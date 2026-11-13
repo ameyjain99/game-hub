@@ -1,4 +1,4 @@
-import type { CardCombo, Hand, TrainCard } from '../../engine/types';
+import type { CardCombo, Hand, Route, TrainCard } from '../../engine/types';
 import { canPayFor, getRoute } from '../../engine/selectors';
 import { cityById } from '../../engine/maps';
 import { cardHex, cardBorder, cardText, LOCO_GRADIENT } from '../colors';
@@ -42,6 +42,15 @@ function ComboChips({ combo }: { combo: CardCombo }) {
   );
 }
 
+/** What makes a route special, said up front: ferry locomotives and the tunnel risk. */
+function routeNotes(route: Route): string {
+  const notes: string[] = [];
+  const locos = route.locomotivesRequired;
+  if (locos > 0) notes.push(`ferry: needs ${locos} locomotive${locos === 1 ? '' : 's'}`);
+  if (route.isTunnel) notes.push('tunnel: may cost extra');
+  return notes.map((n) => ` · ${n}`).join('');
+}
+
 export function ClaimDialog({ routeId, hand, onConfirm, onCancel }: Props) {
   const route = getRoute(routeId)!;
   const combos = canPayFor(hand, route);
@@ -53,7 +62,8 @@ export function ClaimDialog({ routeId, hand, onConfirm, onCancel }: Props) {
           Claim {NAME.get(route.a)} → {NAME.get(route.b)}
         </h3>
         <span className="dialog-sub">
-          {route.length} {route.color === 'grey' ? 'any-color' : route.color} · pick cards to spend
+          {route.length} {route.color === 'grey' ? 'any-color' : route.color}
+          {routeNotes(route)} · pick cards to spend
         </span>
       </div>
       {combos.length === 0 ? (

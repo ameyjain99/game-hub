@@ -47,7 +47,9 @@ export function cardText(card: TrainCard): string {
 }
 
 /** CSS background for a card face — the loco is a rainbow sweep, others solid. */
-export const LOCO_GRADIENT = 'linear-gradient(135deg,#e74c3c,#f39c12,#2ecc71,#3498db,#e85fae)';
+/** The locomotive card's rainbow, shared by the CSS card face and SVG ferry slots. */
+export const LOCO_STOPS = ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#e85fae'];
+export const LOCO_GRADIENT = `linear-gradient(135deg,${LOCO_STOPS.join(',')})`;
 
 export function cardHex(card: TrainCard): string {
   return COLOR_HEX[card];

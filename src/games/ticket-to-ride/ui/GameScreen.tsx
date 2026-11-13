@@ -15,7 +15,7 @@ import { TunnelDialog } from './components/TunnelDialog';
 import { Commentary } from './components/Commentary';
 import { TicketSelect } from './components/TicketSelect';
 import { TicketCard } from './components/TicketCard';
-import { FinalScores, ResultDetail, rankPlayers } from './components/FinalResults';
+import { FinalScores, ResultDetail, rankPlayers, winners } from './components/FinalResults';
 import { LongestPathOutline, TicketRings } from './components/ResultOverlays';
 import { areConnected, longestPathThrough } from '../engine/graph';
 import { playerColor } from './colors';
@@ -344,11 +344,9 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
 
   let status: string;
   if (gameOver) {
-    const winners = ranked
-      .filter((r) => r.score.total === ranked[0].score.total)
-      .map((r) => r.player.name);
-    const verb = winners.length > 1 ? 'tie' : winners[0] === 'You' ? 'win' : 'wins';
-    status = `Game over — ${winners.join(' & ')} ${verb}!`;
+    const names = winners(ranked).map((r) => r.player.name);
+    const verb = names.length > 1 ? 'tie' : names[0] === 'You' ? 'win' : 'wins';
+    status = `Game over — ${names.join(' & ')} ${verb}!`;
   } else if (state.phase === 'setup-tickets') {
     status = 'Choose your destination tickets…';
   } else if (state.phase === 'tunnel-decision') {

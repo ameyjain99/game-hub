@@ -16,6 +16,14 @@ export interface GameMode {
   /** Tickets dealt to each player at setup, and how many they must keep. */
   setupDeal: number;
   setupKeep: number;
+  /**
+   * How many of the setup deal come from the long-ticket deck (tickets with
+   * `long`); the rest are regular. Undealt long tickets leave the game. When the
+   * deck has no long tickets, the whole deal is regular.
+   */
+  setupLong?: number;
+  /** Where unkept setup tickets go: under the ticket pile, or out of the game. */
+  setupDiscards: 'bottom' | 'box';
   /** Tickets drawn on a draw-tickets turn (the player keeps at least 1). */
   ticketDraw: number;
   bonuses: BonusId[];
