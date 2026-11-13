@@ -1,7 +1,7 @@
 import { Crown } from '../../../../shared/icons';
 import type { GameState, PlayerState, Ticket } from '../../engine/types';
 import { finalScores, type ScoreBreakdown } from '../../engine/scoring';
-import { DEFAULT_BONUSES, longestPathBonus } from '../../engine/bonuses';
+import { bonusesFor } from '../../engine/bonuses';
 import { areConnected, longestPath } from '../../engine/graph';
 import { playerColor } from '../colors';
 import { cleanName } from '../displayName';
@@ -16,7 +16,7 @@ export interface RankedPlayer {
 /** Players ranked by final score, highest first (removed players are excluded). */
 export function rankPlayers(state: GameState): RankedPlayer[] {
   const active = state.players.filter((p) => !p.removed);
-  const scores = finalScores(active, DEFAULT_BONUSES);
+  const scores = finalScores(active, bonusesFor(state.mapId, state.modeId));
   return active
     .map((player) => ({ player, seat: state.players.indexOf(player), score: scores[player.id] }))
     .sort((a, b) => b.score.total - a.score.total);
@@ -80,7 +80,12 @@ export function ResultDetail({
   onPlayAgain?: () => void;
 }) {
   const { player, score } = selected;
-  const longestWinners = longestPathBonus.award(state.players);
+  // Bonus card points this player won, by card id.
+  const won = new Map(
+    bonusesFor(state.mapId, state.modeId)
+      .filter((b) => b.award(state.players).has(player.id))
+      .map((b) => [b.id, b.points]),
+  );
   const done = player.tickets.filter((t) => areConnected(player.claimedRouteIds, t.a, t.b)).length;
 
   return (
@@ -96,11 +101,12 @@ export function ResultDetail({
           <span className="detail-sub">
             {done}/{player.tickets.length} done
           </span>
+          {won.has('globetrotter') && <span className="detail-sub">+{won.get('globetrotter')} bonus</span>}
         </div>
         <div className="detail-stat">
           <span className="detail-k">Longest</span>
           <span className="detail-v">{longestPath(player.claimedRouteIds)}</span>
-          {longestWinners.has(player.id) && <span className="detail-sub">+10 bonus</span>}
+          {won.has('longest-path') && <span className="detail-sub">+{won.get('longest-path')} bonus</span>}
         </div>
         {score.stations > 0 && (
           <div className="detail-stat">

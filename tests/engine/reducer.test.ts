@@ -30,6 +30,7 @@ function hand(over: Partial<Hand>): Hand {
 function turnState(over: Partial<GameState> = {}): GameState {
   return {
     mapId: 'usa',
+    modeId: 'default',
     pendingTunnel: null,
     players: [player({ id: 'p0' }), player({ id: 'p1', name: 'P1' })],
     current: 0,
@@ -303,7 +304,7 @@ describe('setup tickets', () => {
     expect(b.current).toBe(0);
   });
 
-  it('keeping fewer than 1 setup ticket is illegal', () => {
+  it('keeping fewer than 2 setup tickets is illegal', () => {
     const s = turnState({
       phase: 'setup-tickets',
       players: [
@@ -321,8 +322,11 @@ describe('setup tickets', () => {
     expect(() =>
       applyAction(s, { type: 'CONFIRM_SETUP_TICKETS', playerId: 'p0', keptIds: [] }),
     ).toThrow(IllegalActionError);
-    const kept = applyAction(s, { type: 'CONFIRM_SETUP_TICKETS', playerId: 'p0', keptIds: ['p0-a'] });
-    expect(kept.players[0].tickets.map((t) => t.id)).toEqual(['p0-a']);
+    expect(() =>
+      applyAction(s, { type: 'CONFIRM_SETUP_TICKETS', playerId: 'p0', keptIds: ['p0-a'] }),
+    ).toThrow(IllegalActionError);
+    const kept = applyAction(s, { type: 'CONFIRM_SETUP_TICKETS', playerId: 'p0', keptIds: ['p0-a', 'p0-c'] });
+    expect(kept.players[0].tickets.map((t) => t.id)).toEqual(['p0-a', 'p0-c']);
   });
 });
 

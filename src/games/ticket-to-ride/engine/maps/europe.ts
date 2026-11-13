@@ -11,7 +11,20 @@ export const EUROPE_MAP: GameMap = {
   name: 'Europe',
   cities: EUROPE_CITIES,
   routes: EUROPE_ROUTES,
-  modes: [{ id: 'default', name: 'Default', tickets: EUROPE_TICKETS, rulebook: rulebookUrl('europe.pdf') }],
+  // The rulebook deals 1 long-route + 3 regular tickets and requires keeping 2;
+  // the ticket data has no long/regular split yet, so this is a simplification.
+  modes: [
+    {
+      id: 'default',
+      name: 'Default',
+      tickets: EUROPE_TICKETS,
+      setupDeal: 3,
+      setupKeep: 1,
+      ticketDraw: 3,
+      bonuses: ['longest-path'],
+      rulebook: rulebookUrl('europe.pdf'),
+    },
+  ],
   deck: DECK_COMPOSITION,
   startingTrains: 45,
   stationsPerPlayer: 3,

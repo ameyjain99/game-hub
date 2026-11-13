@@ -6,6 +6,7 @@ import type { GameState } from '../../src/games/ticket-to-ride/engine/types';
 function baseState(over: Partial<GameState> = {}): GameState {
   return {
     mapId: 'usa',
+    modeId: 'default',
     pendingTunnel: null,
     players: [],
     current: 0,

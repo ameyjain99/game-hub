@@ -3,6 +3,7 @@ import type { Action } from '../engine/actions';
 import { legalActions, getRoute } from '../engine/selectors';
 import { routePoints } from '../engine/scoring';
 import { areConnected } from '../engine/graph';
+import { modeFor } from '../engine/maps';
 import { targetRouteIds, desiredColors } from './heuristics';
 import { heuristicAction } from './hardHeuristic';
 
@@ -35,10 +36,11 @@ export function chooseAction(
       [...player.pendingTickets].sort((a, b) => b.points - a.points).slice(0, n).map((t) => t.id),
     );
 
-  // Setup: keep the two highest-value tickets (and complete them — that's where
-  // the points are). Undisciplined easy will fail to finish them.
+  // Setup: keep the mode's minimum, highest value first (and complete them —
+  // that's where the points are). Undisciplined easy will fail to finish them.
   if (state.phase === 'setup-tickets') {
-    return { type: 'CONFIRM_SETUP_TICKETS', playerId, keptIds: inPendingOrder(topByPoints(2)) };
+    const keep = modeFor(state.mapId, state.modeId).setupKeep;
+    return { type: 'CONFIRM_SETUP_TICKETS', playerId, keptIds: inPendingOrder(topByPoints(keep)) };
   }
 
   // Choosing among freshly drawn tickets: keep every one already satisfied by

@@ -22,6 +22,7 @@ function state(over: Partial<GameState> & { playerCount?: number } = {}): GameSt
   const { playerCount: _pc, ...rest } = over;
   return {
     mapId: 'usa',
+    modeId: 'default',
     pendingTunnel: null,
     players,
     current: 0,

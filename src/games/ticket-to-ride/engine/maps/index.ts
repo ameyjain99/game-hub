@@ -1,9 +1,9 @@
-import type { City, MapId, Route, Ticket } from '../types';
-import type { GameMap, GameMode } from './types';
+import type { City, MapId, Route } from '../types';
+import type { BonusId, GameMap, GameMode } from './types';
 import { USA_MAP } from './usa';
 import { EUROPE_MAP } from './europe';
 
-export type { GameMap, GameMode };
+export type { BonusId, GameMap, GameMode };
 
 /** All playable maps, keyed by id. New maps register here. */
 export const MAPS: Record<MapId, GameMap> = {
@@ -24,11 +24,6 @@ export function getMap(id: MapId): GameMap {
 export function modeFor(mapId: MapId, modeId?: string): GameMode {
   const map = getMap(mapId);
   return (modeId && map.modes.find((m) => m.id === modeId)) || map.modes[0];
-}
-
-/** Tickets for a map under the given mode (default mode if unspecified/unknown). */
-export function ticketsFor(mapId: MapId, modeId?: string): Ticket[] {
-  return modeFor(mapId, modeId).tickets;
 }
 
 // Global id lookups across every map. Route and city ids are unique across

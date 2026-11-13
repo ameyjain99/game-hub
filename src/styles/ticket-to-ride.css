@@ -1049,9 +1049,20 @@
 }
 
 
+/* Cards shrink (down to where long names still fit in 3 lines) before the strip
+   scrolls, so a 5-ticket deal (USA Mega) shows every card at laptop widths; the
+   strip's scrollbar is hidden, so a clipped card would be easy to miss. */
 .top-content .ticket-card {
   width: auto;
-  min-width: 148px;
+  flex: 0 1 148px;
+  min-width: 132px;
+}
+
+
+/* The ticket prompt's hint wraps under its title to leave room for the cards. */
+.top-content .ticket-select .dialog-sub {
+  white-space: normal;
+  max-width: 170px;
 }
 
 

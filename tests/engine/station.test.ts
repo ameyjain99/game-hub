@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { applyAction } from '../../src/games/ticket-to-ride/engine/reducer';
 import { IllegalActionError } from '../../src/games/ticket-to-ride/engine/actions';
 import { finalScores } from '../../src/games/ticket-to-ride/engine/scoring';
-import { DEFAULT_BONUSES } from '../../src/games/ticket-to-ride/engine/bonuses';
+import { bonusesFor } from '../../src/games/ticket-to-ride/engine/bonuses';
 import { emptyHand } from '../../src/games/ticket-to-ride/engine/deck';
 import type { GameState, Hand, PlayerState } from '../../src/games/ticket-to-ride/engine/types';
 
@@ -27,6 +27,7 @@ function europePlayer(over: Partial<PlayerState>): PlayerState {
 function europeState(over: Partial<GameState> = {}): GameState {
   return {
     mapId: 'europe',
+    modeId: 'default',
     players: [europePlayer({ id: 'p0' }), europePlayer({ id: 'p1', name: 'P1' })],
     current: 0,
     phase: 'turn',
@@ -86,7 +87,7 @@ test('cannot place on a city that already has a station', () => {
 
 test('unused stations score 4 points each', () => {
   const players = [europePlayer({ stationsLeft: 2 }), europePlayer({ id: 'p1', stationsLeft: 0 })];
-  const scores = finalScores(players, DEFAULT_BONUSES);
+  const scores = finalScores(players, bonusesFor('europe'));
   expect(scores.p0.stations).toBe(8);
   expect(scores.p1.stations).toBe(0);
 });
@@ -98,7 +99,7 @@ test("a station borrows a neighbor's route to complete a ticket", () => {
     tickets: [{ id: 'paris__zurich', a: 'paris', b: 'zurich', points: 5 }],
   });
   const p1 = europePlayer({ id: 'p1', stations: [], stationsLeft: 3, claimedRouteIds: ['paris-zurich'] });
-  const scores = finalScores([p0, p1], DEFAULT_BONUSES);
+  const scores = finalScores([p0, p1], bonusesFor('europe'));
   // paris→zurich is only reachable by borrowing p1's paris-zurich via the station.
   expect(scores.p0.tickets).toBe(5);
 });

@@ -12,7 +12,7 @@ import { cpus } from 'node:os';
 import { createGame } from '../src/games/ticket-to-ride/engine/setup';
 import { applyAction } from '../src/games/ticket-to-ride/engine/reducer';
 import { finalScores } from '../src/games/ticket-to-ride/engine/scoring';
-import { DEFAULT_BONUSES } from '../src/games/ticket-to-ride/engine/bonuses';
+import { bonusesFor } from '../src/games/ticket-to-ride/engine/bonuses';
 import type { GameState } from '../src/games/ticket-to-ride/engine/types';
 import type { Action } from '../src/games/ticket-to-ride/engine/actions';
 import { chooseAction } from '../src/games/ticket-to-ride/ai/bot';
@@ -60,7 +60,7 @@ function playGame(job: Job, seed: number): GameResult {
     if (seat === aSeat) timings.push(performance.now() - t0);
     s = applyAction(s, action);
   }
-  const scores = finalScores(s.players, DEFAULT_BONUSES);
+  const scores = finalScores(s.players, bonusesFor(s.mapId, s.modeId));
   const bestB = Math.max(...s.players.filter((_, i) => i !== aSeat).map((p) => scores[p.id].total));
   return { margin: scores[`p${aSeat}`].total - bestB, timings };
 }

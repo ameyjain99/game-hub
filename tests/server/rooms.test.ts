@@ -28,7 +28,7 @@ function finishSetup(code: string, hostTok: string, guestTok: string): void {
     store.submitAction(code, tok, {
       type: 'CONFIRM_SETUP_TICKETS',
       playerId: pid,
-      keptIds: [me.pendingTickets[0].id],
+      keptIds: me.pendingTickets.slice(0, 2).map((t) => t.id),
     });
   }
 }
@@ -112,7 +112,7 @@ test('submitAction applies a legal action and rejects an illegal one', () => {
     store.submitAction(code, hostTok, {
       type: 'CONFIRM_SETUP_TICKETS',
       playerId: 'p0',
-      keptIds: [me.pendingTickets[0].id],
+      keptIds: me.pendingTickets.slice(0, 2).map((t) => t.id),
     }),
   ).toEqual({ ok: true });
 
