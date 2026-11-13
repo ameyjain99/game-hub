@@ -1,0 +1,41 @@
+name: PR conventions
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  conventions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Branch name
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          echo "Branch: $BRANCH"
+          printf '%s' "$BRANCH" | grep -Eq '^(feat|fix|test|chore)/[a-z0-9._/-]+$' || {
+            echo "::error::Branch must be named feat/..., fix/..., test/... or chore/..."; exit 1; }
+      - name: PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "Title: $TITLE"
+          printf '%s' "$TITLE" | grep -Eq '^(feat|fix|test|chore)(\([a-z0-9._-]+\))?: .+' || {
+            echo "::error::PR title must start with feat:, fix:, test: or chore:"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Commit messages
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          bad=0
+          for sha in $(git rev-list "$BASE".."$HEAD"); do
+            # Skip merge commits (more than one parent).
+            [ "$(git rev-list --parents -n1 "$sha" | wc -w)" -gt 2 ] && continue
+            subj=$(git log -1 --format=%s "$sha")
+            printf '%s' "$subj" | grep -Eq '^(feat|fix|test|chore)(\([a-z0-9._-]+\))?: .+' || {
+              echo "::error::Commit $sha has a non-conforming message: $subj"; bad=1; }
+          done
+          [ "$bad" -eq 0 ]
