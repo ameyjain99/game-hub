@@ -1,0 +1,380 @@
+/* GameHub landing page. */
+
+/* ---------------- GameHub home ----------------
+   Full-bleed near-black landing page. `.hub` paints the background edge to
+   edge; its direct children are constrained to a centred content column. */
+.hub {
+  width: 100%;
+  background: #0b0b0f;
+  color: #ececee;
+  font-family: 'Archivo', system-ui, 'Segoe UI', sans-serif;
+  padding-bottom: 72px;
+  overflow-x: clip; /* the tilted hero backdrop must never cause a horizontal scrollbar */
+}
+
+
+.hub > header,
+.hub > section,
+.hub > footer {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+
+
+.hub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
+
+
+.hub-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+
+.hub-wordmark {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+
+.hub-nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+
+.hub-nav a {
+  color: #9ba0a6;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+
+.hub-nav a:hover {
+  color: #fff;
+}
+
+
+.hub-pill {
+  background: #fff;
+  color: #0b0b0f;
+  border: none;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+
+
+.hub-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 12px;
+  color: #8a9099;
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+
+
+
+.hub-hero {
+  position: relative;
+  padding-top: 48px;
+  padding-bottom: 56px;
+}
+/* Hero text sits above the decorative grid backdrop. */
+.hub-hero > .hub-eyebrow,
+.hub-hero > .hub-headline,
+.hub-hero > .hub-sub,
+.hub-hero > .hub-hero-actions {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Tilted 3D grid backdrop ---- */
+.hub-backdrop {
+  position: absolute;
+  z-index: 0;
+  top: -72px;
+  right: -60px;
+  width: 70%;
+  height: 128%;
+  pointer-events: none;
+  perspective: 1200px;
+  overflow: hidden;
+  /* Fade toward every edge so it melts into the page and never fights the text. */
+  -webkit-mask-image: radial-gradient(118% 104% at 80% 32%, #000 16%, transparent 64%);
+  mask-image: radial-gradient(118% 104% at 80% 32%, #000 16%, transparent 64%);
+}
+.hub-grid-plane {
+  display: grid;
+  gap: 14px;
+  width: 150%;
+  transform-origin: 25% 75%;
+  /* Recede into the screen from the near bottom-left toward the far top-right. */
+  transform: rotateX(48deg) rotateZ(32deg);
+}
+.hub-cell {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 #ffffff12;
+}
+@media (max-width: 760px) {
+  .hub-backdrop {
+    display: none;
+  }
+}
+
+
+.hub-headline {
+  font-size: clamp(38px, 6vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  margin: 0 0 20px;
+}
+
+
+.hub-sub {
+  color: #9ba0a6;
+  font-size: 17px;
+  max-width: 540px;
+  line-height: 1.5;
+  margin: 0 0 28px;
+}
+
+
+.hub-hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+
+.hub-btn-primary {
+  background: #fff;
+  color: #0b0b0f;
+  border: none;
+  border-radius: 10px;
+  padding: 13px 22px;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+
+.hub-btn-ghost {
+  color: #ececee;
+  text-decoration: none;
+  padding: 13px 18px;
+  border-radius: 10px;
+  border: 1px solid #2a2c31;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+
+
+.hub-section-title {
+  font-size: clamp(26px, 4vw, 40px);
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  margin: 0 0 28px;
+}
+
+
+
+.hub-library {
+  padding-top: 40px;
+  padding-bottom: 40px;
+  border-top: 1px solid #1c1d22;
+}
+
+
+.hub-games {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+
+.game-card {
+  background: #141419;
+  border: 1px solid #22232a;
+  border-radius: 16px;
+  padding-bottom: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.game-card.is-soon {
+  opacity: 0.86;
+}
+
+
+.game-card-tile {
+  position: relative;
+  height: 128px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.game-card-status {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+
+.game-card-title {
+  margin: 16px 16px 6px;
+  font-size: 18px;
+}
+
+
+.game-card-tagline {
+  margin: 0 16px 10px;
+  color: #9ba0a6;
+  font-size: 13.5px;
+  line-height: 1.4;
+  flex: 1;
+}
+
+
+.game-card-meta {
+  margin: 0 16px 14px;
+  color: #6e747c;
+  font-size: 12.5px;
+}
+
+
+.game-card-btn {
+  margin: 0 16px;
+  background: #fff;
+  color: #0b0b0f;
+  border: none;
+  border-radius: 9px;
+  padding: 10px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+
+.game-card-btn.soon {
+  background: #22232a;
+  color: #8a9099;
+  cursor: default;
+}
+
+
+
+.hub-how {
+  padding-top: 48px;
+  padding-bottom: 48px;
+  border-top: 1px solid #1c1d22;
+}
+
+
+.hub-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+
+.hub-steps li {
+  border-top: 2px solid #2a2c31;
+  padding-top: 14px;
+}
+
+
+.hub-step-num {
+  color: #6e747c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+.hub-steps h4 {
+  margin: 8px 0 6px;
+  font-size: 16px;
+}
+
+
+.hub-steps p {
+  margin: 0;
+  color: #9ba0a6;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+
+
+.hub-cta {
+  margin-top: 40px;
+  margin-bottom: 40px;
+  padding: 32px;
+  border-radius: 18px;
+  background: #141419;
+  border: 1px solid #22232a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+
+.hub-cta h2 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+
+
+.hub-cta p {
+  margin: 0;
+  color: #9ba0a6;
+}
+
+
+
+.hub-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 28px;
+  padding-bottom: 28px;
+  border-top: 1px solid #1c1d22;
+  color: #6e747c;
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 12px;
+}

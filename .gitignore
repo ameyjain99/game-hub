@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-server
+.DS_Store
+*.tsbuildinfo
+.local
+.claude
+.superpowers
+docs
+.playwright-mcp/
+.gstack/

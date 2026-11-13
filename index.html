@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>GameHub — Play Ticket to Ride, Cluedo &amp; more online with friends</title>
+    <meta
+      name="description"
+      content="GameHub lets you play classic board games — Ticket to Ride, Monopoly, Cluedo and Catan — online with friends. Open a room, share the code, and everyone's at the same table."
+    />
+    <meta name="theme-color" content="#0b0b0f" />
+    <!-- Open Graph / social sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GameHub" />
+    <meta property="og:title" content="GameHub — board games online with friends" />
+    <meta
+      property="og:description"
+      content="Ticket to Ride, Monopoly, Cluedo and Catan in your browser. Open a room, send the code, and play in real time."
+    />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="GameHub — board games online with friends" />
+    <meta
+      name="twitter:description"
+      content="Ticket to Ride, Monopoly, Cluedo and Catan in your browser. Open a room, send the code, and play in real time."
+    />
+    <meta name="twitter:image" content="/og.png" />
+    <!-- Structured data: the site + the games it offers -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "GameHub",
+        "description": "Play classic board games online with friends — Ticket to Ride, Monopoly, Cluedo and Catan.",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Web",
+        "hasPart": [
+          { "@type": "VideoGame", "name": "Ticket to Ride", "gameItem": "board game", "playMode": "MultiPlayer" },
+          { "@type": "VideoGame", "name": "Monopoly", "gameItem": "board game", "playMode": "MultiPlayer" },
+          { "@type": "VideoGame", "name": "Cluedo", "gameItem": "board game", "playMode": "MultiPlayer" },
+          { "@type": "VideoGame", "name": "Catan", "gameItem": "board game", "playMode": "MultiPlayer" }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,1429 @@
+/* Ticket to Ride — the in-game cockpit, board, cards, dialogs, results. */
+
+@media (max-width: 900px) {
+  .hub-games {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+@media (max-width: 520px) {
+  .hub-games {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 760px) {
+  .hub-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 680px) {
+  .cluedo-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+/* ---------------- Train stations ---------------- */
+.station-btn {
+  margin-top: 10px;
+  width: 100%;
+  background: #0e0e12;
+  color: var(--ink);
+  border: 1px solid #2a2c31;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 600;
+}
+
+
+.station-btn.active {
+  background: var(--accent);
+  color: #0b0b0f;
+  border-color: var(--accent);
+}
+
+
+.city.placeable {
+  cursor: pointer;
+}
+
+
+
+/* ---------------- Tunnel dialog ---------------- */
+.tunnel-flip-label {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+
+.tunnel-flipped {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+
+.tunnel-cost {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+
+.tunnel-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+
+/* ---------------- Game layout (cockpit) ---------------- */
+.game-screen {
+  position: relative;
+  display: grid;
+  grid-template-columns: 132px 1fr 300px;
+  /* Fixed-height top row: the commentary / active-choice pane stays one constant
+     height and scrolls internally instead of growing downward. */
+  grid-template-rows: 56px 1fr auto;
+  grid-template-areas:
+    'top   top    top'
+    'decks board  players'
+    'hand  hand   hand';
+  gap: 10px;
+  height: 100vh;
+  padding: 10px;
+}
+
+
+/* ---------------- Running commentary (top bar) ---------------- */
+.commentary {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+}
+
+
+.commentary-feed {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+}
+
+
+.commentary-line {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+
+.commentary-line:last-child {
+  color: var(--ink);
+}
+
+
+.commentary-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+
+.commentary-now {
+  flex: 0 0 32%;
+  max-width: 320px;
+  align-self: center;
+  border-left: 1px solid #ffffff14;
+  padding-left: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+
+
+.game-tools {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+}
+
+
+/* A row of tools sharing one line (e.g. mute + leave, or mic + leave-voice). */
+.tools-row {
+  display: flex;
+  gap: 4px;
+}
+
+
+.tools-row .tool-btn {
+  flex: 1 1 0;
+}
+
+
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #1b1b21cc;
+  color: var(--muted);
+  border: 1px solid #2a2c31;
+  border-radius: 10px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+
+.tool-btn:hover {
+  color: var(--ink);
+  border-color: #44464d;
+}
+
+
+.tool-btn.leave:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+
+.disconnect-overlay {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100vw - 32px);
+  background: #1b1b21f2;
+  border: 1px solid #2a2c31;
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 10px 30px #0009;
+  backdrop-filter: blur(3px);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+
+.disconnect-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+
+.disconnect-overlay .primary,
+.disconnect-overlay .secondary {
+  flex: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+
+.disconnect-overlay .secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid #2a2c31;
+}
+
+
+.disconnect-overlay .secondary:hover {
+  color: var(--ink);
+  border-color: #44464d;
+}
+
+
+.players-strip {
+  grid-area: players;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+
+.decks-pane {
+  grid-area: decks;
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+
+.decks-pane .market-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+
+.decks-pane .card-chip,
+.decks-pane .deck-btn,
+.decks-pane .ticket-deck-btn {
+  width: 100%;
+}
+
+
+.board-area {
+  grid-area: board;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+
+
+/* Top bar: the active choice / commentary content on the left, tools on the right. */
+.top-bar {
+  grid-area: top;
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  min-height: 0;
+  height: 100%;
+}
+
+
+.top-content {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 10px 12px;
+  overflow: auto;
+}
+
+
+.hand-pane {
+  grid-area: hand;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 8px 14px;
+  min-height: 78px;
+}
+
+
+.hand-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Your turn clock, beside your cards in the bottom pane: bold dark red, and it
+   pulses once it gets low. */
+.turn-clock {
+  flex: none;
+  font-size: 30px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: #8e1118;
+}
+.turn-clock.low {
+  color: #c01622;
+  animation: turn-clock-pulse 1s ease-in-out infinite;
+}
+@keyframes turn-clock-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .turn-clock.low {
+    animation: none;
+  }
+}
+
+
+.tickets-strip {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+
+.ticket-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 46vw;
+}
+
+
+.ticket-row .ticket-card {
+  width: auto;
+  font-size: 12px;
+  padding: 7px 9px;
+}
+
+
+.pane-label {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+
+.board {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px #0007;
+}
+
+
+.route rect {
+  transition: filter 0.15s ease;
+}
+
+
+.route.claimable:hover rect {
+  filter: brightness(1.2);
+}
+
+
+/* A claimed route's cars drop in on mount (staggered per car, set inline) so a
+   claim animates for every player watching. transform-box keeps the scale
+   centered on each car despite the route's rotation. */
+.train-car {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: car-drop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+
+@keyframes car-drop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+.route-badge-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: car-drop 0.3s ease-out 0.28s both;
+}
+
+
+/* Hovered longest-path chain: brighter cars (fill eases in) and a popped tooltip. */
+.route.chain .train-car-body {
+  transition: fill 0.12s ease;
+}
+
+
+.route-tooltip {
+  animation: pop 0.12s ease-out;
+}
+
+
+.card-chip {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+
+.dialog {
+  animation: pop 0.16s ease-out;
+}
+
+
+.pass-card {
+  animation: pop 0.2s ease-out;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .popover,
+  .pass-card,
+  .card-chip.clickable:hover,
+  .train-car,
+  .route-badge-pop,
+  .route-tooltip {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+
+
+/* ---------------- Player panels ---------------- */
+/* Each card is a video frame (cam, or an avatar silhouette) with the name/score
+   overlaid, and a stats bar below. Cards flex to share the pane's full height. */
+.player-panel {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid #2a2c31;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.12s ease;
+}
+/* Player-colour strip on the left, painted above the video. */
+.player-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  z-index: 3;
+  background: var(--pc, #666);
+}
+.player-panel.current {
+  border-color: var(--pc);
+  box-shadow: 0 0 0 1px var(--pc);
+}
+.player-panel:hover {
+  border-color: #3a3c42;
+}
+
+.player-media {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  background: var(--panel-2);
+}
+.player-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.player-panel.is-me .player-video {
+  transform: scaleX(-1); /* mirror your own camera, like a selfie view */
+}
+.player-silhouette {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+.player-silhouette-avatar {
+  font-size: 34px;
+  line-height: 1;
+}
+.player-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 18px 10px 6px;
+  background: linear-gradient(transparent, #000b);
+}
+.player-overlay .player-name {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-overlay .player-score {
+  font-weight: 800;
+  font-size: 15px;
+  color: #fff;
+}
+.player-vcontrols {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.player-panel.is-me:hover .player-vcontrols {
+  opacity: 1;
+}
+.player-vcontrols button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #000a;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 6px;
+  color: #fff;
+}
+.player-stats {
+  flex: none;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 6px 10px 6px 14px;
+  color: var(--muted);
+  font-size: 12px;
+  background: var(--panel);
+}
+.player-stats .stat b {
+  color: var(--ink);
+  font-size: 14px;
+}
+.player-stats .stat.trains b {
+  color: var(--accent);
+}
+
+
+
+/* ---------------- Cards / market / hand ---------------- */
+.market-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.card-chip {
+  width: 38px;
+  height: 54px;
+  border-radius: 7px;
+  border: 1px solid #0006;
+  position: relative;
+  box-shadow: inset 0 2px 6px #ffffff40, 0 2px 6px #0006;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.card-chip.clickable:hover {
+  transform: translateY(-3px);
+}
+
+
+.card-chip.dimmed {
+  opacity: 0.4;
+}
+
+
+.card-chip .loco-mark {
+  color: #fff;
+  text-shadow: 0 1px 2px #0008;
+  font-size: 18px;
+}
+
+
+.card-count {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  background: #0e0e12;
+  color: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #2a2c31;
+}
+
+
+.deck-btn,
+.ticket-deck-btn {
+  width: 50px;
+  height: 54px;
+  border-radius: 7px;
+  border: 1px solid #2a2c31;
+  background: linear-gradient(160deg, #2e2f36, #141419);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+
+.ticket-deck-btn {
+  background: linear-gradient(160deg, #3a3b42, #1c1c22);
+}
+
+
+.deck-btn:disabled,
+.ticket-deck-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+.deck-count {
+  font-weight: 800;
+}
+
+
+.deck-label {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+
+.hand-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+
+.hand-label,
+.hand-empty {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+
+.hand {
+  display: flex;
+  gap: 6px;
+  min-height: 54px;
+  align-items: center;
+}
+
+
+
+/* ---------------- Tickets ---------------- */
+.my-tickets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: 320px;
+}
+
+
+.ticket-card {
+  background: #1b1b21;
+  border: 1px solid #2a2c31;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+
+.ticket-card .ticket-points {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+
+/* Inset ring (not an outset one) so the selected outline is never clipped
+   when the ticket list is a horizontal overflow-x strip in the top bar. */
+.ticket-card.selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+
+.ticket-card.done {
+  border-color: #2fa84f;
+}
+
+
+.ticket-card.missing {
+  border-color: #e2483b;
+}
+
+
+.ticket-status {
+  font-weight: 800;
+}
+
+
+.ticket-card.done .ticket-status {
+  color: #2fa84f;
+}
+
+
+.ticket-card.missing .ticket-status {
+  color: #e2483b;
+}
+
+
+
+.status-line {
+  color: var(--muted);
+  text-align: center;
+}
+
+
+.status-line .error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+
+/* The bottom bar's middle column: holds the status line plus any per-player
+ * feedback (turn cue / draw note), shown only on this device's screen. */
+.center-pane {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-align: center;
+}
+
+
+.player-flash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+
+.turn-flash {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  color: #fff;
+  animation: turn-blink 0.7s steps(1, end) infinite;
+}
+
+
+@keyframes turn-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+
+.draw-flash {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+
+
+/* ---------------- Side-pane choice panels (claim / tickets) ---------------- */
+/* Rendered inside the right side pane, so the board stays fully visible. */
+.popover {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  animation: popUp 0.16s ease-out;
+}
+
+
+.popover-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+
+.popover-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+
+.dialog-sub {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+
+.dialog-none {
+  color: var(--danger);
+  margin: 0;
+}
+
+
+.combo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+.combo-btn {
+  width: 100%;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid #2a2c31;
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+
+.combo-btn:hover {
+  border-color: var(--accent);
+}
+
+
+/* A combo is shown as the mini card faces it spends, with the count drawn
+   inside each — colours as rounded squares, the locomotive as a circle. */
+.combo-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+.combo-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 28px;
+  padding: 0 4px;
+  border: 1px solid #0006;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow:
+    inset 0 2px 5px #ffffff40,
+    0 1px 3px #0006;
+}
+
+
+.combo-chip.loco {
+  min-width: 28px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+
+.dialog-cancel {
+  background: transparent;
+  border: 1px solid #2a2c31;
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin-top: auto;
+}
+
+
+.tickets-pane,
+.ticket-select .ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+.ticket-card {
+  width: 100%;
+  font-size: 13px;
+  padding: 9px 11px;
+  cursor: pointer;
+}
+
+
+.ticket-select .primary {
+  margin-top: auto;
+}
+
+
+
+/* --- Choice panels laid out horizontally in the short (56px) top bar --- */
+/* The row never wraps, so the cancel/confirm button stays pinned to the right
+   edge instead of dropping onto a second line. */
+.top-content {
+  padding: 6px 12px;
+}
+
+
+.top-content .popover,
+.top-content .claim-dialog {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 14px;
+  height: 100%;
+}
+
+
+/* The title block never shrinks or truncates — it always shows in full; the
+   combo strip beside it takes the remaining width and scrolls. */
+.top-content .popover-head {
+  flex: 0 0 auto;
+}
+
+
+.top-content .popover-head h3 {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+
+.top-content .dialog-sub {
+  white-space: nowrap;
+}
+
+
+.top-content .ticket-select .ticket-list,
+.top-content .combo-list,
+.top-content .tunnel-flipped {
+  flex: 1 1 auto;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+
+.top-content .combo-btn {
+  width: auto;
+  white-space: nowrap;
+  padding: 5px 10px;
+}
+
+
+.top-content .ticket-card {
+  width: auto;
+  min-width: 148px;
+}
+
+
+/* Pin the trailing action (Cancel / Keep tickets / tunnel actions) to the right. */
+.top-content .ticket-select .primary,
+.top-content .dialog-cancel,
+.top-content .tunnel-actions {
+  margin-top: 0;
+  margin-left: auto;
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+
+.top-content .tunnel-dialog h3,
+.top-content .tunnel-flip-label,
+.top-content .tunnel-cost {
+  margin: 0;
+}
+
+
+
+/* ---------------- Pass screen ---------------- */
+.pass-screen {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.pass-card {
+  background: var(--panel);
+  border: 2px solid #666;
+  border-radius: 18px;
+  padding: 40px 60px;
+  text-align: center;
+  box-shadow: 0 24px 70px #000a;
+}
+
+
+.pass-card .pass-token {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 12px;
+}
+
+
+.pass-name {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 4px 0 20px;
+}
+
+
+
+/* ---------------- Final results (side pane at game over) ---------------- */
+.final-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+.final-results .primary {
+  margin-top: 6px;
+  width: 100%;
+}
+
+
+.result-list,
+.result-tickets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+
+.result-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  background: #1b1b21;
+  border: 1px solid #2a2c31;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+
+.result-row.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+
+.result-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.result-name {
+  flex: 1;
+  font-weight: 700;
+}
+
+
+.result-total {
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--accent);
+}
+
+
+.result-detail {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+
+.result-detail .neg {
+  color: var(--danger);
+}
+
+
+
+/* ---------------- Last-round banner ---------------- */
+.last-round-banner {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+  padding: 12px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #15151a;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px #0006;
+  cursor: default;
+  animation: last-round-in 0.25s ease-out;
+}
+
+
+.last-round-banner.dismissable {
+  cursor: pointer;
+}
+
+
+.last-round-dismiss {
+  margin-left: 6px;
+  color: #6b6b73;
+  font-weight: 700;
+}
+
+
+@keyframes last-round-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+
+
+/* ---------------- Voice chat ---------------- */
+.tool-btn.voice-mic.muted {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+
+.tool-btn.voice-mic:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+
+
+/* ---------------- Game-over (top scores + bottom detail) ---------------- */
+.final-scores {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  flex-wrap: wrap;
+}
+
+
+.score-chip-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+
+.score-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-2);
+  border: 1px solid #2a2c31;
+  border-radius: 10px;
+  padding: 8px 14px;
+  color: var(--ink);
+}
+
+
+.score-chip.selected {
+  border-color: var(--accent);
+}
+
+
+.score-chip .score-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+
+.score-chip .score-total {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+
+/* The "Game over — X wins!" line, beside the score chips in the top bar. */
+.final-caption {
+  flex: none;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+
+.final-detail {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+
+/* Routes / Tickets / Longest as vertical stat blocks: heading on top, big score
+   below. The ticket cards fill the space between these and Play again. */
+.detail-stats {
+  display: flex;
+  align-items: stretch;
+  gap: 22px;
+  flex: none;
+  padding-left: 2px;
+}
+.detail-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.detail-k {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.detail-v {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+}
+.detail-v.neg {
+  color: var(--danger);
+}
+.detail-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+
+.detail-tickets {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+
+.detail-tickets .ticket-card {
+  width: auto;
+  min-width: 150px;
+}
+
+
+.final-detail .primary {
+  flex: none;
+}
+
+
+
+/* ---------------- Scrollable panes: keep the scroll, hide the bar ---------------- */
+.commentary-feed,
+.top-content,
+.top-content .combo-list,
+.top-content .ticket-select .ticket-list,
+.top-content .tunnel-flipped,
+.players-strip,
+.decks-pane,
+.detail-tickets,
+.final-detail,
+.cluedo-log {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-spinner {
+    animation-duration: 1.6s;
+  }
+}
+
+
+/* ---------------- Lobby room code + copy ---------------- */
+.lobby-code-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+.copy-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border: 1px solid #2a2c31;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+
+.copy-code:hover {
+  color: var(--ink);
+  border-color: #44464d;
+}
+
+
+.copy-code.copied {
+  color: #39d98a;
+  border-color: #39d98a;
+}

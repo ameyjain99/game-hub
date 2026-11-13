@@ -1,0 +1,12 @@
+# Render Blueprint — free, no card required.
+# Deploy: push this repo to GitHub, then in the Render dashboard
+# New + -> Blueprint -> pick this repo -> Apply.
+services:
+  - type: web
+    name: game-hub
+    runtime: node
+    plan: free
+    region: singapore # closest free region to India
+    buildCommand: npm ci --include=dev && npm run build && npm run build:server
+    startCommand: npm start
+    healthCheckPath: /

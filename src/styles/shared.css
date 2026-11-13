@@ -1,0 +1,535 @@
+/* Shared chrome: setup/landing/profile screens, forms, avatars, modal. */
+
+/* ---------------- Setup screen ---------------- */
+.setup-screen {
+  position: relative;
+  max-width: 640px;
+  margin: 6vh auto;
+  padding: 28px;
+  background: var(--panel);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px #0008;
+}
+
+
+.corner-exit {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid #2a2c31;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+
+.corner-exit:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+
+.setup-screen h1 {
+  margin: 0;
+  font-size: 40px;
+  letter-spacing: 0.5px;
+}
+
+
+.tagline {
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+
+.setup-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 22px 0;
+}
+
+
+.setup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-2);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border-left: 5px solid #666;
+}
+
+
+.seat-token,
+.player-token,
+.pass-token {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 2px #fff3;
+  flex: none;
+}
+
+
+.name-input {
+  flex: 1;
+  background: #0e0e12;
+  border: 1px solid #2a2c31;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+
+
+.type-toggle {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #2a2c31;
+}
+
+
+.type-toggle button {
+  background: #0e0e12;
+  color: var(--muted);
+  border: none;
+  padding: 8px 12px;
+}
+
+
+.type-toggle button.active {
+  background: var(--accent);
+  color: #0b0b0f;
+  font-weight: 700;
+}
+
+
+.difficulty,
+select {
+  background-color: #0e0e12;
+  color: var(--ink);
+  border: 1px solid #2a2c31;
+  border-radius: 8px;
+  /* Right padding clears the chevron (12px wide, sitting 12px from the edge) so
+     the value text never collides with the arrow and the arrow isn't cramped. */
+  padding: 9px 36px 9px 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ba0a6' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+
+
+.remove-row {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+
+.add-ai-btn {
+  background: #22232a;
+  color: var(--ink);
+  border: 1px solid #ffffff14;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.12s ease;
+}
+
+
+.add-ai-btn:hover {
+  background: #26272e;
+  border-color: var(--accent);
+}
+
+
+.setup-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+
+.setup-actions > button:not(.primary) {
+  background: transparent;
+  color: var(--muted);
+  border: 1px dashed #2a2c31;
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+
+
+
+/* ---------------- Landing screen ---------------- */
+.landing-screen {
+  max-width: 720px;
+}
+
+
+.setup-map {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 2px;
+  color: var(--muted);
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+
+/* ---------------- Avatars ---------------- */
+.player-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  background: #0e0e12;
+  border: 2px solid #666;
+  flex: none;
+}
+
+
+.avatar-label {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 16px 0 6px;
+}
+
+
+.avatar-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+
+.avatar-choice {
+  width: 46px;
+  height: 46px;
+  font-size: 24px;
+  line-height: 1;
+  border-radius: 10px;
+  background: #0e0e12;
+  border: 2px solid #2a2c31;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.avatar-choice.selected {
+  border-color: var(--accent);
+  background: #22232a;
+}
+
+
+.avatar-choice.taken {
+  opacity: 0.3;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+
+.avatar-picker {
+  margin-top: 18px;
+}
+
+
+.profile-submit {
+  margin-top: 20px;
+}
+
+
+
+.rulebook-link {
+  /* display comes from the icon+text alignment utility in base.css — don't set
+     it here or it overrides that utility's inline-flex and drops the gap. */
+  margin-top: 6px;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+
+.rulebook-link:hover {
+  text-decoration: underline;
+}
+
+
+.setup-back {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 0;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+
+.setup-back:hover {
+  color: var(--ink);
+}
+
+
+.landing-name {
+  display: block;
+  margin-top: 22px;
+}
+
+
+.landing-name > span,
+.landing-field > span {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+
+.landing-name .name-input {
+  width: 100%;
+  font-size: 16px;
+  padding: 12px 14px;
+}
+
+
+/* Single-column landing: Join is the primary box, then an "or" divider, then a
+   lighter Start-a-game group with the board picker. */
+.landing-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 380px;
+  margin: 22px auto 6px;
+  text-align: left;
+}
+
+
+.landing-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+
+.landing-or::before,
+.landing-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #ffffff1a;
+}
+
+
+.landing-start {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+.landing-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel-2);
+  border: 1px solid #ffffff10;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+
+.landing-panel h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+
+.landing-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+
+.landing-field {
+  display: block;
+}
+
+
+.landing-field select,
+.landing-field .name-input {
+  width: 100%;
+}
+
+
+/* Match the Board dropdown to the taller Room code field across the two cards. */
+.landing-panel .landing-field select,
+.landing-panel .landing-field .name-input {
+  min-height: 48px;
+}
+
+
+/* On the profile screen the fields stack in normal flow (no flex gap), so give
+   each one room above its label. */
+.profile-screen .landing-field {
+  margin-top: 16px;
+}
+
+
+.code-input {
+  letter-spacing: 6px;
+  font-weight: 700;
+  font-size: 18px;
+  text-align: center;
+}
+
+
+.landing-panel .primary {
+  margin-top: auto;
+  width: 100%;
+}
+
+
+.landing-start .primary {
+  width: 100%;
+}
+
+
+.landing-start .landing-field select {
+  min-height: 48px;
+}
+
+
+.landing-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+
+.landing-local {
+  display: block;
+  margin: 20px auto 0;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 14px;
+}
+
+
+.landing-local:hover {
+  color: var(--ink);
+}
+
+
+/* Left-aligned "← Back to games" link, sits at the top of a screen. */
+.back-link {
+  /* display comes from the icon+text alignment utility (base.css). */
+  margin: 0 0 16px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+
+.back-link:hover {
+  color: var(--ink);
+}
+
+
+
+/* ---------------- Confirm modal ---------------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0009;
+  backdrop-filter: blur(2px);
+}
+
+
+.modal-card {
+  max-width: 360px;
+  margin: 16px;
+  padding: 24px;
+  background: var(--panel);
+  border: 1px solid #2a2c31;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px #000a;
+}
+
+
+.modal-card h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+
+.modal-card p {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+
+.modal-actions button {
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+
+.modal-actions .secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid #2a2c31;
+}
+
+
+.modal-actions .secondary:hover {
+  color: var(--ink);
+}
+
+
+.modal-actions .danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+}

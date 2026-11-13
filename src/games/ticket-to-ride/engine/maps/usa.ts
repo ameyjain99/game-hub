@@ -1,0 +1,26 @@
+import type { GameMap } from './types';
+import { rulebookUrl } from './rulebook';
+import { CITIES, USA_LAYOUT } from '../data/usa/cities';
+import { ROUTES } from '../data/usa/routes';
+import { TICKETS } from '../data/usa/tickets';
+import { TICKETS_1910 } from '../data/usa/tickets1910';
+import { DECK_COMPOSITION } from '../data/deck';
+
+/** Ticket to Ride USA base game. No tunnels, ferries, or stations. */
+export const USA_MAP: GameMap = {
+  id: 'usa',
+  name: 'USA',
+  cities: CITIES,
+  routes: ROUTES,
+  modes: [
+    { id: 'default', name: 'Default', tickets: TICKETS, rulebook: rulebookUrl('usa.pdf') },
+    { id: '1910', name: '1910', tickets: TICKETS_1910, rulebook: rulebookUrl('usa_expansion.pdf') },
+    { id: 'mega', name: 'Mega (all)', tickets: [...TICKETS, ...TICKETS_1910], rulebook: rulebookUrl('usa_expansion.pdf') },
+  ],
+  deck: DECK_COMPOSITION,
+  startingTrains: 45,
+  stationsPerPlayer: 0,
+  minPlayers: 2,
+  maxPlayers: 5,
+  layout: USA_LAYOUT,
+};

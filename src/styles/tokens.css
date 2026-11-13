@@ -1,0 +1,50 @@
+/* Design tokens: the Archivo face + the black-and-white palette. */
+
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
+}
+
+
+
+:root {
+  /* Neutral black-and-white palette, shared with the GameHub home page. */
+  --bg: #0b0b0f;
+  --panel: #141419;
+  --panel-2: #1b1b21;
+  --ink: #ececee;
+  --muted: #9ba0a6;
+  --accent: #ffffff;
+  --danger: #e2483b;
+  --warn: #f0b429;
+  --ok: #39d98a;
+
+  /* Surfaces & lines: one field fill, two line weights. */
+  --field: #0e0e12;
+  --line: #ffffff14;
+  --line-strong: #2a2c31;
+
+  /* Spacing scale (4px base). */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radius hierarchy: inner elements round less than the panels holding them. */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  /* Control heights. */
+  --control-h: 44px;
+  --control-h-sm: 34px;
+  color-scheme: dark;
+}

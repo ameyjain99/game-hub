@@ -1,0 +1,13 @@
+/*
+ * GameHub stylesheet — layered architecture (cascade order matters, so the
+ * imports below are ordered tokens -> base -> shared chrome -> per-surface).
+ * Add a new game by dropping in its own <game>.css and importing it here.
+ */
+@import './tokens.css';
+@import './base.css';
+@import './shared.css';
+@import './game-ui.css';
+@import './hub.css';
+@import './ticket-to-ride.css';
+@import './cluedo.css';
+@import './monopoly.css';

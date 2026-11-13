@@ -1,0 +1,834 @@
+/*
+ * Cluedo. The screen is header / (mansion + decision panel) / sidebar (table,
+ * your hand, notebook). The mansion is a floor plan: rooms as panels on a faint
+ * corridor grid, each holding its occupants, weapons and secret passage.
+ */
+
+/* ---------------- Screen ---------------- */
+.cl-game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'head head'
+    'main side';
+  gap: var(--space-4) var(--space-6);
+  width: 100%;
+  max-width: 1440px;
+  height: 100dvh;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.cl-head {
+  grid-area: head;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 36px;
+}
+
+.cl-head .back-link {
+  margin: 0;
+  padding: 0; /* flush with the board edge below */
+}
+
+.cl-title {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  border-left: 1px solid var(--line-strong);
+}
+
+.cl-head-extra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.cl-main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.cl-main::-webkit-scrollbar,
+.cl-side::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------------- Mansion ---------------- */
+.cl-board-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cl-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(124px, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background-color: #0f0f13;
+  background-image:
+    linear-gradient(#ffffff06 1px, transparent 1px),
+    linear-gradient(90deg, #ffffff06 1px, transparent 1px);
+  background-size: 24px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+}
+
+.cl-room {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.cl-room-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.cl-room-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #c9cbd0;
+  text-transform: uppercase;
+}
+
+.cl-passage {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px dashed #ffffff26;
+  border-radius: var(--radius-pill);
+}
+
+.cl-room-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+}
+
+.cl-room-weapons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.cl-weapon {
+  padding: 2px 8px;
+  font-size: 11.5px;
+  color: #c9cbd0;
+  background: #ffffff0d;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+/* Where the latest suggestion happened. */
+.cl-room.is-scene {
+  background: #22222b;
+  border-color: #ffffff3d;
+}
+
+.cl-room.is-mine {
+  box-shadow: inset 0 0 0 1px #ffffff1f;
+}
+
+/* Rooms you can move to now: lit and clickable. */
+button.cl-room.is-reachable {
+  cursor: pointer;
+  border-color: #ffffffb3;
+  box-shadow: 0 0 0 3px #ffffff1f;
+  animation: cl-glow 1.8s ease-in-out infinite;
+}
+
+button.cl-room.is-reachable:hover {
+  background: #26262f;
+}
+
+button.cl-room:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.cl-room-cta {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0b0b0f;
+  background: var(--ink);
+  border-radius: var(--radius-pill);
+}
+
+@keyframes cl-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px #ffffff1a;
+  }
+  50% {
+    box-shadow: 0 0 0 5px #ffffff2e;
+  }
+}
+
+.cl-token {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--tc);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--panel-2), 0 2px 6px #0007;
+}
+
+.cl-token.is-me {
+  box-shadow: 0 0 0 2px var(--panel-2), 0 0 0 4px #fff;
+}
+
+.cl-token.is-out {
+  opacity: 0.4;
+}
+
+.cl-token.is-static {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+  box-shadow: 0 0 0 2px var(--panel);
+}
+
+.cl-hallway {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 48px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+}
+
+.cl-hallway-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ---------------- Decision panel ---------------- */
+.cl-panel {
+  padding: var(--space-5);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.cl-act {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cl-kicker {
+  margin: 0 0 calc(-1 * var(--space-2));
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.cl-act-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.cl-status {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cl-muted {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.cl-latest {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: 14px;
+  line-height: 1.5;
+  color: #c9cbd0;
+  background: var(--panel-2);
+  border-radius: var(--radius-md);
+}
+
+.cl-latest strong {
+  color: var(--ink);
+}
+
+.cl-act-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cl-act-row .primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-h);
+  padding: 0 var(--space-5);
+  box-shadow: none;
+}
+
+.cl-chip-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.cl-chip:hover {
+  background: #ffffff0a;
+  border-color: #ffffff47;
+}
+
+.cl-chip.is-on {
+  color: #0b0b0f;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.cl-chip:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.cl-chip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px #0004;
+}
+
+.modal-card.cl-accuse {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: calc(100% - 2 * var(--space-4));
+  max-width: 580px;
+}
+
+.modal-card.cl-accuse h2,
+.modal-card.cl-accuse p {
+  margin: 0;
+}
+
+.cl-accuse-summary {
+  padding: var(--space-3) var(--space-4);
+  font-size: 14px;
+  color: var(--ink) !important;
+  background: var(--panel-2);
+  border-radius: var(--radius-md);
+}
+
+/* ---------------- Cards ---------------- */
+.cl-hand {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--space-2);
+}
+
+.cl-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: 68px;
+  padding: 14px 10px 10px;
+  overflow: hidden;
+  font: inherit;
+  color: #1a1b20;
+  text-align: left;
+  background: #f4f1e8;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px #0000001f, 0 2px 8px #0005;
+}
+
+.cl-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 6px;
+  background: var(--band);
+  box-shadow: inset 0 -1px 0 #00000026; /* keeps pale bands (Mrs White) visible */
+}
+
+.cl-card.kind-weapon::before {
+  background: #8a8f98;
+}
+
+.cl-card.kind-room::before {
+  background: #b08d57;
+}
+
+.cl-card-kind {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #6b6e76;
+  text-transform: uppercase;
+}
+
+.cl-card-name {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+button.cl-card.is-action {
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+button.cl-card.is-action:hover,
+button.cl-card.is-action:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px #0000001f, 0 0 0 2px #fff, 0 6px 16px #0007;
+  transform: translateY(-2px);
+}
+
+/* ---------------- Sidebar ---------------- */
+.cl-side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.cl-side-section,
+.cl-notebook {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cl-side-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.cl-players {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-player {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  min-height: 52px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cl-player.is-turn {
+  border-color: var(--tc);
+  box-shadow: inset 0 0 0 1px var(--tc);
+}
+
+.cl-player.is-out {
+  opacity: 0.5;
+}
+
+.cl-player-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cl-player-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.cl-player-meta {
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-player-cards {
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-player-cards span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* Notebook grid. */
+.cl-grid {
+  width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.cl-grid th,
+.cl-grid td {
+  padding: 6px 4px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.cl-grid tbody:last-of-type tr:last-child th,
+.cl-grid tbody:last-of-type tr:last-child td {
+  border-bottom: 0;
+}
+
+.cl-grid thead th {
+  padding: 8px 4px;
+  background: var(--panel-2);
+}
+
+.cl-grid-who {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--tc);
+  border-radius: 50%;
+}
+
+.cl-grid .cl-grid-card {
+  padding-left: var(--space-3);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.cl-grid-group th {
+  padding: 10px var(--space-3) 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-align: left;
+  text-transform: uppercase;
+  background: var(--panel);
+}
+
+.cl-grid-group th span {
+  margin-left: var(--space-2);
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.75;
+}
+
+.cl-grid td svg {
+  color: var(--ink);
+}
+
+.cl-grid tr.is-out .cl-grid-card {
+  color: #6b6e76;
+  text-decoration: line-through;
+  text-decoration-color: #ffffff40;
+}
+
+.cl-grid tr.is-solved th,
+.cl-grid tr.is-solved td {
+  color: var(--ok);
+  background: #39d98a14;
+}
+
+.cl-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.cl-log summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.cl-log ol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-log li {
+  padding: var(--space-2) var(--space-3);
+  font-size: 13px;
+  line-height: 1.45;
+  color: #c9cbd0;
+  background: var(--panel);
+  border-radius: 8px;
+}
+
+.cl-log li span {
+  color: var(--muted);
+}
+
+/* ---------------- Video tiles (online) ---------------- */
+.cluedo-videos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.cluedo-vtile {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.cluedo-vtile.is-me {
+  border-color: #ffffff59;
+}
+
+.cluedo-vtile.is-out {
+  opacity: 0.5;
+}
+
+.cluedo-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* mirror, like a selfie view */
+}
+
+.cluedo-silhouette {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--muted);
+  background: var(--panel);
+}
+
+.cluedo-vlabel {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  background: linear-gradient(transparent, #000b);
+}
+
+.cluedo-vcontrols {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.cluedo-vtile.is-me:hover .cluedo-vcontrols,
+.cluedo-vtile.is-me:focus-within .cluedo-vcontrols {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .cluedo-vcontrols {
+    opacity: 1;
+  }
+}
+
+.cluedo-vcontrols button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #fff;
+  background: #000b;
+  border: 0;
+  border-radius: 7px;
+}
+
+/* ---------------- Narrower screens ---------------- */
+@media (max-width: 1100px) {
+  .cl-game {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'head'
+      'main'
+      'side';
+    align-content: start;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .cl-main,
+  .cl-side {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 720px) {
+  .cl-game {
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  .cl-board {
+    grid-auto-rows: minmax(104px, auto);
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border-radius: var(--radius-lg);
+  }
+
+  .cl-room {
+    padding: var(--space-2);
+  }
+
+  .cl-room-name {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  .cl-passage {
+    display: none;
+  }
+
+  .cl-token {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .cl-weapon {
+    font-size: 10.5px;
+    padding: 1px 6px;
+  }
+
+  .cl-room-cta {
+    right: var(--space-2);
+    bottom: var(--space-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.cl-room.is-reachable {
+    animation: none;
+  }
+}
