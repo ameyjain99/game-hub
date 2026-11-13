@@ -1,0 +1,15 @@
+#!/bin/sh
+# Block pushing a branch that isn't main or feat/ fix/ test/ chore/.
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/*) branch=${remote_ref#refs/heads/} ;;
+    *) continue ;;
+  esac
+  case "$branch" in
+    main|feat/*|fix/*|test/*|chore/*) ;;
+    *)
+      echo "x Branch '$branch' must be named feat/..., fix/..., test/... or chore/... (or main)." >&2
+      exit 1 ;;
+  esac
+done
+exit 0

@@ -1,0 +1,13 @@
+#!/bin/sh
+# Enforce the commit-message convention: feat|fix|test|chore, an optional
+# (scope), then ": " and a subject. Git-generated merge commits are allowed.
+first_line=$(head -n1 "$1")
+case "$first_line" in
+  "Merge "*|"Revert "*) exit 0 ;;
+esac
+if ! printf '%s' "$first_line" | grep -Eq '^(feat|fix|test|chore)(\([a-z0-9._-]+\))?: .+'; then
+  echo "x Commit message must start with feat:, fix:, test: or chore: (an optional (scope) is allowed)." >&2
+  echo "  example: feat: add spectator mode" >&2
+  echo "  yours:   $first_line" >&2
+  exit 1
+fi
