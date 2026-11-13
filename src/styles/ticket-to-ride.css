@@ -56,23 +56,10 @@
 
 
 /* ---------------- Tunnel dialog ---------------- */
-.tunnel-flip-label {
-  margin: 4px 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-
 .tunnel-flipped {
   display: flex;
   gap: 8px;
   margin: 6px 0 10px;
-}
-
-
-.tunnel-cost {
-  margin: 6px 0;
-  font-size: 14px;
 }
 
 
@@ -765,6 +752,15 @@
 }
 
 
+/* Long-route tickets (Europe's green deck): a faint green tint and a green
+   left edge, so they read as distinct without copying the printed card. The
+   edge is an inset shadow, not a border, so selected/done states still show. */
+.ticket-card.long {
+  background: #18201a;
+  box-shadow: inset 3px 0 0 #3f8a5c;
+}
+
+
 .ticket-card .ticket-points {
   font-weight: 800;
   color: var(--accent);
@@ -1003,8 +999,7 @@
 }
 
 
-.top-content .popover,
-.top-content .claim-dialog {
+.top-content .popover {
   flex-direction: row;
   align-items: center;
   flex-wrap: nowrap;
@@ -1077,10 +1072,23 @@
 }
 
 
-.top-content .tunnel-dialog h3,
-.top-content .tunnel-flip-label,
-.top-content .tunnel-cost {
+.top-content .tunnel-dialog h3 {
   margin: 0;
+}
+
+
+/* The flipped cards sit in the 56px bar, so shrink them and drop the vertical
+   margin that would otherwise push the strip past the bar and force a scroll. */
+.top-content .tunnel-flipped {
+  margin: 0;
+  align-items: center;
+}
+
+
+.top-content .tunnel-flipped .card-chip {
+  flex: 0 0 auto;
+  width: 29px;
+  height: 42px;
 }
 
 
