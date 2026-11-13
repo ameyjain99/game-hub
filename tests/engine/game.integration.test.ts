@@ -3,7 +3,7 @@ import { createGame } from '../../src/games/ticket-to-ride/engine/setup';
 import { applyAction } from '../../src/games/ticket-to-ride/engine/reducer';
 import { legalActions } from '../../src/games/ticket-to-ride/engine/selectors';
 import { finalScores } from '../../src/games/ticket-to-ride/engine/scoring';
-import { DEFAULT_BONUSES } from '../../src/games/ticket-to-ride/engine/bonuses';
+import { bonusesFor } from '../../src/games/ticket-to-ride/engine/bonuses';
 import { makeRng } from '../../src/shared/rng';
 import type { GameState } from '../../src/games/ticket-to-ride/engine/types';
 
@@ -54,7 +54,7 @@ describe('full random legal game', () => {
       expect(s.phase).toBe('game-over');
       expect(iterations).toBeLessThan(CAP);
 
-      const scores = finalScores(s.players, DEFAULT_BONUSES);
+      const scores = finalScores(s.players, bonusesFor('usa'));
       for (const p of s.players) expect(typeof scores[p.id].total).toBe('number');
     }
   });

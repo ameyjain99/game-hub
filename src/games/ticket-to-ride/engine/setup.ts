@@ -1,7 +1,7 @@
 import type { Difficulty, GameState, MapId, PlayerState, Ticket } from './types';
 import { makeRng } from '../../../shared/rng';
 import { buildDrawPile, dealMarket, drawOne, emptyHand } from './deck';
-import { DEFAULT_MAP_ID, getMap, ticketsFor } from './maps';
+import { DEFAULT_MAP_ID, getMap, modeFor } from './maps';
 
 export interface PlayerConfig {
   name: string;
@@ -12,7 +12,6 @@ export interface PlayerConfig {
 }
 
 const STARTING_HAND = 4;
-const SETUP_TICKETS = 3;
 
 function shuffle<T>(arr: T[], rng: { next(): number }): T[] {
   const out = [...arr];
@@ -30,7 +29,7 @@ export function createGame(
   modeId?: string,
 ): GameState {
   const map = getMap(mapId);
-  const tickets = ticketsFor(mapId, modeId);
+  const mode = modeFor(mapId, modeId);
   if (configs.length < map.minPlayers || configs.length > map.maxPlayers) {
     throw new Error(`${map.name} supports ${map.minPlayers}-${map.maxPlayers} players`);
   }
@@ -39,6 +38,7 @@ export function createGame(
 
   let state: GameState = {
     mapId,
+    modeId: mode.id,
     players: [],
     current: 0,
     phase: 'setup-tickets',
@@ -46,7 +46,7 @@ export function createGame(
     drawPile: buildDrawPile(rng, map.deck),
     discardPile: [],
     market: [],
-    ticketPile: shuffle<Ticket>(tickets, rng),
+    ticketPile: shuffle<Ticket>(mode.tickets, rng),
     claimedBy: {},
     finalTurnsLeft: null,
     pendingTunnel: null,
@@ -82,7 +82,7 @@ export function createGame(
   // Deal setup destination tickets from the top of the ticket pile.
   const ticketPile = [...state.ticketPile];
   for (const p of players) {
-    p.pendingTickets = ticketPile.splice(0, SETUP_TICKETS);
+    p.pendingTickets = ticketPile.splice(0, mode.setupDeal);
   }
   state = { ...state, ticketPile, players };
 

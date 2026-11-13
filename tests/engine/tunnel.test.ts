@@ -22,6 +22,7 @@ function europeTurn(red: number, drawPile: TrainCard[]): GameState {
   });
   return {
     mapId: 'europe',
+    modeId: 'default',
     players: [mk('p0', red), mk('p1')],
     current: 0,
     phase: 'turn',

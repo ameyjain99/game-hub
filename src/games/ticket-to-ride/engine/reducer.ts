@@ -2,12 +2,10 @@ import { CARD_COLORS, type CardCombo, type GameState, type Hand, type PlayerStat
 import { type Action, IllegalActionError } from './actions';
 import { drawOne, dealMarket } from './deck';
 import { getRoute, routeIsClaimable } from './selectors';
-import { cityById } from './maps';
+import { cityById, modeFor } from './maps';
 import { routePoints, finalScores } from './scoring';
 import { payExtra, spentCards, tunnelExtra } from './tunnel';
-import { DEFAULT_BONUSES } from './bonuses';
-
-const TICKETS_OFFERED = 3;
+import { bonusesFor } from './bonuses';
 
 function clone(state: GameState): GameState {
   return {
@@ -77,8 +75,8 @@ function finishGame(state: GameState): GameState {
   const s = clone(state);
   s.phase = 'game-over';
   s.finalTurnsLeft = 0;
-  // Removed players are excluded from scoring (and from the longest-path bonus).
-  const scores = finalScores(s.players.filter((p) => !p.removed), DEFAULT_BONUSES);
+  // Removed players are excluded from scoring (and from the bonus cards).
+  const scores = finalScores(s.players.filter((p) => !p.removed), bonusesFor(s.mapId, s.modeId));
   for (const p of s.players) p.score = scores[p.id]?.total ?? 0;
   pushLog(s, 'Game over.');
   return s;
@@ -377,7 +375,7 @@ function applyDrawTickets(state: GameState): GameState {
   if (state.ticketPile.length === 0) throw new IllegalActionError('no tickets left');
 
   const s = clone(state);
-  const offered = s.ticketPile.splice(0, Math.min(TICKETS_OFFERED, s.ticketPile.length));
+  const offered = s.ticketPile.splice(0, modeFor(s.mapId, s.modeId).ticketDraw);
   s.players[s.current].pendingTickets = offered;
   s.phase = 'draw-tickets';
   pushLog(s, `${s.players[s.current].name} ${toBe(s.players[s.current].name)} choosing destination tickets…`);
@@ -422,7 +420,10 @@ function applyConfirmSetupTickets(
   if (player.pendingTickets.length === 0) {
     throw new IllegalActionError('player already confirmed setup tickets');
   }
-  if (action.keptIds.length < 1) throw new IllegalActionError('must keep at least one ticket');
+  const { setupKeep } = modeFor(state.mapId, state.modeId);
+  if (new Set(action.keptIds).size < setupKeep) {
+    throw new IllegalActionError(`must keep at least ${setupKeep} tickets`);
+  }
   const pendingIds = new Set(player.pendingTickets.map((t) => t.id));
   if (!action.keptIds.every((id) => pendingIds.has(id))) {
     throw new IllegalActionError('kept ticket not among the dealt tickets');

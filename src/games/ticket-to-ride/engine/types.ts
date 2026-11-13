@@ -105,6 +105,8 @@ export interface PendingTunnel {
 export interface GameState {
   /** The map this game is played on. */
   mapId: MapId;
+  /** The map's mode (see `GameMode`): sets ticket counts and bonus cards. */
+  modeId: string;
   players: PlayerState[];
   current: number;
   phase: Phase;

@@ -140,7 +140,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
   }, [hoverPlayerId, state.claimedBy]);
 
   const gameMap = getMap(state.mapId);
-  const rulebook = modeFor(state.mapId).rulebook;
+  const mode = modeFor(state.mapId, state.modeId);
   const gameOver = state.phase === 'game-over';
   const current = state.players[state.current];
   const currentIsHuman = !gameOver && state.phase !== 'setup-tickets' && !current.isAI;
@@ -389,7 +389,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
       <TicketSelect
         key={activeSetup.id}
         player={activeSetup}
-        minKeep={1}
+        minKeep={mode.setupKeep}
         title="Keep your starting tickets"
         onConfirm={(keptIds) =>
           dispatch({ type: 'CONFIRM_SETUP_TICKETS', playerId: activeSetup.id, keptIds })
@@ -429,8 +429,8 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
         <div className="top-content">{sidePane}</div>
         <div className="game-tools">
           {/* Mic/cam now live on each player's video frame in the right pane. */}
-          {rulebook && (
-            <a className="tool-btn" href={rulebook} target="_blank" rel="noopener noreferrer" title="Rules">
+          {mode.rulebook && (
+            <a className="tool-btn" href={mode.rulebook} target="_blank" rel="noopener noreferrer" title="Rules">
               <BookOpen size={16} />Rules
             </a>
           )}
