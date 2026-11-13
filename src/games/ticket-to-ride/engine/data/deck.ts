@@ -1,6 +1,6 @@
 import type { TrainCard } from '../types';
 
-/** Train-car deck: 12 of each of 8 colors + 14 locomotives = 124 cards. */
+/** Train-car deck: 12 of each of 8 colors + 14 locomotives = 110 cards. */
 export const DECK_COMPOSITION: Record<TrainCard, number> = {
   red: 12,
   orange: 12,

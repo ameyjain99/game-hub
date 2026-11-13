@@ -420,7 +420,7 @@ function applyConfirmSetupTickets(
   if (player.pendingTickets.length === 0) {
     throw new IllegalActionError('player already confirmed setup tickets');
   }
-  const { setupKeep } = modeFor(state.mapId, state.modeId);
+  const { setupKeep, setupDiscards } = modeFor(state.mapId, state.modeId);
   if (new Set(action.keptIds).size < setupKeep) {
     throw new IllegalActionError(`must keep at least ${setupKeep} tickets`);
   }
@@ -432,8 +432,10 @@ function applyConfirmSetupTickets(
   const s = clone(state);
   const p = s.players.find((x) => x.id === action.playerId)!;
   p.tickets.push(...p.pendingTickets.filter((t) => action.keptIds.includes(t.id)));
-  // Unkept setup tickets go to the bottom of the pile, as with a mid-game draw.
-  s.ticketPile.push(...p.pendingTickets.filter((t) => !action.keptIds.includes(t.id)));
+  // Unkept setup tickets go under the pile, or leave the game, per the mode.
+  if (setupDiscards === 'bottom') {
+    s.ticketPile.push(...p.pendingTickets.filter((t) => !action.keptIds.includes(t.id)));
+  }
   p.pendingTickets = [];
   pushLog(s, `${p.name} ${toBe(p.name)} ready.`);
 

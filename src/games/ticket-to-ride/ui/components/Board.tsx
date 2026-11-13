@@ -4,8 +4,61 @@ import { CITIES } from '../../engine/data/usa/cities';
 import { ROUTES } from '../../engine/data/usa/routes';
 import { ROUTE_BENDS, bendKey } from '../data/routeCurves';
 import type { Bend } from '../geometry';
-import { RouteSegment } from './RouteSegment';
+import { RouteSegment, starPath } from './RouteSegment';
 import { CityDot } from './CityDot';
+import { COLOR_BORDER, COLOR_HEX, LOCO_STOPS } from '../colors';
+
+/**
+ * Key for the special routes, shown only on maps that have them. It sits in the
+ * open sea along the bottom edge (between Cadiz and Palermo on the Europe board).
+ */
+function RouteLegend({ routes }: { routes: Route[] }) {
+  const tunnels = routes.some((r) => r.isTunnel);
+  const ferries = routes.some((r) => r.locomotivesRequired > 0);
+  if (!tunnels && !ferries) return null;
+  const slot = (x: number, y: number, loco = false) => (
+    <g>
+      <rect
+        x={x}
+        y={y - 5.5}
+        width={18}
+        height={11}
+        rx={2.5}
+        fill={loco ? 'url(#locoSlot)' : COLOR_HEX.grey}
+        stroke={loco ? '#4a4a4a' : COLOR_BORDER.grey}
+        strokeWidth={1.5}
+      />
+      {loco && <path d={starPath(x + 9, y, 4)} fill="#ffffff" stroke="#00000080" strokeWidth={0.6} />}
+    </g>
+  );
+  const label = { fontSize: 12, fontWeight: 600, fill: '#3d2b1a', dominantBaseline: 'central' } as const;
+  let y = 0;
+  const rows: ReactNode[] = [];
+  if (tunnels) {
+    rows.push(
+      <g key="tunnel" transform={`translate(0 ${y})`}>
+        <rect x={-3} y={-8.5} width={24} height={17} rx={5} fill="none" stroke="#3d2b1a" strokeWidth={1.6} strokeDasharray="3 2" />
+        {slot(0, 0)}
+        <text x={30} {...label}>Tunnel: may cost extra</text>
+      </g>,
+    );
+    y += 18;
+  }
+  if (ferries) {
+    rows.push(
+      <g key="ferry" transform={`translate(0 ${y})`}>
+        {slot(0, 0, true)}
+        <text x={30} {...label}>Ferry: ★ needs a locomotive</text>
+      </g>,
+    );
+    y += 18;
+  }
+  return (
+    <g data-testid="board-legend" transform={`translate(172 ${692 - y})`} style={{ pointerEvents: 'none' }}>
+      {rows}
+    </g>
+  );
+}
 
 interface Props {
   claimedBy: Record<string, string>;
@@ -94,6 +147,12 @@ export function Board({
           <stop offset="0" stopColor="#efe6ce" />
           <stop offset="1" stopColor="#ddd0ac" />
         </linearGradient>
+        {/* Ferry slots that need a locomotive wear the locomotive card's rainbow. */}
+        <linearGradient id="locoSlot" x1="0" y1="0" x2="1" y2="1">
+          {LOCO_STOPS.map((c, i) => (
+            <stop key={c} offset={i / (LOCO_STOPS.length - 1)} stopColor={c} />
+          ))}
+        </linearGradient>
       </defs>
       {/* Parchment map with a gold frame, echoing the printed board. */}
       <rect x={0} y={0} width={1000} height={700} fill="url(#parchment)" rx={12} />
@@ -135,6 +194,7 @@ export function Board({
           );
         })}
       </g>
+      <RouteLegend routes={routes} />
       <g className="cities">
         {cities.map((c) => {
           const placeable = placeableCityIds?.has(c.id) ?? false;

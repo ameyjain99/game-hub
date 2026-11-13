@@ -74,7 +74,7 @@ describe('finalScores', () => {
     // p2: one length-2 route (2 pts), no tickets, no bonus
     const p2 = player({ id: 'p2', claimedRouteIds: ['boston-new-york'] });
     const scores = finalScores([p1, p2], [longestPathBonus]);
-    expect(scores.p1).toEqual({ routes: 10, tickets: 8, bonuses: 10, stations: 0, total: 28 });
-    expect(scores.p2).toEqual({ routes: 2, tickets: 0, bonuses: 0, stations: 0, total: 2 });
+    expect(scores.p1).toEqual({ routes: 10, tickets: 8, ticketsCompleted: 1, bonuses: 10, stations: 0, total: 28 });
+    expect(scores.p2).toEqual({ routes: 2, tickets: 0, ticketsCompleted: 0, bonuses: 0, stations: 0, total: 2 });
   });
 });

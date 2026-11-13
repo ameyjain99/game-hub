@@ -1,7 +1,7 @@
 import type { Difficulty, GameState, MapId, PlayerState, Ticket } from './types';
 import { makeRng } from '../../../shared/rng';
 import { buildDrawPile, dealMarket, drawOne, emptyHand } from './deck';
-import { DEFAULT_MAP_ID, getMap, modeFor } from './maps';
+import { DEFAULT_MAP_ID, getMap, modeFor, type GameMode } from './maps';
 
 export interface PlayerConfig {
   name: string;
@@ -22,6 +22,26 @@ function shuffle<T>(arr: T[], rng: { next(): number }): T[] {
   return out;
 }
 
+/**
+ * Shuffle a mode's tickets and deal each player's setup hand: up to
+ * `setupLong` long tickets, topped up to `setupDeal` with regular ones. The
+ * draw pile keeps only the undealt regular tickets; undealt long tickets
+ * leave the game, as the rulebook puts them back in the box.
+ */
+export function dealSetupTickets(
+  mode: GameMode,
+  playerCount: number,
+  rng: { next(): number },
+): { hands: Ticket[][]; pile: Ticket[] } {
+  const long = shuffle(mode.tickets.filter((t) => t.long), rng);
+  const pile = shuffle(mode.tickets.filter((t) => !t.long), rng);
+  const hands = Array.from({ length: playerCount }, () => {
+    const dealtLong = long.splice(0, mode.setupLong ?? 0);
+    return [...dealtLong, ...pile.splice(0, mode.setupDeal - dealtLong.length)];
+  });
+  return { hands, pile };
+}
+
 export function createGame(
   configs: PlayerConfig[],
   seed: number,
@@ -35,6 +55,9 @@ export function createGame(
   }
 
   const rng = makeRng(seed);
+  // Same RNG order as always (train deck, then tickets) so seeds replay identically.
+  const drawPile = buildDrawPile(rng, map.deck);
+  const tickets = dealSetupTickets(mode, configs.length, rng);
 
   let state: GameState = {
     mapId,
@@ -43,10 +66,10 @@ export function createGame(
     current: 0,
     phase: 'setup-tickets',
     drawnThisTurn: 0,
-    drawPile: buildDrawPile(rng, map.deck),
+    drawPile,
     discardPile: [],
     market: [],
-    ticketPile: shuffle<Ticket>(mode.tickets, rng),
+    ticketPile: tickets.pile,
     claimedBy: {},
     finalTurnsLeft: null,
     pendingTunnel: null,
@@ -79,12 +102,8 @@ export function createGame(
     }
   }
 
-  // Deal setup destination tickets from the top of the ticket pile.
-  const ticketPile = [...state.ticketPile];
-  for (const p of players) {
-    p.pendingTickets = ticketPile.splice(0, mode.setupDeal);
-  }
-  state = { ...state, ticketPile, players };
+  players.forEach((p, i) => (p.pendingTickets = tickets.hands[i]));
+  state = { ...state, players };
 
   // Fill the face-up market (with the 3-locomotive redeal rule).
   state = dealMarket(state);

@@ -11,15 +11,17 @@ export const EUROPE_MAP: GameMap = {
   name: 'Europe',
   cities: EUROPE_CITIES,
   routes: EUROPE_ROUTES,
-  // The rulebook deals 1 long-route + 3 regular tickets and requires keeping 2;
-  // the ticket data has no long/regular split yet, so this is a simplification.
+  // Rulebook: deal 4 (1 long-route + 3 regular), keep at least 2, discards go
+  // back in the box. Until the deck has long tickets, all 4 are regular.
   modes: [
     {
       id: 'default',
       name: 'Default',
       tickets: EUROPE_TICKETS,
-      setupDeal: 3,
-      setupKeep: 1,
+      setupDeal: 4,
+      setupLong: 1,
+      setupKeep: 2,
+      setupDiscards: 'box',
       ticketDraw: 3,
       bonuses: ['longest-path'],
       rulebook: rulebookUrl('europe.pdf'),

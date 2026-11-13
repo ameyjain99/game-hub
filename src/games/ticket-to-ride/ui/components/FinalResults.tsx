@@ -11,15 +11,38 @@ export interface RankedPlayer {
   player: PlayerState;
   seat: number;
   score: ScoreBreakdown;
+  /** Holds the Longest Path card (only when the mode uses it); the last tie-break. */
+  longestPath: boolean;
 }
 
-/** Players ranked by final score, highest first (removed players are excluded). */
+/** Rulebook order: most points, then most completed tickets, then the Longest Path card. */
+function compareRank(a: RankedPlayer, b: RankedPlayer): number {
+  return (
+    b.score.total - a.score.total ||
+    b.score.ticketsCompleted - a.score.ticketsCompleted ||
+    Number(b.longestPath) - Number(a.longestPath)
+  );
+}
+
+/** Players ranked best first, ties broken per the rulebook (removed players are excluded). */
 export function rankPlayers(state: GameState): RankedPlayer[] {
   const active = state.players.filter((p) => !p.removed);
-  const scores = finalScores(active, bonusesFor(state.mapId, state.modeId));
+  const bonuses = bonusesFor(state.mapId, state.modeId);
+  const scores = finalScores(active, bonuses);
+  const longest = bonuses.find((b) => b.id === 'longest-path')?.award(active) ?? new Set<string>();
   return active
-    .map((player) => ({ player, seat: state.players.indexOf(player), score: scores[player.id] }))
-    .sort((a, b) => b.score.total - a.score.total);
+    .map((player) => ({
+      player,
+      seat: state.players.indexOf(player),
+      score: scores[player.id],
+      longestPath: longest.has(player.id),
+    }))
+    .sort(compareRank);
+}
+
+/** The winner(s): everyone still level with the top player after every tie-break. */
+export function winners(ranked: RankedPlayer[]): RankedPlayer[] {
+  return ranked.filter((r) => compareRank(r, ranked[0]) === 0);
 }
 
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
@@ -37,7 +60,7 @@ export function FinalScores({
   caption: string;
   onSelect: (playerId: string) => void;
 }) {
-  const top = ranked[0].score.total;
+  const won = new Set(winners(ranked).map((r) => r.player.id));
   return (
     <div className="final-scores" data-testid="final-scores">
       <span className="final-caption">{cleanName(caption)}</span>
@@ -56,7 +79,7 @@ export function FinalScores({
               <span className="seat-token" style={{ background: playerColor(seat) }} />
               <span className="score-name">
                 {cleanName(player.name)}
-                {score.total === top && <Crown size={14} className="winner-crown" fill="currentColor" />}
+                {won.has(player.id) && <Crown size={14} className="winner-crown" fill="currentColor" />}
               </span>
               <span className="score-total">{score.total}</span>
             </button>
@@ -86,7 +109,7 @@ export function ResultDetail({
       .filter((b) => b.award(state.players).has(player.id))
       .map((b) => [b.id, b.points]),
   );
-  const done = player.tickets.filter((t) => areConnected(player.claimedRouteIds, t.a, t.b)).length;
+  const done = score.ticketsCompleted;
 
   return (
     <div className="final-detail" data-testid="final-detail">

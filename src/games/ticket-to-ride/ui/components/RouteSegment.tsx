@@ -29,6 +29,24 @@ const TRAIN_WIDTH = 13; // claimed cars sit slightly proud of empty slots
 const PARALLEL_OFFSET = 11;
 const HIT_STEPS = 12; // polyline resolution for the hit area / affordable glow
 const STRAIGHT: Bend = [0, 0];
+const TUNNEL_INK = '#3d2b1a'; // dark brown casing, reads on the parchment and on every slot colour
+const LOCO_EDGE = '#4a4a4a'; // matches the locomotive card's border
+
+/** A 5-point star (the app's locomotive mark) centred on (cx, cy). */
+export function starPath(cx: number, cy: number, r: number): string {
+  const pts = Array.from({ length: 10 }, (_, k) => {
+    const rad = k % 2 === 0 ? r : r * 0.45;
+    const a = -Math.PI / 2 + (k * Math.PI) / 5;
+    return `${(cx + rad * Math.cos(a)).toFixed(2)},${(cy + rad * Math.sin(a)).toFixed(2)}`;
+  });
+  return `M${pts.join('L')}Z`;
+}
+
+/** Which car slots of a ferry need a locomotive: the middle `required` ones. */
+function locoSlotIndexes(route: Route): Set<number> {
+  const first = Math.floor((route.length - route.locomotivesRequired) / 2);
+  return new Set(Array.from({ length: route.locomotivesRequired }, (_, k) => first + k));
+}
 
 /** Sideways offset of a route's rail: the two rails of a double route sit either side of the curve. */
 export function railSide(route: Route): number {
@@ -83,30 +101,51 @@ export function RouteSegment({
     return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
   }).join(' ');
 
+  const locoSlots = locoSlotIndexes(route);
+
   const cars = Array.from({ length: route.length }, (_, i) => {
     const { x: cx, y: cy, angle } = railAt(start + (i + 0.5) * slot);
     const rot = `rotate(${angle} ${cx} ${cy})`;
 
     if (!owned) {
-      // Open route: a colored slot with a darker edge (like the printed board).
-      // Full colour when affordable, muted-but-coloured otherwise.
+      // Open route: a colored slot with a darker edge. Full colour when
+      // affordable, muted-but-coloured otherwise. A tunnel wraps every slot in a
+      // dashed dark casing; a ferry's required-locomotive slots look like the
+      // locomotive card (rainbow + star), the card you must pay there.
       const w = SLOT_WIDTH;
-      // Tunnels render as pills (rounded ends) so they read as distinct on the board.
+      const loco = locoSlots.has(i);
       return (
-        <rect
-          key={i}
-          x={cx - carLen / 2}
-          y={cy - w / 2}
-          width={carLen}
-          height={w}
-          rx={route.isTunnel ? w / 2 : 2.5}
-          transform={rot}
-          fill={slotColor}
-          fillOpacity={claimable ? 1 : 0.5}
-          stroke={slotBorder}
-          strokeOpacity={claimable ? 1 : 0.6}
-          strokeWidth={claimable ? 2.2 : 1.5}
-        />
+        <g key={i} transform={rot}>
+          {route.isTunnel && (
+            <rect
+              className="tunnel-casing"
+              x={cx - carLen / 2 - 3}
+              y={cy - w / 2 - 3}
+              width={carLen + 6}
+              height={w + 6}
+              rx={5}
+              fill="none"
+              stroke={TUNNEL_INK}
+              strokeWidth={1.6}
+              strokeDasharray="3 2"
+              strokeOpacity={claimable ? 0.95 : 0.7}
+            />
+          )}
+          <rect
+            className={loco ? 'loco-slot' : undefined}
+            x={cx - carLen / 2}
+            y={cy - w / 2}
+            width={carLen}
+            height={w}
+            rx={2.5}
+            fill={loco ? 'url(#locoSlot)' : slotColor}
+            fillOpacity={claimable ? 1 : loco ? 0.75 : 0.5}
+            stroke={loco ? LOCO_EDGE : slotBorder}
+            strokeOpacity={claimable ? 1 : 0.6}
+            strokeWidth={claimable ? 2.2 : 1.5}
+          />
+          {loco && <path d={starPath(cx, cy, 4)} fill="#ffffff" stroke="#00000080" strokeWidth={0.6} />}
+        </g>
       );
     }
 
