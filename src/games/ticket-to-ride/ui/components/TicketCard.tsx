@@ -19,7 +19,8 @@ export function TicketCard({ ticket, completed, selected, onToggle, onHover }: P
   return (
     <button
       type="button"
-      className={`ticket-card${selected ? ' selected' : ''}${status}`}
+      className={`ticket-card${selected ? ' selected' : ''}${status}${ticket.long ? ' long' : ''}`}
+      title={ticket.long ? 'Long route' : undefined}
       onClick={onToggle}
       disabled={!onToggle && !onHover}
       data-ticket-id={ticket.id}
