@@ -23,8 +23,8 @@ interface Props {
   sideTop?: ReactNode;
 }
 
-/** The full Cluedo screen — mansion + decision panel, with the table, your
- *  hand and the notebook alongside — shared by local and online games. */
+/** The full Cluedo screen – mansion + decision panel, with the table, your
+ *  hand and the notebook alongside – shared by local and online games. */
 export function CluedoGame({ view, meId, nameFor, onAction, onExit, exitLabel, headerExtra, banner, sideTop }: Props) {
   const actorId = view.phase === 'disprove' ? view.pendingDisprover : view.players[view.current]?.id;
   const me = view.players.find((p) => p.id === meId);

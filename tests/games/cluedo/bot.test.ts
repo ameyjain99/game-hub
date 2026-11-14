@@ -26,7 +26,7 @@ test('the bot makes a legal suggestion, then ends its turn', () => {
   g = reduce(g, suggestion);
   if (g.phase === 'disprove') g = reduce(g, chooseCluedoAction(g)); // a bot disproves
   expect(g.phase).toBe('decide');
-  // After its one suggestion it ends the turn — unless that suggestion already
+  // After its one suggestion it ends the turn – unless that suggestion already
   // revealed the whole solution, in which case it (correctly) accuses.
   expect(['endTurn', 'accuse']).toContain(chooseCluedoAction(g).type);
 });

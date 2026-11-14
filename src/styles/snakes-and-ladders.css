@@ -1,0 +1,248 @@
+/* Snakes & Ladders: a cream board of numbered squares, wooden ladders and
+   painted snakes, with round tokens that walk, climb and slide. */
+
+.snl-board {
+  padding: clamp(6px, 1.6cqmin, 16px);
+  background: linear-gradient(150deg, #2a6a4a 0%, #1f5038 60%, #173d2b 100%);
+  border-radius: clamp(14px, 2.6cqmin, 24px);
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff26, inset 0 0 0 1px #0000004d;
+  container-type: inline-size;
+}
+
+.snl-grid {
+  display: grid;
+  grid-template: repeat(10, 1fr) / repeat(10, 1fr);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px #10301f;
+}
+
+.snl-sq {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 4%;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.snl-sq.is-a {
+  background: #fbf5e4;
+}
+
+.snl-sq.is-b {
+  background: #f1e5c6;
+}
+
+.snl-num {
+  font-size: max(9px, 1.55cqw);
+  font-weight: 800;
+  line-height: 1;
+  color: #6b5d3f;
+}
+
+.snl-sq.is-finish {
+  background: radial-gradient(circle at 50% 60%, #ffe58a, #f2c548);
+}
+
+.snl-sq.is-finish .snl-num {
+  color: #6b4c00;
+}
+
+/* On your turn: the six squares a roll could take you to. */
+.snl-sq.is-reach {
+  background: color-mix(in srgb, #ffffff 40%, #b9e2ff);
+  box-shadow: inset 0 0 0 2px #4b9fe0;
+}
+
+.snl-sq.is-reach.is-up {
+  background: color-mix(in srgb, #ffffff 35%, #a7e3b4);
+  box-shadow: inset 0 0 0 2px #2f9e62;
+}
+
+.snl-sq.is-reach.is-down {
+  background: color-mix(in srgb, #ffffff 40%, #ffc2bd);
+  box-shadow: inset 0 0 0 2px #d93a3f;
+}
+
+/* Hovering a ladder's foot or a snake's head lights where it leads. */
+.snl-sq.is-dest {
+  box-shadow: inset 0 0 0 3px #1c1d22;
+}
+
+.snl-art,
+.snl-tokens {
+  position: absolute;
+  inset: clamp(6px, 1.6cqmin, 16px);
+  width: calc(100% - 2 * clamp(6px, 1.6cqmin, 16px));
+  height: calc(100% - 2 * clamp(6px, 1.6cqmin, 16px));
+  pointer-events: none;
+}
+
+.snl-rail {
+  fill: none;
+  stroke: #7a4a22;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.snl-rung {
+  fill: none;
+  stroke: #c58d52;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.snl-body {
+  fill: var(--sc);
+  stroke: color-mix(in srgb, var(--sc) 60%, #000);
+  stroke-width: 1.5;
+}
+
+/* Spots down the back. */
+.snl-spots {
+  fill: none;
+  stroke: color-mix(in srgb, var(--sc) 45%, #fff);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 2 22;
+  opacity: 0.85;
+}
+
+.snl-head {
+  fill: color-mix(in srgb, var(--sc) 88%, #000);
+  stroke: color-mix(in srgb, var(--sc) 55%, #000);
+  stroke-width: 1.5;
+}
+
+.snl-eye {
+  fill: #fff;
+}
+
+.snl-pupil {
+  fill: #111;
+}
+
+.snl-tongue {
+  fill: none;
+  stroke: #e0313a;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.snl-ladder,
+.snl-snake {
+  transition: opacity 0.2s;
+}
+
+/* While one ladder or snake is lit, the rest step back. */
+.snl-board.is-linking .snl-ladder:not(.is-lit),
+.snl-board.is-linking .snl-snake:not(.is-lit) {
+  opacity: 0.35;
+}
+
+.snl-token {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 5.4%;
+  aspect-ratio: 1;
+  font-size: max(9px, 1.7cqw);
+  font-weight: 800;
+  color: #fff;
+  background: var(--tc);
+  border: max(2px, 0.35cqw) solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px #0008;
+  transform: translate(-50%, -50%);
+  transition:
+    left 0.13s ease-out,
+    top 0.13s ease-out,
+    opacity 0.2s,
+    transform 0.15s;
+}
+
+/* A walking token hops and rides above the rest. */
+.snl-token.is-moving {
+  z-index: 3;
+  transform: translate(-50%, -50%) scale(1.22);
+  box-shadow: 0 8px 16px #0009;
+}
+
+/* Climbing a ladder or sliding down a snake glides the whole way. */
+.snl-token.is-gliding {
+  transition:
+    left 0.8s cubic-bezier(0.45, 0, 0.25, 1),
+    top 0.8s cubic-bezier(0.45, 0, 0.25, 1),
+    transform 0.15s;
+}
+
+.snl-token.is-active {
+  z-index: 2;
+  animation: snl-pulse 1.5s ease-out infinite;
+}
+
+@keyframes snl-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--tc) 80%, transparent), 0 3px 8px #0008;
+  }
+  100% {
+    box-shadow: 0 0 0 1.4cqw transparent, 0 3px 8px #0008;
+  }
+}
+
+.snl-token.is-dim {
+  opacity: 0.3;
+}
+
+/* The die tray in the sidebar. */
+.snl-tray {
+  border-color: color-mix(in srgb, var(--tc) 45%, transparent);
+}
+
+.snl-tray-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.snl-tray-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.snl-tray-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--tc);
+  text-transform: uppercase;
+}
+
+.snl-tray-line {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.snl-roll {
+  height: 48px !important;
+  font-size: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snl-token,
+  .snl-token.is-gliding {
+    transition: none;
+  }
+
+  .snl-token.is-active {
+    animation: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc) 60%, transparent);
+  }
+}

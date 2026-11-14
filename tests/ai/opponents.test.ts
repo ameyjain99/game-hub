@@ -10,7 +10,7 @@ describe('threatMap', () => {
     expect(t.has('boston-new-york')).toBe(false);
   });
 
-  it('omits claimed routes and ignores the player’s own network', () => {
+  it("omits claimed routes and ignores the player's own network", () => {
     const s = makeState({ owned: { p0: ['boston-new-york'], p1: ['denver-omaha'] } });
     const t = threatMap(s, 'p0');
     expect(t.has('denver-omaha')).toBe(false);

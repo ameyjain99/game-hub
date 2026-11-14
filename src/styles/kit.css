@@ -1,0 +1,859 @@
+/*
+ * Kit games (Tic-Tac-Toe, Checkers, Chess, Snakes & Ladders, Ludo, Sequence,
+ * Solitaire, Sudoku) share one screen, laid out like Monopoly: a header, the
+ * board filling the stage, and a sidebar. Each game adds its own board styles
+ * in its own file.
+ */
+
+/* ---------------- Screen ---------------- */
+.kit-game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'head head'
+    'stage side';
+  gap: var(--space-4) var(--space-6);
+  width: 100%;
+  /* A square board fills the stage height exactly, its edges in line with the header. */
+  max-width: calc(100dvh + 320px);
+  height: 100dvh;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.kit-head {
+  grid-area: head;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  min-height: 36px;
+}
+
+.kit-head .back-link {
+  flex: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kit-title {
+  flex: none;
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  border-left: 1px solid var(--line-strong);
+}
+
+.kit-status {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kit-status strong {
+  color: var(--ink);
+}
+
+.kit-head-extra {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.kit-stage {
+  grid-area: stage;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The board is sized to the largest square the stage holds (games may override). */
+.kit-board-wrap {
+  position: relative;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 0;
+  container-type: size;
+}
+
+.kit-board {
+  position: relative;
+  width: min(100cqw, 100cqh);
+  aspect-ratio: 1;
+}
+
+/* ---------------- Sidebar ---------------- */
+.kit-side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.kit-side::-webkit-scrollbar {
+  display: none;
+}
+
+.kit-side-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.kit-side-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.kit-side-meta {
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.kit-muted {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* A panel in the sidebar: the viewer's controls, a hand, a move list. */
+.kit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.kit-panel .primary,
+.kit-panel .g-btn {
+  height: var(--control-h);
+  border-radius: var(--radius-md);
+}
+
+.kit-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+/* ---------------- Players ---------------- */
+.kit-players {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kit-player {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    background-color 0.2s;
+}
+
+.kit-player.is-turn {
+  border-color: var(--tc);
+  box-shadow: inset 0 0 0 1px var(--tc);
+}
+
+.kit-player.is-spot {
+  background: color-mix(in srgb, var(--tc) 12%, var(--panel));
+  border-color: color-mix(in srgb, var(--tc) 70%, transparent);
+}
+
+.kit-player.is-out {
+  opacity: 0.45;
+}
+
+.kit-token {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  aspect-ratio: 1;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--tc);
+  border: 2px solid var(--panel);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--tc);
+}
+
+.kit-player.is-turn .kit-token {
+  animation: kit-pulse 1.6s ease-out infinite;
+}
+
+@keyframes kit-pulse {
+  0% {
+    box-shadow: 0 0 0 1px var(--tc), 0 0 0 1px color-mix(in srgb, var(--tc) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 1px var(--tc), 0 0 0 8px transparent;
+  }
+}
+
+.kit-player-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.kit-player-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kit-you {
+  padding: 1px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+}
+
+.kit-player-detail {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.kit-player-trailing {
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- Log ---------------- */
+.kit-log {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.kit-log li {
+  padding: 5px 0;
+}
+
+.kit-log li + li {
+  border-top: 1px solid var(--line);
+}
+
+.kit-log li:first-child {
+  color: var(--ink);
+}
+
+.kit-log b {
+  color: var(--ink);
+}
+
+/* ---------------- Result ---------------- */
+.kit-result-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: #0b0b0f8c;
+  backdrop-filter: blur(2px);
+  animation: kit-fade 0.25s ease-out;
+}
+
+.kit-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(380px, 100%);
+  padding: var(--space-6);
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 30px 80px #000c;
+  animation: kit-rise 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.kit-result.is-won {
+  border-color: #f0b42966;
+  box-shadow: 0 30px 80px #000c, 0 0 60px #f0b42922;
+}
+
+.kit-result-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.kit-result-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.kit-result.is-won .kit-result-title svg {
+  color: var(--warn);
+}
+
+.kit-result-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.kit-result-body p {
+  margin: 0;
+}
+
+.kit-result-actions {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.kit-result-actions .primary,
+.kit-result-actions .g-btn {
+  height: var(--control-h);
+  border-radius: var(--radius-md);
+}
+
+.kit-result-hide {
+  align-self: center;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+}
+
+.kit-result-hide:hover {
+  color: var(--ink);
+}
+
+.kit-result-chip {
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  z-index: 20;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0b0b0f;
+  background: #fff;
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 10px 30px #000a;
+  transform: translateX(-50%);
+}
+
+@keyframes kit-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes kit-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+
+/* ---------------- Die (Snakes & Ladders, Ludo) ---------------- */
+.kit-die {
+  display: grid;
+  flex: none;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  box-sizing: border-box;
+  width: var(--die, 52px);
+  aspect-ratio: 1;
+  /* In the die's own units: a percentage would follow the parent's width. */
+  padding: calc(var(--die, 52px) * 0.14);
+  background: #fff;
+  border-radius: 22%;
+  box-shadow: 0 3px 0 #0003, 0 8px 18px #0005, inset 0 0 0 1px #0000000f;
+}
+
+.kit-die > .is-pip {
+  margin: 16%;
+  background: #1c1d22;
+  border-radius: 50%;
+}
+
+.kit-die.is-idle {
+  opacity: 0.55;
+}
+
+.kit-die.is-rolling {
+  animation: kit-tumble 0.56s ease-out;
+}
+
+@keyframes kit-tumble {
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  30% {
+    transform: translateY(-40%) rotate(-25deg);
+  }
+  60% {
+    transform: translateY(6%) rotate(12deg);
+  }
+  80% {
+    transform: translateY(-8%) rotate(-4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 1100px) {
+  .kit-game {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'head'
+      'stage'
+      'side';
+    align-content: start;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .kit-board-wrap {
+    container-type: inline-size;
+  }
+
+  .kit-board {
+    width: min(100cqw, calc(100dvh - 96px));
+    min-width: min(100cqw, 480px);
+  }
+
+  .kit-side {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 720px) {
+  .kit-game {
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  .kit-head {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  .kit-status {
+    order: 5;
+    width: 100%;
+  }
+
+  .kit-board {
+    width: 100cqw;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kit-player.is-turn .kit-token,
+  .kit-die.is-rolling,
+  .kit-result,
+  .kit-result-backdrop {
+    animation: none;
+  }
+}
+
+/* ---------------- Square board (Checkers, Chess) ---------------- */
+.sq-board {
+  display: grid;
+  grid-template: repeat(8, 1fr) / repeat(8, 1fr);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+  container-type: inline-size;
+}
+
+.sq {
+  position: relative;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  background: var(--sq-light);
+  border: 0;
+  border-radius: 0;
+  cursor: default;
+}
+
+.sq.is-dark {
+  background: var(--sq-dark);
+}
+
+.sq.is-last {
+  background: color-mix(in srgb, var(--sq-last) 55%, var(--sq-light));
+}
+
+.sq.is-dark.is-last {
+  background: color-mix(in srgb, var(--sq-last) 45%, var(--sq-dark));
+}
+
+.sq.is-selected {
+  background: color-mix(in srgb, var(--sq-select) 55%, var(--sq-dark));
+}
+
+.sq.is-light.is-selected {
+  background: color-mix(in srgb, var(--sq-select) 55%, var(--sq-light));
+}
+
+/* Where the chosen piece can go: a dot on an empty square, a ring round a capture. */
+.sq.is-target::after,
+.sq.is-capture::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.sq.is-target::after {
+  inset: 37%;
+  background: var(--sq-hint);
+}
+
+.sq.is-capture::after {
+  inset: 5%;
+  border: max(3px, 0.6cqw) solid var(--sq-hint);
+}
+
+/* A hovered piece's moves, before it's picked. */
+.sq.is-preview::after {
+  opacity: 0.5;
+}
+
+.sq.is-target,
+.sq.is-capture,
+.sq.is-movable,
+.sq.is-must {
+  cursor: pointer;
+}
+
+.sq.is-target:hover::after {
+  inset: 30%;
+}
+
+.sq:focus-visible {
+  z-index: 4;
+  outline: 3px solid #fff;
+  outline-offset: -3px;
+}
+
+.sq-piece {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+/* The piece that just moved slides in from its old square. */
+.sq-piece.is-arriving {
+  z-index: 3;
+  animation: sq-slide 0.24s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes sq-slide {
+  from {
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+
+/* A captured piece fades where it stood. */
+.sq-piece.is-ghost {
+  animation: sq-ghost 0.5s ease-out forwards;
+}
+
+@keyframes sq-ghost {
+  to {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+}
+
+.sq-piece.is-lifted {
+  opacity: 0.25;
+}
+
+.sq-piece.is-dragging {
+  position: fixed;
+  inset: auto;
+  z-index: 1000;
+  transform: translate(-50%, -50%) scale(1.12);
+  filter: drop-shadow(0 10px 14px #0008);
+}
+
+.sq.is-dim .sq-piece {
+  opacity: 0.35;
+}
+
+.sq-file,
+.sq-rank {
+  position: absolute;
+  z-index: 2;
+  font-size: max(9px, 1.45cqw);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--sq-dark);
+  pointer-events: none;
+}
+
+.sq-file {
+  right: 5%;
+  bottom: 4%;
+}
+
+.sq-rank {
+  top: 4%;
+  left: 5%;
+}
+
+.sq.is-dark .sq-file,
+.sq.is-dark .sq-rank {
+  color: var(--sq-light);
+}
+
+/* ---------------- Move list (Checkers, Chess) ---------------- */
+.kit-moves {
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  overflow-y: auto;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.kit-moves li {
+  display: grid;
+  grid-template-columns: 34px 1fr 1fr;
+  gap: var(--space-2);
+  padding: 4px 0;
+  font-weight: 600;
+}
+
+.kit-moves li + li {
+  border-top: 1px solid var(--line);
+}
+
+.kit-moves li.is-latest {
+  color: var(--ink);
+}
+
+.kit-moves li:not(.is-latest) {
+  color: var(--muted);
+}
+
+.kit-move-no {
+  color: #6e747c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sq-piece.is-arriving,
+  .sq-piece.is-ghost {
+    animation: none;
+  }
+
+  .sq-piece.is-ghost {
+    display: none;
+  }
+}
+
+/* A seat's token, large, standing in for a camera that's off. */
+.kit-badge {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  aspect-ratio: 1;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--tc);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px #0007;
+}
+
+/* ---------------- Playing cards (Sequence, Solitaire) ---------------- */
+.pc {
+  position: relative;
+  display: block;
+  width: var(--pc-w, 64px);
+  aspect-ratio: 5 / 7;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1c1d22;
+  background: #fffefa;
+  border-radius: calc(var(--pc-w, 64px) * 0.09);
+  box-shadow: 0 1px 0 #0000001a, 0 3px 8px #0005, inset 0 0 0 1px #00000014;
+  user-select: none;
+}
+
+.pc.is-red {
+  color: #cf2e35;
+}
+
+.pc-corner {
+  position: absolute;
+  top: 4%;
+  left: 7%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.95;
+}
+
+.pc-corner b {
+  font-size: calc(var(--pc-w, 64px) * 0.25);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.pc-corner i,
+.pc-court i {
+  font-style: normal;
+  font-size: calc(var(--pc-w, 64px) * 0.2);
+}
+
+.pc-corner.is-flip {
+  top: auto;
+  right: 7%;
+  bottom: 4%;
+  left: auto;
+  transform: rotate(180deg);
+}
+
+.pc-pip {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--pc-w, 64px) * 0.5);
+}
+
+.pc-court {
+  position: absolute;
+  inset: 20% 22%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  line-height: 1;
+  background: color-mix(in srgb, currentColor 8%, #fff);
+  border: 1.5px solid color-mix(in srgb, currentColor 70%, #fff);
+  border-radius: calc(var(--pc-w, 64px) * 0.06);
+}
+
+.pc-court b {
+  font-size: calc(var(--pc-w, 64px) * 0.36);
+  font-weight: 900;
+}
+
+.pc.is-back {
+  background:
+    radial-gradient(circle at 50% 50%, #ffffff26 0 18%, transparent 19%),
+    repeating-linear-gradient(45deg, #2c52b8 0 5px, #24479f 5px 10px);
+  border: calc(var(--pc-w, 64px) * 0.06) solid #fff;
+}
+
+.pc-badge {
+  position: absolute;
+  bottom: 3%;
+  left: 50%;
+  padding: 1px 5px;
+  font-size: max(8px, calc(var(--pc-w, 64px) * 0.13));
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #fff;
+  white-space: nowrap;
+  text-transform: uppercase;
+  background: #1c1d22;
+  border-radius: var(--radius-pill);
+  transform: translateX(-50%);
+}

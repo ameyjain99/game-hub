@@ -817,9 +817,27 @@ button.mono-cell.is-owned:hover {
   box-shadow: none;
 }
 
+/* The roll: a small pill beside the dice, not a whole panel. */
 .mono-roll {
-  height: 52px !important;
-  font-size: 17px;
+  height: 32px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--board-ink);
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 2px 0 #0003;
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.15s;
+}
+
+.mono-roll:hover {
+  background: #33402c;
+}
+
+.mono-roll:active {
+  transform: scale(0.96);
 }
 
 .mono-muted {

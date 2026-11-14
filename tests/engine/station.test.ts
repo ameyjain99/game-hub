@@ -102,7 +102,7 @@ test("a station borrows a neighbor's route to complete a ticket", () => {
   const scores = finalScores([p0, p1], bonusesFor('europe'));
   // paris→zurich is only reachable by borrowing p1's paris-zurich via the station.
   expect(scores.p0.tickets).toBe(5);
-  // …and the scoring says which route the station used.
+  // ...and the scoring says which route the station used.
   expect(scores.p0.stationRoutes).toEqual([{ city: 'paris', routeId: 'paris-zurich' }]);
 });
 

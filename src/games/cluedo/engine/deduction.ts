@@ -4,13 +4,13 @@ import type { RedactedCluedoState } from './redact';
 export interface NotebookFacts {
   /** Cards you can prove each player holds (your own hand + cards shown to you). */
   knownByPlayer: Record<string, Card[]>;
-  /** Cards in each category not yet accounted for — still candidates for the envelope. */
+  /** Cards in each category not yet accounted for – still candidates for the envelope. */
   stillPossible: { suspects: Suspect[]; weapons: Weapon[]; rooms: Room[] };
 }
 
 /**
  * The facts a player can legitimately know, derived from their redacted view:
- * their own hand, and any card a disprover showed them. Pure — safe to reuse
+ * their own hand, and any card a disprover showed them. Pure – safe to reuse
  * for the human's notebook online, where only the redacted view is available.
  */
 export function notebookFacts(view: RedactedCluedoState): NotebookFacts {

@@ -59,7 +59,7 @@ function takenAvatars(room: Room, exceptIndex = -1): Set<string> {
   );
 }
 
-/** The preferred avatar if still free, else the first unused one — never a clash. */
+/** The preferred avatar if still free, else the first unused one – never a clash. */
 function freeAvatar(room: Room, preferred?: string): string {
   const taken = takenAvatars(room);
   if (preferred && !taken.has(preferred)) return preferred;
@@ -234,11 +234,29 @@ export class RoomStore {
           this.armTurnTimer(room);
         }
       } else {
-        room.turnDeadline = null; // couldn't skip — clear so we don't spin
+        room.turnDeadline = null; // couldn't skip – clear so we don't spin
       }
       expired.push(code);
     }
     return expired;
+  }
+
+  /** For games whose bots act one move at a time: the pause before this room's
+   *  next bot move, or null when no bot is to act (or nobody is left to watch). */
+  botDelay(code: string): number | null {
+    const room = this.rooms.get(code);
+    if (!room?.game || !room.adapter.botDelay || !room.adapter.stepBot) return null;
+    if (!this.hasConnectedHuman(room)) return null;
+    return room.adapter.botDelay(room.game);
+  }
+
+  /** Let the next bot make one move; whether one did. */
+  stepBot(code: string): boolean {
+    const room = this.rooms.get(code);
+    if (!room?.game || this.botDelay(code) === null) return false;
+    room.game = room.adapter.stepBot!(room.game);
+    this.armTurnTimer(room); // a human may be up next: give them a fresh clock
+    return true;
   }
 
   /** Whether any human seat is still connected (so the game has a live driver). */
@@ -256,7 +274,7 @@ export class RoomStore {
   replaceWithAi(code: string, callerToken: string, index: number, difficulty?: Difficulty): Ok | Err {
     const room = this.rooms.get(code);
     if (!room || !room.game) return { error: 'no active game' };
-    // Any member of the room may replace a seat that has DROPPED — not just the
+    // Any member of the room may replace a seat that has DROPPED – not just the
     // host. Restricting to the host means a dropped host can never be replaced and
     // the game stalls. You can still only replace someone who's already gone.
     if (!room.seats.some((s) => s.token === callerToken)) return { error: 'not in this room' };
@@ -308,7 +326,7 @@ export class RoomStore {
       return { code, deleted: false };
     }
 
-    // Mid-game: leave gracefully — the seat pauses and the host can replace it.
+    // Mid-game: leave gracefully – the seat pauses and the host can replace it.
     seat.socketId = null;
     seat.connected = false;
     return { code, deleted: false };
@@ -335,9 +353,10 @@ export class RoomStore {
     return null;
   }
 
-  /** Whether a room with this code currently exists (case-insensitive). */
-  hasRoom(code: string): boolean {
-    return this.rooms.has(code.toUpperCase());
+  /** The game an open room with this code is playing, or null if there's no
+   *  such room (case-insensitive). */
+  gameOf(code: string): string | null {
+    return this.rooms.get(code.toUpperCase())?.gameId ?? null;
   }
 
   lobbyView(code: string): LobbyView {

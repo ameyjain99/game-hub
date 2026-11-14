@@ -1,0 +1,326 @@
+/* Minesweeper: slate tiles that open onto light paper, numbers in clear colours,
+   areas that ripple open, and a chain reaction when a mine goes off. */
+
+.ms-game .kit-board-wrap {
+  overflow: auto;
+}
+
+.ms-frame {
+  --pad: clamp(6px, 1.4cqmin, 14px);
+  --cell: min(calc((100cqw - 2 * var(--pad)) / var(--cols)), calc((100cqh - 2 * var(--pad)) / var(--rows)), 56px);
+  --gap: max(1px, calc(var(--cell) * 0.06));
+  padding: var(--pad);
+  background: linear-gradient(150deg, #2b3243 0%, #1d2230 60%, #151924 100%);
+  border-radius: clamp(12px, 2cqmin, 22px);
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff1f;
+  transition: box-shadow 0.4s;
+}
+
+.ms-frame.is-won {
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff1f, 0 0 0 2px #2f9e62, 0 0 50px #2f9e6255;
+}
+
+.ms-frame.is-lost {
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff1f, 0 0 0 2px #e5383b, 0 0 50px #e5383b44;
+  animation: ms-shake 0.4s ease-in-out;
+}
+
+@keyframes ms-shake {
+  20% {
+    transform: translate(-6px, 2px);
+  }
+  40% {
+    transform: translate(5px, -3px);
+  }
+  60% {
+    transform: translate(-3px, 2px);
+  }
+  80% {
+    transform: translate(2px, -1px);
+  }
+}
+
+.ms-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), calc(var(--cell) - var(--gap)));
+  grid-auto-rows: calc(var(--cell) - var(--gap));
+  gap: var(--gap);
+}
+
+.ms-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  background: linear-gradient(180deg, #5d677e 0%, #4a5369 100%);
+  border: 0;
+  border-radius: calc(var(--cell) * 0.16);
+  box-shadow: inset 0 1px 0 #ffffff33, inset 0 calc(var(--cell) * -0.06) 0 #0000004d;
+  cursor: pointer;
+  transition: background-color 0.1s, filter 0.1s;
+}
+
+.ms-frame.is-playing .ms-cell:not(.is-open):hover,
+.ms-frame.is-ready .ms-cell:not(.is-open):hover {
+  filter: brightness(1.18);
+}
+
+.ms-cell:focus-visible {
+  z-index: 1;
+  outline: 2px solid #ffd25a;
+  outline-offset: 1px;
+}
+
+/* Pressing a square (or a number's hidden neighbours, before a chord). */
+.ms-cell.is-pressed:not(.is-open) {
+  background: #3e465a;
+  box-shadow: inset 0 2px 4px #0006;
+}
+
+.ms-cell.is-open {
+  background: #e9edf3;
+  box-shadow: inset 0 0 0 1px #00000010;
+  cursor: default;
+}
+
+.ms-cell.is-open.n1,
+.ms-cell.is-open.n2,
+.ms-cell.is-open.n3,
+.ms-cell.is-open.n4,
+.ms-cell.is-open.n5,
+.ms-cell.is-open.n6,
+.ms-cell.is-open.n7,
+.ms-cell.is-open.n8 {
+  cursor: pointer;
+}
+
+.ms-cell b {
+  font-size: calc(var(--cell) * 0.58);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ms-cell.n1 b {
+  color: #2b6be0;
+}
+
+.ms-cell.n2 b {
+  color: #1f9a5a;
+}
+
+.ms-cell.n3 b {
+  color: #e5383b;
+}
+
+.ms-cell.n4 b {
+  color: #6a3fb8;
+}
+
+.ms-cell.n5 b {
+  color: #b8452a;
+}
+
+.ms-cell.n6 b {
+  color: #138a8f;
+}
+
+.ms-cell.n7 b {
+  color: #1d1f25;
+}
+
+.ms-cell.n8 b {
+  color: #7a808a;
+}
+
+/* An area opening ripples out from where you clicked. */
+.ms-cell.is-new {
+  animation: ms-open 0.28s ease-out backwards;
+  animation-delay: calc(var(--ring, 0) * 22ms);
+}
+
+@keyframes ms-open {
+  from {
+    background: #6c7690;
+    transform: scale(0.82);
+  }
+}
+
+.ms-flag {
+  width: 70%;
+  height: 70%;
+  overflow: visible;
+}
+
+.ms-flag-pole {
+  fill: none;
+  stroke: #1d1f25;
+  stroke-width: 6;
+}
+
+.ms-flag-cloth {
+  fill: #e5383b;
+  stroke: #1d1f25;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.ms-cell .ms-flag {
+  animation: ms-plant 0.18s ease-out;
+}
+
+@keyframes ms-plant {
+  from {
+    transform: translateY(-30%) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.ms-flag.is-wrong {
+  opacity: 0.85;
+}
+
+.ms-flag-x {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.ms-mine {
+  width: 72%;
+  height: 72%;
+}
+
+.ms-mine path {
+  fill: none;
+  stroke: #1d1f25;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.ms-mine circle {
+  fill: #1d1f25;
+}
+
+.ms-mine .ms-mine-shine {
+  fill: #ffffffcc;
+}
+
+/* The mine that went off, and the rest going up after it. */
+.ms-cell.is-exploded {
+  background: #e5383b;
+  animation: ms-blast 0.5s ease-out;
+}
+
+@keyframes ms-blast {
+  0% {
+    box-shadow: 0 0 0 0 #ff8a80;
+    transform: scale(1.3);
+  }
+  100% {
+    box-shadow: 0 0 0 calc(var(--cell) * 0.6) transparent;
+  }
+}
+
+.ms-cell.is-mine:not(.is-exploded) {
+  background: #d9dee7;
+  animation: ms-chain 0.3s ease-out backwards;
+  animation-delay: calc(var(--ring, 0) * 45ms);
+}
+
+@keyframes ms-chain {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+.ms-frame.is-flag-mode .ms-cell:not(.is-open) {
+  cursor: crosshair;
+}
+
+.ms-count {
+  color: #ff8a65;
+}
+
+.ms-levels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.ms-level {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.ms-level b {
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.ms-level span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ms-level:hover {
+  border-color: #ffffff40;
+}
+
+.ms-level.is-on {
+  background: #ececee;
+  border-color: #ececee;
+}
+
+.ms-level.is-on b {
+  color: #0b0b0f;
+}
+
+.ms-level.is-on span {
+  color: #55585f;
+}
+
+.kit-panel .g-btn .ms-flag {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 1100px) {
+  /* On a narrow screen big boards scroll sideways rather than shrink past tapping size. */
+  .ms-game .kit-board-wrap {
+    justify-items: start;
+    overflow-x: auto;
+  }
+
+  .ms-frame {
+    --cell: max(26px, min(calc((100cqw - 2 * var(--pad)) / var(--cols)), 44px));
+    margin: 0 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-cell.is-new,
+  .ms-cell.is-exploded,
+  .ms-cell.is-mine,
+  .ms-cell .ms-flag,
+  .ms-frame.is-lost {
+    animation: none;
+  }
+}
+
+/* The flag inside a button follows the button's text colour. */
+.g-btn .ms-flag-pole,
+.g-btn .ms-flag-cloth {
+  stroke: currentColor;
+}

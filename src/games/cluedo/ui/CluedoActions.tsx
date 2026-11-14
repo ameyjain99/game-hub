@@ -51,7 +51,7 @@ function AccuseDialog({ onAccuse, onClose }: { onAccuse: (s: Suspect, w: Weapon,
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card cl-accuse" role="dialog" aria-label="Make an accusation" onClick={(e) => e.stopPropagation()}>
         <h2>Make an accusation</h2>
-        <p>Name the murderer, the weapon and the room. If you’re wrong, you’re out of the game (you still show cards).</p>
+        <p>Name the murderer, the weapon and the room. If you're wrong, you're out of the game (you still show cards).</p>
         <Chips label="Suspect" items={SUSPECTS} value={s} onChange={setS} dot={(x) => SUSPECT_COLOR[x]} />
         <Chips label="Weapon" items={WEAPONS} value={w} onChange={setW} />
         <Chips label="Room" items={ROOMS} value={r} onChange={setR} />
@@ -135,7 +135,7 @@ export function CluedoActions({ view, meId, nameFor, onAction, onExit }: Props) 
       const matches = (me?.hand ?? []).filter((c) => named.includes(c));
       return (
         <Panel kicker="Disprove" title={`${nameFor(current.id)} suggested ${s.suspect} with the ${s.weapon} in the ${s.room}`}>
-          <p className="cl-muted">You hold {matches.length > 1 ? 'some of these' : 'one of these'}. Show one card — only {nameFor(current.id)} will see it.</p>
+          <p className="cl-muted">You hold {matches.length > 1 ? 'some of these' : 'one of these'}. Show one card – only {nameFor(current.id)} will see it.</p>
           <div className="cl-hand">
             {matches.map((c) => (
               <CardFace key={c} card={c} onClick={() => onAction({ type: 'disprove', card: c })} />
@@ -145,8 +145,8 @@ export function CluedoActions({ view, meId, nameFor, onAction, onExit }: Props) 
       );
     }
     return (
-      <Panel kicker={myTurn ? 'Your suggestion' : `${nameFor(current.id)}’s turn`}>
-        <p className="cl-status">{nameFor(view.pendingDisprover ?? '')} is checking their cards…</p>
+      <Panel kicker={myTurn ? 'Your suggestion' : `${nameFor(current.id)}'s turn`}>
+        <p className="cl-status">{nameFor(view.pendingDisprover ?? '')} is checking their cards...</p>
         <p className="cl-muted">
           {myTurn ? 'You' : nameFor(current.id)} suggested {s.suspect} with the {s.weapon} in the {s.room}.
         </p>
@@ -156,8 +156,8 @@ export function CluedoActions({ view, meId, nameFor, onAction, onExit }: Props) 
 
   if (!myTurn) {
     return (
-      <Panel kicker={me?.eliminated ? 'You’re out — still showing cards' : undefined}>
-        <p className="cl-status">{nameFor(current.id)} is taking their turn…</p>
+      <Panel kicker={me?.eliminated ? "You're out – still showing cards" : undefined}>
+        <p className="cl-status">{nameFor(current.id)} is taking their turn...</p>
         {latestLine}
       </Panel>
     );
@@ -217,7 +217,7 @@ export function CluedoActions({ view, meId, nameFor, onAction, onExit }: Props) 
           </button>
         )}
         <button type="button" className="g-btn g-btn-ghost" onClick={() => setAccusing(true)}>
-          Make an accusation…
+          Make an accusation...
         </button>
         {!suggested && (
           <button type="button" className="g-btn g-btn-ghost" onClick={() => onAction({ type: 'endTurn' })}>

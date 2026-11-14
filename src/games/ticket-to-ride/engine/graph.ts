@@ -45,7 +45,7 @@ export function areConnected(routeIds: string[], a: string, b: string): boolean 
 
 /**
  * Route ids of one longest continuous path, in travel order, using each claimed
- * edge at most once. Cities may be revisited. Exhaustive DFS — fine at map scale.
+ * edge at most once. Cities may be revisited. Exhaustive DFS – fine at map scale.
  */
 export function longestPathRoutes(routeIds: string[]): string[] {
   const adj = buildAdjacency(routeIds);
@@ -81,7 +81,7 @@ export function longestPath(routeIds: string[]): number {
 /**
  * Route ids of the longest continuous trail that passes through `edgeId` (same
  * edge-disjoint, city-revisiting sense as `longestPathRoutes`). Returns [] if
- * `edgeId` isn't among `routeIds`. Exhaustive DFS — fine at map scale, and only
+ * `edgeId` isn't among `routeIds`. Exhaustive DFS – fine at map scale, and only
  * runs on a settled hover, not per frame.
  */
 export function longestPathThrough(routeIds: string[], edgeId: string): string[] {

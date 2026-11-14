@@ -3,7 +3,7 @@ export interface Rng {
   state: number;
 }
 
-/** mulberry32 — small, fast, deterministic PRNG. */
+/** mulberry32 – small, fast, deterministic PRNG. */
 export function makeRng(seed: number): Rng {
   let s = seed >>> 0;
   return {

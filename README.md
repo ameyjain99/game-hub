@@ -1,13 +1,25 @@
 # Game Hub
 
 Board games in the browser, together. Open a room, share a four-letter code (or
-a join link), and everyone is at the same table — no accounts, no installs.
+a join link), and everyone is at the same table – no accounts, no installs.
 
 | Game | Players | Modes |
 |---|---|---|
 | **Ticket to Ride** (USA, Europe) | 2–5 | Online, local vs bots, pass-and-play |
 | **Monopoly** (classic US board) | 2–6 | Online, local vs bots |
-| **Cluedo** | 3–6 | Online (with video tiles), local vs bots |
+| **Chess** | 2 | Online, local vs Stockfish (five strengths) |
+| **Checkers** (American) | 2 | Online, local vs bots |
+| **Tic-Tac-Toe** | 2 | Online, local vs bots (one never loses) |
+| **Ludo** | 2–4 | Online, local vs bots |
+| **Snakes & Ladders** | 2–6 | Online, local vs bots |
+| **Lineup** (five-in-a-row with cards and chips) | 2–12, in teams | Online, local vs bots (with a bot partner) |
+| **Last Card** (colour-matching card game: Classic and Flip) | 2–10 | Online, local vs bots |
+| **Wordgrid** (crossword tile game) | 2–4 | Online, local vs bots |
+| **Blockyard** (3D block-building sandbox) | 1–8 | Online (shared world), local (saved in the browser) |
+| **Solitaire** (Klondike) | 1 | Draw one or three, undo, hints |
+| **Sudoku** | 1 | Four levels, notes, hints |
+| **Minesweeper** | 1 | Four levels (Easy 9×9 to Expert 30×24), first click always safe, chording |
+| **Cluedo** | 3–6 | Built, switched off on the hub for now |
 
 Every game has bots at several difficulty levels, so a table can always be
 filled, and a player who drops can be handed to a bot without stopping play.
@@ -77,18 +89,24 @@ proxies `/socket.io` and `/api` to the server.
 ```
 server/
   index.ts          HTTP + socket.io entry; serves the built client in production
-  rooms.ts          RoomStore — game-agnostic rooms, seats, clocks, disconnects
+  rooms.ts          RoomStore – game-agnostic rooms, seats, clocks, disconnects
   gameAdapter.ts    the adapter contract
-  adapters.ts       Ticket to Ride, Cluedo and Monopoly adapters
+  adapters.ts       Ticket to Ride, Cluedo and Monopoly adapters, and the kit games
+  kitAdapter.ts     one adapter for every kit game (bots step one move at a time)
 src/
-  app/              hub page and top-level routing (/<game>/…)
+  app/              hub page and top-level routing (/<game>/...)
   games/
     registry.ts     the game catalogue shown on the hub
     ticket-to-ride/ engine · ai · net · ui
     monopoly/       engine · ui
     cluedo/         engine · ui
+    kit/            the shared contract, screen, lobby wiring and boards for the
+                    newer games (chess, checkers, tic-tac-toe, ludo,
+                    snakes-and-ladders, lineup, last-card, wordgrid,
+                    blockyard, solitaire, sudoku, minesweeper – each
+                    engine.ts + ui/)
   online/           socket session hook, session storage, URL routing,
-                    shared online UI (lobby, join gate, turn clock, …)
+                    shared online UI (lobby, join gate, turn clock, ...)
   net/protocol.ts   socket event names and payload types
   shared/           seeded RNG, icons, loader, shared UI (landing, form)
   styles/           tokens.css → base → shared → game-ui → per-game CSS
@@ -125,8 +143,51 @@ npm start                               # PORT defaults to 3001
   friction-free; nothing persists beyond a running game.
 - **In-memory, single instance.** Simplest thing that works for game nights;
   see Deployment for the trade-off.
+- **Original games, not clones.** The newer games play in familiar styles but are
+  GameHub's own designs with their own names, boards and art: Lineup (its own
+  board arrangement), Last Card (its own cards and Flip deck), Wordgrid (its own
+  premium-square layout and tile values) and Blockyard (its own world and
+  textures, all drawn in code). A licence file covers code, not trademarks:
+  names such as Monopoly, Ticket to Ride, Cluedo and Catan belong to their owners.
 - **Original names and art.** Monopoly uses generic place names and Cluedo the
   classic character set; no trademarked board art is included.
+- **Kit games share one contract.** Chess, Checkers, Tic-Tac-Toe, Ludo,
+  Snakes & Ladders and Lineup each implement `GameKit` (`src/games/kit/engine.ts`):
+  one server adapter, one local runner and one online wrapper serve them all.
+  Their bots act one move at a time on the server too, so everyone watches each
+  roll and move.
+- **Rule choices.** Checkers follows American/English draughts (compulsory,
+  free-choice captures; crowning ends the move; 40 moves each without progress
+  is a draw). Ludo plays the common Indian rules (a 6 to leave the yard and roll
+  again, three 6s forfeit, captures and arrivals earn a bonus roll, stars and
+  starts are safe, no blockades). Snakes & Ladders uses Milton Bradley's 1952
+  board, a 6 rolls again, and 100 must be hit exactly (overshoot bounces back).
+  Lineup plays like the classic chips-and-cards five-in-a-row games on
+  GameHub's own board arrangement, in teams of two or three.
+- **Chess plays the computer with Stockfish.** The engine runs in the browser
+  as a Web Worker (the 7 MB "lite single-threaded" Stockfish 18 build, GPLv3,
+  shipped unmodified in `public/engine/` with its licence); GameHub talks to it
+  only over UCI. Rules come from chess.js (BSD-2); the pieces are Colin
+  Burnett's set, used under its BSD-3 option (credited in
+  `src/games/chess/ui/pieces.ts`). Online chess is between two
+  people, untimed; a dropped opponent can be removed, which ends the game.
+- **Last Card.** Classic: 108 cards; match colour or symbol; Skip, Reverse, Draw 2,
+  Wild and Wild Draw 4 (only with nothing of the colour in hand); draw one and
+  you may play it if it fits; call "Last card" at one card or be caught for two;
+  going out scores the cards left in everyone's hands. Flip: 112 two-faced cards;
+  a Flip card turns the whole table to the dark side (Draw 5, Skip Everyone, and
+  a Wild that makes the next player draw until they find the colour); you see the
+  other face of everyone else's cards.
+- **Wordgrid.** 15×15, 100 tiles (two blanks), racks of seven, words checked
+  against ENABLE (public domain, `public/words/`); premiums only under new tiles;
+  all seven tiles score 50 more; swap with seven or more in the bag; the game
+  ends when someone goes out with the bag empty or after six scoreless turns. The
+  bot generates every legal move (anchors, cross-checks and a trie) and picks by
+  level.
+- **Blockyard.** A 96×40×96 world generated from a seed (hills, beaches, water,
+  snow, trees); creative building with a hotbar and a palette of 21 blocks; fly
+  mode. A room stores only the seed and the edited blocks; positions travel on a
+  separate, throwaway presence relay ten times a second.
 - **Cluedo movement is abstracted.** Rooms form a graph (adjacent rooms plus the
   secret passages); one die roll moves you along it. Suggestions, disproving and
   accusations follow the real rules.
@@ -138,7 +199,7 @@ npm start                               # PORT defaults to 3001
 Contributions are welcome. Every change goes through a pull request and needs
 the maintainer's approval before it can merge.
 
-1. **Fork** the repo and create a branch from `main` (`feat/…`, `fix/…`).
+1. **Fork** the repo and create a branch from `main` (`feat/...`, `fix/...`).
 2. **Make the change with tests.** Put tests next to the matching folder under
    `tests/`. For a bug, write a failing test first.
 3. **Check locally:** `npm test` and `npm run build` (the build also typechecks).
@@ -151,7 +212,7 @@ Conventions:
   `lucide-react` anywhere else.
 - Style with the tokens in `src/styles/tokens.css` and the shared classes in
   `game-ui.css` rather than new magic numbers.
-- Commit messages follow Conventional Commits (`feat:`, `fix:`, `test:`, …).
+- Commit messages follow Conventional Commits (`feat:`, `fix:`, `test:`, ...).
 
 ### Adding a game
 
@@ -162,3 +223,11 @@ Conventions:
 3. Build the screens with `useGameRoute`, `GameLanding`, `GameForm` and
    `OnlineLobby`, then list the game in `src/games/registry.ts` and route it in
    `src/app/App.tsx`.
+
+## License
+
+GameHub's own code is released under the [MIT License](LICENSE). Third-party
+parts keep their own licences: Stockfish (GPLv3, `public/engine/`, run as a
+separate Web Worker), chess.js (BSD-2), three.js (MIT), the Cburnett chess pieces
+(BSD-3, `src/games/chess/ui/pieces.ts`), the ENABLE word list (public domain,
+`public/words/`) and the Inter font (SIL OFL 1.1).

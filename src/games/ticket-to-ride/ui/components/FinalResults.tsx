@@ -57,7 +57,7 @@ export function FinalScores({
 }: {
   ranked: RankedPlayer[];
   selectedId: string;
-  /** The "Game over — X wins!" line, shown beside the chips. */
+  /** The "Game over – X wins!" line, shown beside the chips. */
   caption: string;
   onSelect: (playerId: string) => void;
 }) {

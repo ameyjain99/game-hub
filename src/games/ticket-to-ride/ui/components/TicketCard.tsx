@@ -10,7 +10,7 @@ interface Props {
   completed?: boolean;
   selected?: boolean;
   onToggle?: () => void;
-  /** Fired on hover enter (true) / leave (false) — used to highlight the map. */
+  /** Fired on hover enter (true) / leave (false) – used to highlight the map. */
   onHover?: (hovering: boolean) => void;
 }
 

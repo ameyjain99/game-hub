@@ -29,7 +29,7 @@ export interface OnlineSession<S = unknown, A = unknown> {
   lobby: LobbyView | null;
   state: S | null;
   myPlayerId: string | null;
-  /** The room code once joined — the signaling address for voice chat. */
+  /** The room code once joined – the signaling address for voice chat. */
   code: string | null;
   /** The live socket, exposed for voice-chat signaling. Null until connected. */
   socket: Socket | null;

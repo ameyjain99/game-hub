@@ -25,7 +25,7 @@ function CluedoProfile({
     <GameForm
       eyebrow={hosting ? 'Cluedo · New room' : `Cluedo · Room ${code}`}
       title={hosting ? 'Set up your game' : 'Join the game'}
-      subtitle={hosting ? 'You’ll get a room code to share next.' : 'Pick the name the table will see.'}
+      subtitle={hosting ? "You'll get a room code to share next." : 'Pick the name the table will see.'}
       onBack={onBack}
       submitLabel={hosting ? 'Create game' : 'Join game'}
       canSubmit={name.trim().length > 0}

@@ -1,4 +1,4 @@
-/* Ticket to Ride — the in-game cockpit, board, cards, dialogs, results. */
+/* Ticket to Ride – the in-game cockpit, board, cards, dialogs, results. */
 
 @media (max-width: 900px) {
   .hub-games {
@@ -900,7 +900,7 @@
 
 
 /* A combo is shown as the mini card faces it spends, with the count drawn
-   inside each — colours as rounded squares, the locomotive as a circle. */
+   inside each – colours as rounded squares, the locomotive as a circle. */
 .combo-chips {
   display: inline-flex;
   align-items: center;
@@ -981,7 +981,7 @@
 }
 
 
-/* The title block never shrinks or truncates — it always shows in full; the
+/* The title block never shrinks or truncates – it always shows in full; the
    combo strip beside it takes the remaining width and scrolls. */
 .top-content .popover-head {
   flex: 0 0 auto;
@@ -1290,7 +1290,7 @@
 }
 
 
-/* The "Game over — X wins!" line, beside the score chips in the top bar. */
+/* The "Game over – X wins!" line, beside the score chips in the top bar. */
 .final-caption {
   flex: none;
   font-weight: 700;

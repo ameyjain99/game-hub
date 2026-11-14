@@ -38,7 +38,7 @@ export interface Space {
   group?: ColorGroup;
   /** Purchase price (property / railroad / utility). */
   price?: number;
-  /** Rent table — 6 tiers for properties, 4 for railroads. */
+  /** Rent table – 6 tiers for properties, 4 for railroads. */
   rent?: number[];
   /** Cost per house/hotel (property spaces only). */
   houseCost?: number;

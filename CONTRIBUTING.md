@@ -7,10 +7,10 @@ maintainer's approval before it can merge into `main`.
 
 A branch must be named with one of these prefixes:
 
-- `feat/…` — a new feature
-- `fix/…` — a bug fix
-- `test/…` — tests only
-- `chore/…` — tooling, deps, docs, housekeeping
+- `feat/...` – a new feature
+- `fix/...` – a bug fix
+- `test/...` – tests only
+- `chore/...` – tooling, deps, docs, housekeeping
 
 Every commit message (and your PR title) must start the same way, with `:`
 instead of `/`, then a space and a short summary. An optional `(scope)` is
@@ -25,10 +25,10 @@ chore: bump vite to 8.4
 
 These are enforced two ways:
 
-1. **Locally** — `npm install` points git at `.githooks/`, which rejects a bad
+1. **Locally** – `npm install` points git at `.githooks/`, which rejects a bad
    commit message or a bad branch name before they leave your machine. (To
    enable by hand: `git config core.hooksPath .githooks`.)
-2. **In CI** — the **PR conventions** check validates the branch name, the PR
+2. **In CI** – the **PR conventions** check validates the branch name, the PR
    title and every commit in the PR. It must pass before a PR can merge.
 
 ## Before you open a PR

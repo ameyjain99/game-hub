@@ -11,7 +11,7 @@ export function playClaim(): void {
 }
 
 /**
- * A gentle ascending chime for the final-round warning — a soft C-E-G bell
+ * A gentle ascending chime for the final-round warning – a soft C-E-G bell
  * instead of a harsh siren. Each note is a pure sine with a quick attack and a
  * long, mellow decay, the three overlapping slightly.
  */

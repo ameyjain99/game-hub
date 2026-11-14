@@ -51,7 +51,7 @@ export function TicketToRideLanding({ onStart, onJoin, onLocal, onBackToHub }: P
           <button type="button" className="primary" onClick={() => onStart()}>
             Start game
           </button>
-          <p className="landing-hint">Create a room and invite friends — you'll pick the board, players and mode next.</p>
+          <p className="landing-hint">Create a room and invite friends – you'll pick the board, players and mode next.</p>
         </section>
       </div>
 

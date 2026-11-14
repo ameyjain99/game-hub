@@ -19,6 +19,7 @@ import {
   type LeaveRoom,
   type SetAvatar,
   type VoiceSignal,
+  type Presence,
 } from '../src/net/protocol';
 import type { Difficulty } from '../src/games/ticket-to-ride/engine/types';
 
@@ -41,6 +42,8 @@ const MIME: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.pdf': 'application/pdf',
+  '.wasm': 'application/wasm', // the Stockfish engine (streamed compilation needs this type)
+  '.txt': 'text/plain',
 };
 
 /**
@@ -54,11 +57,12 @@ function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore): vo
     const url = new URL(req.url ?? '/', 'http://localhost');
 
     // Whether a room code exists, so a join link can be validated before asking
-    // for a name (and a "no such room" message shown otherwise).
+    // for a name (and a "no such room" message shown otherwise), and which game
+    // it's playing, so the hub can send a code straight to the right game.
     if (url.pathname === '/api/room-exists') {
       res.setHeader('Content-Type', 'application/json');
-      const code = url.searchParams.get('code') ?? '';
-      res.end(JSON.stringify({ exists: store.hasRoom(code) }));
+      const gameId = store.gameOf(url.searchParams.get('code') ?? '');
+      res.end(JSON.stringify(gameId ? { exists: true, gameId } : { exists: false }));
       return;
     }
 
@@ -92,6 +96,21 @@ export function createServer(opts: { port?: number } = {}): {
 
   const fail = (socket: Socket, message: string) => socket.emit(EVT.errorMsg, { message });
 
+  // Games whose bots move one step at a time get a timer per room for the next
+  // bot move; each move is broadcast, which schedules the one after it.
+  const botTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const scheduleBot = (code: string) => {
+    if (botTimers.has(code)) return;
+    const delay = store.botDelay(code);
+    if (delay === null) return;
+    const timer = setTimeout(() => {
+      botTimers.delete(code);
+      if (store.stepBot(code)) broadcast(code);
+    }, delay);
+    timer.unref?.();
+    botTimers.set(code, timer);
+  };
+
   /** Push the lobby to everyone and, once started, a per-socket redacted state. */
   const broadcast = (code: string) => {
     let lobby;
@@ -105,6 +124,7 @@ export function createServer(opts: { port?: number } = {}): {
       const state = store.stateForViewer(code, playerId);
       if (state) io.to(socketId).emit(EVT.state, state);
     }
+    scheduleBot(code);
   };
 
   io.on('connection', (socket: Socket) => {
@@ -188,7 +208,7 @@ export function createServer(opts: { port?: number } = {}): {
 
     socket.on(EVT.extendTime, (p: ExtendTime) => {
       const res = store.extendTime(p.code, data.token ?? '', 20_000);
-      if ('error' in res) return; // a stale/forbidden grant is harmless — ignore
+      if ('error' in res) return; // a stale/forbidden grant is harmless – ignore
       broadcast(p.code);
     });
 
@@ -208,6 +228,11 @@ export function createServer(opts: { port?: number } = {}): {
     // server only brokers the WebRTC handshake. `socket.to(code)` excludes the sender.
     socket.on(EVT.voice, (p: VoiceSignal) => {
       if (p && typeof p.code === 'string') socket.to(p.code).emit(EVT.voice, p);
+    });
+
+    // Presence (a builder's position): relayed to the room, dropped under load.
+    socket.on(EVT.presence, (p: Presence) => {
+      if (p && typeof p.code === 'string' && p.code === data.code && p.from === data.playerId) socket.to(p.code).volatile.emit(EVT.presence, p);
     });
 
     socket.on('disconnect', () => {
@@ -241,13 +266,15 @@ export function createServer(opts: { port?: number } = {}): {
     close: () =>
       new Promise<void>((done) => {
         clearInterval(turnTick);
+        for (const timer of botTimers.values()) clearTimeout(timer);
+        botTimers.clear();
         io.close(() => httpServer.close(() => done()));
       }),
   };
 }
 
 // Start the server when this file is run directly (dev via tsx, or the built
-// bundle in production) — but not when imported, e.g. by tests that spin up
+// bundle in production) – but not when imported, e.g. by tests that spin up
 // their own instance. Static file serving stays gated on NODE_ENV=production
 // inside createServer, since in dev Vite serves the client.
 const runDirectly = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

@@ -90,6 +90,16 @@ export interface VoiceSignal {
   data?: unknown;
 }
 
+/**
+ * Fast-changing, throwaway updates for real-time games (a builder's position in
+ * Blockyard), relayed to the rest of the room without touching game state.
+ */
+export interface Presence {
+  code: string;
+  from: string;
+  data: unknown;
+}
+
 /** A peer's current mic/cam state, broadcast via a 'media' VoiceSignal. */
 export interface MediaState {
   micOn: boolean;
@@ -121,6 +131,7 @@ export const EVT = {
   leaveRoom: 'leaveRoom',
   setAvatar: 'setAvatar',
   voice: 'voice',
+  presence: 'presence',
   lobby: 'lobby',
   state: 'state',
   joined: 'joined',

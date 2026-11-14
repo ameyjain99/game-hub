@@ -3,7 +3,7 @@ import type { Route, RouteColor } from '../../types';
 /**
  * Ticket to Ride EUROPE routes.
  *
- * NOTE: this is a best-effort reconstruction of the printed Europe map — the
+ * NOTE: this is a best-effort reconstruction of the printed Europe map – the
  * topology, tunnels (`t`) and ferries (`f`, = required locomotives) are placed
  * on the well-known alpine/pyrenees/balkan crossings and sea routes, but the
  * exact per-route COLORS and LENGTHS should be verified against the physical

@@ -11,7 +11,7 @@ interface Props {
   onSubmit: (name: string, seatCount?: number, settings?: Partial<Settings>) => void;
 }
 
-/** Name, plus — when hosting — players, board, starting cash and house rules. */
+/** Name, plus – when hosting – players, board, starting cash and house rules. */
 export function MonopolyProfile({ action, code, onBack, onSubmit }: Props) {
   const [name, setName] = useState('');
   const [seatCount, setSeatCount] = useState(4);
@@ -23,7 +23,7 @@ export function MonopolyProfile({ action, code, onBack, onSubmit }: Props) {
     <GameForm
       eyebrow={hosting ? 'Monopoly · New room' : `Monopoly · Room ${code}`}
       title={hosting ? 'Set up your game' : 'Join the game'}
-      subtitle={hosting ? 'You’ll get a room code to share next.' : 'Pick the name the table will see.'}
+      subtitle={hosting ? "You'll get a room code to share next." : 'Pick the name the table will see.'}
       onBack={onBack}
       submitLabel={hosting ? 'Create game' : 'Join game'}
       canSubmit={name.trim().length > 0}

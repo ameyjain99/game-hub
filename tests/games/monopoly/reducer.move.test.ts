@@ -38,7 +38,7 @@ describe('ROLL and movement', () => {
     const out = applyAction(g, { type: 'ROLL' });
     const total = out.dice![0] + out.dice![1];
     expect(out.players[currentSeat(g)].position).toBe((39 + total) % 40);
-    // cash rose by 200 (plus no spend — unowned landings only set pendingPurchase)
+    // cash rose by 200 (plus no spend – unowned landings only set pendingPurchase)
     expect(out.players[currentSeat(g)].cash).toBe(1500 + 200);
   });
 

@@ -11,7 +11,7 @@ test.each([1, 2, 3, 42])('all-bot game (seed %i) ends with a correct win and no 
   while (state.phase !== 'over' && steps < 20000) {
     state = reduce(state, chooseCluedoAction(state));
     steps += 1;
-    // A wrong accusation would eliminate someone — the bot must never do that.
+    // A wrong accusation would eliminate someone – the bot must never do that.
     expect(state.players.some((p) => p.eliminated)).toBe(false);
   }
   expect(state.phase).toBe('over');

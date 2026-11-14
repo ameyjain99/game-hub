@@ -6,7 +6,7 @@ import { TicketToRideSetup } from '../../src/games/ticket-to-ride/ui/TicketToRid
 afterEach(cleanup);
 
 // The local setup screen shows its nav links only when the matching callback is
-// provided — i.e. when it was reached from the hub/landing, not in a bare game.
+// provided – i.e. when it was reached from the hub/landing, not in a bare game.
 test('no nav links when neither callback is provided', () => {
   render(<TicketToRideSetup onStart={vi.fn()} />);
   expect(screen.queryByRole('button', { name: /play with anyone/i })).toBeNull();

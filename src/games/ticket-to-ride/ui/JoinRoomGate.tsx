@@ -32,7 +32,7 @@ export function JoinRoomGate({ code, onBack, onSubmit }: Props) {
   if (status === 'checking') {
     return (
       <div className="setup-screen">
-        <Loader full label={`Looking for room ${code}…`} />
+        <Loader full label={`Looking for room ${code}...`} />
       </div>
     );
   }
@@ -42,7 +42,7 @@ export function JoinRoomGate({ code, onBack, onSubmit }: Props) {
       <div className="setup-screen">
         <div className="modal-backdrop">
           <div className="modal-card" role="alertdialog" aria-label="Could not join">
-            <h2>Couldn’t join</h2>
+            <h2>Couldn't join</h2>
             <p>
               No room with the code <strong>{code}</strong> is open right now. Check the code and try
               again.

@@ -72,7 +72,7 @@ test('Monopoly: while another player moves, there is no stray action button', ()
   const g = mono();
   g.current = 1;
   center(g);
-  expect(screen.getByText(/bot 1’s turn/i)).toBeTruthy();
+  expect(screen.getByText(/bot 1's turn/i)).toBeTruthy();
   expect(screen.queryByRole('button')).toBeNull();
 });
 

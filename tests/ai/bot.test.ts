@@ -50,7 +50,7 @@ function toFirstTurn(difficulties: Difficulty[], seed: number): GameState {
 
 describe('chooseAction', () => {
   it('always returns a legal action across difficulties and seeds', () => {
-    // Pair each difficulty with a hard bot so the game always terminates — a
+    // Pair each difficulty with a hard bot so the game always terminates – a
     // low-on-trains normal stops claiming, so normal-vs-normal would never end.
     for (const d of ['easy', 'normal', 'hard'] as Difficulty[]) {
       for (const seed of [1, 2, 3]) {

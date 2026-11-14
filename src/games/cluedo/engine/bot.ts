@@ -107,8 +107,8 @@ export function chooseCluedoAction(state: CluedoState): CluedoAction {
 }
 
 /** What an idle human defaults to when their turn clock runs out: roll, take the
- *  first room offered, end the turn without suggesting, and — since a disprover
- *  must show a card — show the first one that matches. */
+ *  first room offered, end the turn without suggesting, and – since a disprover
+ *  must show a card – show the first one that matches. */
 export function cluedoTimeoutAction(state: CluedoState): CluedoAction {
   switch (state.phase) {
     case 'roll':

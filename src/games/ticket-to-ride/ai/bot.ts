@@ -36,7 +36,7 @@ export function chooseAction(
       [...player.pendingTickets].sort((a, b) => b.points - a.points).slice(0, n).map((t) => t.id),
     );
 
-  // Setup: keep the mode's minimum, highest value first (and complete them —
+  // Setup: keep the mode's minimum, highest value first (and complete them –
   // that's where the points are). Undisciplined easy will fail to finish them.
   if (state.phase === 'setup-tickets') {
     const keep = modeFor(state.mapId, state.modeId).setupKeep;
@@ -90,7 +90,7 @@ export function chooseAction(
     // tickets (a scoring penalty).
     if (difficulty === 'easy') return best;
 
-    // Normal finishes its tickets first, then claims extra routes for points —
+    // Normal finishes its tickets first, then claims extra routes for points –
     // a little wasteful, leaving the shortest leftovers (and some trains) unused.
     if (targets.size === 0 && route.length >= 3) return best;
   }

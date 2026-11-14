@@ -113,7 +113,7 @@ export interface Plan {
 /**
  * Plan all incomplete tickets together, highest value first: routes already
  * owned or planned cost nothing, so overlapping tickets share track.
- * `lengthBias` (0–0.6) makes long routes — which score more points per train —
+ * `lengthBias` (0–0.6) makes long routes – which score more points per train –
  * cheaper to path through; `trainsNeeded` always counts real trains.
  */
 export function planTickets(

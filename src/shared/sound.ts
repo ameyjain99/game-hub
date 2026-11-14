@@ -1,5 +1,5 @@
-// Lightweight procedural sound effects via the Web Audio API — no asset files to
-// ship or license — shared by every game. A single AudioContext is created
+// Lightweight procedural sound effects via the Web Audio API – no asset files to
+// ship or license – shared by every game. A single AudioContext is created
 // lazily on first use (after a user gesture, so browsers allow it) and reused
 // for every cue. One mute switch covers the whole hub.
 
@@ -31,7 +31,7 @@ export function setMuted(value: boolean): void {
   try {
     localStorage.setItem(STORAGE_KEY, value ? '1' : '0');
   } catch {
-    /* storage unavailable — keep the in-memory value */
+    /* storage unavailable – keep the in-memory value */
   }
 }
 
@@ -59,7 +59,7 @@ function audio(): AudioContext | null {
   return ctx;
 }
 
-// Two cues can be triggered by the same state update — e.g. a payment and your
+// Two cues can be triggered by the same state update – e.g. a payment and your
 // turn chime. Serialise starts with a minimum gap so they play back-to-back
 // instead of stacking on top of each other.
 let lastStart = 0;
@@ -139,13 +139,13 @@ export function playTurn(): void {
 }
 
 /**
- * A gentle "time's nearly up" nudge — three soft, quick sine pips (~1.5s total).
+ * A gentle "time's nearly up" nudge – three soft, quick sine pips (~1.5s total).
  * Urgent enough to notice, soft enough not to grate. Played on the current
  * player's device when their turn clock reaches the last few seconds.
  */
 export function playTimeWarning(): void {
   withAudio((ac, t0) => {
-    // F#5 — clear but not shrill.
+    // F#5 – clear but not shrill.
     for (let i = 0; i < 3; i++) tone(ac, t0 + i * 0.42, { freq: 740, peak: 0.14, attack: 0.02, decay: 0.26 });
   });
 }

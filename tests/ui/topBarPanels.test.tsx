@@ -18,7 +18,7 @@ test('the tunnel panel uses the horizontal popover layout (head · cards · acti
   const { container } = render(<TunnelDialog pending={pending} canAfford onResolve={vi.fn()} />);
   // Root is a .popover so the top bar's `flex-direction: row` applies (no vertical scroll).
   expect(container.querySelector('.popover.tunnel-dialog')).toBeTruthy();
-  // A fixed head block, the flipped cards in a strip, and the actions — side by side.
+  // A fixed head block, the flipped cards in a strip, and the actions – side by side.
   expect(container.querySelector('.popover-head')).toBeTruthy();
   expect(container.querySelectorAll('.tunnel-flipped [data-card]')).toHaveLength(3);
   expect(screen.getByRole('button', { name: /pay/i })).toBeTruthy();

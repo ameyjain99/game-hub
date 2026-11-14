@@ -14,7 +14,7 @@ export function seatName(lobby: LobbyView, seat: Seat): string {
   return 'Open seat';
 }
 
-/** Display name for an engine player id (`p0`…) in this room. */
+/** Display name for an engine player id (`p0`...) in this room. */
 export function nameForPlayer(lobby: LobbyView | null, playerId: string): string {
   const seat = lobby?.seats.find((s) => playerIdForSeat(s.index) === playerId);
   return lobby && seat ? seatName(lobby, seat) : 'Player';

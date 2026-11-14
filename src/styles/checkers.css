@@ -1,0 +1,111 @@
+/* Checkers: a walnut-framed board in tournament green and cream, with turned
+   wooden men – Black and White – and gold crowns on kings. */
+
+.ck-board {
+  --sq-light: #ecdfc2;
+  --sq-dark: #3c6a4e;
+  --sq-last: #f2cf5b;
+  --sq-select: #ffe17a;
+  --sq-hint: #0e1218b3;
+  padding: clamp(8px, 2cqmin, 20px);
+  background: linear-gradient(150deg, #6b4428 0%, #4a2d18 55%, #3a2212 100%);
+  border-radius: clamp(14px, 2.6cqmin, 24px);
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff26, inset 0 0 0 1px #0000004d;
+  transition: box-shadow 0.3s;
+}
+
+.ck-board.is-my-turn {
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff26, inset 0 0 0 1px #0000004d, 0 0 0 1px #f2cf5b55, 0 0 40px #f2cf5b1c;
+}
+
+.ck-board .sq-board {
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px #24140a, 0 2px 10px #0006;
+}
+
+.ck-piece {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+/* The turned rings of a wooden man. */
+.ck-piece::before {
+  content: '';
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  border: 1px solid #ffffff1a;
+  box-shadow: inset 0 0 0 3px #00000014;
+}
+
+.ck-piece.is-black {
+  background: radial-gradient(circle at 34% 28%, #545a68 0%, #2a2d35 45%, #17181d 100%);
+  box-shadow: 0 4% 0 #08090b, 0 10% 18% #000a;
+}
+
+.ck-piece.is-white {
+  background: radial-gradient(circle at 34% 28%, #ffffff 0%, #f1e9d8 45%, #d7cab0 100%);
+  box-shadow: 0 4% 0 #a8987a, 0 10% 18% #0008;
+}
+
+.ck-piece.is-white::before {
+  border-color: #0000001f;
+}
+
+.ck-crown {
+  position: relative;
+  width: 50%;
+  height: 50%;
+  color: #f0b429;
+  filter: drop-shadow(0 1px 0 #0007);
+}
+
+/* Pieces you can move lift a touch under the pointer. */
+.sq.is-movable:hover .ck-piece,
+.sq.is-must:hover .ck-piece {
+  transform: translateY(-4%) scale(1.03);
+}
+
+/* When a capture is forced, the pieces that must jump glow. */
+.sq.is-must .ck-piece {
+  animation: ck-must 1.3s ease-in-out infinite;
+}
+
+@keyframes ck-must {
+  50% {
+    box-shadow: 0 4% 0 #08090b, 0 10% 18% #000a, 0 0 0 4px #ffd34d, 0 0 18px #ffd34daa;
+  }
+}
+
+.ck-token-dot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.ck-token-dot.is-black {
+  background: radial-gradient(circle at 34% 28%, #545a68, #17181d);
+}
+
+.ck-token-dot.is-white {
+  background: radial-gradient(circle at 34% 28%, #fff, #d7cab0);
+}
+
+/* A seat's man, large, standing in for a camera that's off. */
+.g-silhouette .ck-piece {
+  width: 46px;
+  height: 46px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sq.is-must .ck-piece {
+    animation: none;
+    box-shadow: 0 0 0 3px #ffd34d;
+  }
+}
