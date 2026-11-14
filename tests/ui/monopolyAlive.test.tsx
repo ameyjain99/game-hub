@@ -162,7 +162,7 @@ describe('trade shortcut', () => {
     expect((screen.getByRole('combobox', { name: /trade partner/i }) as HTMLSelectElement).value).toBe('p1');
   });
 
-  test('not while it is someone else’s move', () => {
+  test("not while it is someone else's move", () => {
     screenFor(game()); // You still have to roll
     expect(screen.queryByRole('button', { name: 'Trade with Bot 1' })).toBeNull();
   });

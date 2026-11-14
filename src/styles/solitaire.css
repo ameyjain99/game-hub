@@ -1,0 +1,186 @@
+/* Solitaire: a felt table that fills the stage, with every card free to glide
+   between piles. */
+
+/* The table isn't square: it takes the stage's full width and height. */
+.sol-game .kit-board-wrap {
+  padding: clamp(10px, 2cqmin, 22px);
+  background: radial-gradient(120% 90% at 50% 0%, #1f6c49 0%, #175738 55%, #10412a 100%);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff1f;
+}
+
+.sol-game.kit-game {
+  max-width: 1440px;
+}
+
+.sol-table {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+.sol-slot {
+  position: absolute;
+  padding: 0;
+  background: #ffffff0d;
+  border: 2px dashed #ffffff2e;
+  border-radius: calc(var(--pc-w) * 0.09);
+}
+
+.sol-slot.is-stock {
+  cursor: pointer;
+  background:
+    radial-gradient(circle, transparent 0 22%, #ffffff40 23% 27%, transparent 28%),
+    #ffffff0d;
+}
+
+.sol-slot.is-foundation::after {
+  content: 'A';
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: calc(var(--pc-w) * 0.34);
+  font-weight: 800;
+  color: #ffffff2e;
+}
+
+.sol-slot.is-pile::after {
+  content: 'K';
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: calc(var(--pc-w) * 0.34);
+  font-weight: 800;
+  color: #ffffff1f;
+}
+
+.sol-slot.is-hint {
+  border-color: #ffe17a;
+  box-shadow: 0 0 0 3px #ffe17a66;
+}
+
+.sol-card {
+  position: absolute;
+  transition:
+    left 0.22s cubic-bezier(0.2, 0.8, 0.3, 1),
+    top 0.22s cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 0.15s;
+}
+
+.sol-card.is-live {
+  cursor: grab;
+}
+
+.sol-card.is-down:not(.is-live) {
+  cursor: default;
+}
+
+.sol-card.is-live:hover .pc {
+  box-shadow: 0 1px 0 #0000001a, 0 6px 14px #0007, 0 0 0 2px #ffffffb3;
+}
+
+/* A card in your hand follows the pointer with no lag. */
+.sol-card.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+.sol-card.is-dragging .pc {
+  box-shadow: 0 16px 30px #000a;
+}
+
+.sol-card.is-hint .pc {
+  box-shadow: 0 0 0 3px #ffe17a, 0 6px 14px #0007;
+}
+
+.sol-card.is-shake {
+  animation: sol-shake 0.35s ease-in-out;
+}
+
+@keyframes sol-shake {
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Solved: every card takes a little bow, suit by suit and rank by rank. */
+.sol-table.is-won .sol-card {
+  animation: sol-bow 0.7s ease-in-out both;
+}
+
+@keyframes sol-bow {
+  40% {
+    transform: translateY(-28%) rotate(-6deg);
+  }
+  70% {
+    transform: translateY(4%) rotate(2deg);
+  }
+}
+
+.sol-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.sol-stats span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.sol-stats b {
+  display: block;
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.sol-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.sol-progress span {
+  padding: 8px 0;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.sol-progress span.is-red {
+  color: #ff6b6b;
+}
+
+@media (max-width: 1100px) {
+  /* The stage has no fixed height here, so the table takes its own. */
+  .sol-game .kit-board-wrap {
+    flex: none;
+    height: min(78dvh, 125vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sol-card {
+    transition: none;
+  }
+
+  .sol-table.is-won .sol-card,
+  .sol-card.is-shake {
+    animation: none;
+  }
+}

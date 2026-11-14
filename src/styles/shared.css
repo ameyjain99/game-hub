@@ -259,7 +259,7 @@ select {
 
 
 .rulebook-link {
-  /* display comes from the icon+text alignment utility in base.css — don't set
+  /* display comes from the icon+text alignment utility in base.css – don't set
      it here or it overrides that utility's inline-flex and drops the gap. */
   margin-top: 6px;
   color: var(--accent);

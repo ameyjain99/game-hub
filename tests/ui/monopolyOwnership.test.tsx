@@ -39,7 +39,7 @@ const ui = (view: MonopolyState) => (
 const cell = (id: number) => screen.getByRole('button', { name: new RegExp(`^${BOARD[id].name},`) });
 const boardEl = () => screen.getByRole('group', { name: 'Monopoly board' });
 
-test('an owned square is tinted in its owner’s colour', () => {
+test("an owned square is tinted in its owner's colour", () => {
   render(ui(board([])));
   const seville = cell(SEVILLE);
   expect(seville.className).toContain('is-owned');
@@ -57,7 +57,7 @@ test('hovering a player lights up everything they own and dims the rest', () => 
   expect(boardEl().className).not.toContain('is-spotlit');
 });
 
-test('hovering an owned square lights up all of its owner’s squares', () => {
+test("hovering an owned square lights up all of its owner's squares", () => {
   render(ui(board(BROWN)));
   fireEvent.mouseEnter(cell(BROWN[0]));
   for (const id of BROWN) expect(cell(id).className).toContain('is-lit');
@@ -82,7 +82,7 @@ test('a hovered video tile names its seat, so the table can light up that player
   expect(onSeatHover).toHaveBeenCalledWith('p1');
 });
 
-test('a square’s card opens on click, closes on a second click, switches to another, and closes on Escape', () => {
+test("a square's card opens on click, closes on a second click, switches to another, and closes on Escape", () => {
   render(ui(board([])));
   const deed = (id: number) => screen.queryByRole('article', { name: `Title deed: ${BOARD[id].name}` });
 
@@ -100,7 +100,7 @@ test('a square’s card opens on click, closes on a second click, switches to an
   expect(deed(BROWN[0])).toBeNull();
 });
 
-test('an owned square’s card says who owns it and the rent it charges now', () => {
+test("an owned square's card says who owns it and the rent it charges now", () => {
   render(ui(board([])));
   fireEvent.click(cell(SEVILLE));
   const card = screen.getByRole('article', { name: `Title deed: ${BOARD[SEVILLE].name}` }).parentElement!;

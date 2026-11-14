@@ -38,7 +38,7 @@ function useMonopolySounds(view: MonopolyState, meId: string): void {
   }, [view, meId]);
 }
 
-/** The full Monopoly screen — header, board with its play area, and sidebar —
+/** The full Monopoly screen – header, board with its play area, and sidebar –
  *  shared by local and online games. */
 export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel, headerExtra, banner, sideTop }: Props) {
   const [inspected, setInspected] = useState<number | null>(null);

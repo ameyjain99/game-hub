@@ -45,7 +45,7 @@ test('tied on points, the player with more completed tickets wins', () => {
       { routes: ['boston-new-york'], tickets: [ticket('boston', 'new-york', 4), ticket('seattle', 'miami', 4)] },
     ),
   );
-  expect(screen.getByText('Game over — Bob wins!')).toBeTruthy();
+  expect(screen.getByText('Game over – Bob wins!')).toBeTruthy();
   expect(crowns()).toBe(1);
 });
 
@@ -57,12 +57,12 @@ test('still tied, the holder of the Longest Path card wins', () => {
       { routes: ['boston-new-york', 'new-york-washington'], tickets: [ticket('boston', 'washington', 1)] },
     ),
   );
-  expect(screen.getByText('Game over — Bob wins!')).toBeTruthy();
+  expect(screen.getByText('Game over – Bob wins!')).toBeTruthy();
   expect(crowns()).toBe(1);
 });
 
 test('tied on points, tickets and the Longest Path card, the victory is shared', () => {
   show(finished({ routes: ['montreal-boston'], tickets: [] }, { routes: ['boston-new-york'], tickets: [] }));
-  expect(screen.getByText('Game over — Alice & Bob tie!')).toBeTruthy();
+  expect(screen.getByText('Game over – Alice & Bob tie!')).toBeTruthy();
   expect(crowns()).toBe(2);
 });

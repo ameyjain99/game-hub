@@ -5,8 +5,8 @@ import { MonopolyLocalGame } from '../../src/games/monopoly/ui/MonopolyLocalGame
 
 afterEach(cleanup);
 
-// Seed 5's first roll for p0 is a non-doubles total of 8 — landing on Seville (8),
-// an unowned property — so the flow is deterministic.
+// Seed 5's first roll for p0 is a non-doubles total of 8 – landing on Seville (8),
+// an unowned property – so the flow is deterministic.
 function renderLocal() {
   return render(<MonopolyLocalGame playerCount={2} difficulty="normal" seed={5} onBackToHub={() => {}} />);
 }
@@ -23,9 +23,9 @@ test('buying a property lists it under Your properties and marks the board', () 
   renderLocal();
   fireEvent.click(screen.getByRole('button', { name: /roll dice/i }));
   fireEvent.click(screen.getByRole('button', { name: /^buy/i }));
-  // The sidebar's property row (its button is named just "Seville")…
+  // The sidebar's property row (its button is named just "Seville")...
   expect(screen.getByRole('button', { name: 'Seville' })).toBeTruthy();
-  // …and the board cell now reports its owner.
+  // ...and the board cell now reports its owner.
   expect(screen.getByRole('button', { name: /^Seville, owned by You/ })).toBeTruthy();
 });
 

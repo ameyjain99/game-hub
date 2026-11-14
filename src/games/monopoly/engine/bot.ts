@@ -24,7 +24,7 @@ function actingPlayer(state: MonopolyState): MonopolyPlayer | undefined {
   return state.players.find((p) => p.id === id);
 }
 
-/** Cash a bot keeps in reserve by difficulty — higher tiers manage liquidity. */
+/** Cash a bot keeps in reserve by difficulty – higher tiers manage liquidity. */
 function reserve(d: MonopolyDifficulty | undefined): number {
   return d === 'easy' ? 0 : d === 'hard' ? 200 : 100;
 }
@@ -43,7 +43,7 @@ function setOf(id: number): number[] {
 
 /**
  * What a trade is worth to the responder, valued by what it does to sets rather
- * than list prices — the classic digital-Monopoly failure is a bot that sells the
+ * than list prices – the classic digital-Monopoly failure is a bot that sells the
  * lot completing your monopoly for face value. A lot that completes the
  * responder's own set counts 3×; handing the proposer a completed set costs the
  * responder an extra 2× that lot. So an even set-for-set swap nets out to ~0.
@@ -200,7 +200,7 @@ export function chooseMonopolyAction(state: MonopolyState): Action {
 
 /**
  * What an idle human defaults to when their turn clock runs out: the cautious
- * choice at each step — never spends their money on their behalf.
+ * choice at each step – never spends their money on their behalf.
  */
 export function timeoutAction(state: MonopolyState): Action {
   const me = actingPlayer(state);

@@ -52,7 +52,7 @@ interface Options {
  * initiates each offer, avoiding offer/answer glare. A 'media' signal broadcasts
  * each player's mic/cam on-off state so peers can show a silhouette.
  *
- * **Nothing is captured on join** — neither the microphone nor the camera. Each
+ * **Nothing is captured on join** – neither the microphone nor the camera. Each
  * is acquired (and its permission prompt shown) only when the player turns it on,
  * so entering a room never lights up the webcam or opens the mic. Peers pre-add
  * inactive audio/video transceivers at connect time, so toggling a device later
@@ -275,20 +275,20 @@ export function useMediaChat({ socket, code, myId, enabled, video = false }: Opt
 
   const toggleMic = async () => {
     if (micMuted) {
-      // Turn the mic ON — the permission prompt happens here, not on join.
+      // Turn the mic ON – the permission prompt happens here, not on join.
       let track: MediaStreamTrack;
       try {
         const m = await navigator.mediaDevices.getUserMedia({ audio: true });
         track = m.getAudioTracks()[0];
       } catch {
-        return; // denied / no mic — stay off
+        return; // denied / no mic – stay off
       }
       micTrackRef.current = track;
       for (const peer of peersRef.current.values()) void peer.audioSender?.replaceTrack(track);
       micOnRef.current = true;
       setMicMuted(false);
     } else {
-      // Turn the mic OFF — stop the track so the device is fully released.
+      // Turn the mic OFF – stop the track so the device is fully released.
       for (const peer of peersRef.current.values()) void peer.audioSender?.replaceTrack(null);
       micTrackRef.current?.stop();
       micTrackRef.current = null;
@@ -302,20 +302,20 @@ export function useMediaChat({ socket, code, myId, enabled, video = false }: Opt
   const toggleCam = async () => {
     if (!video) return;
     if (camOff) {
-      // Turn the camera ON — the permission prompt happens here, not on join.
+      // Turn the camera ON – the permission prompt happens here, not on join.
       let track: MediaStreamTrack;
       try {
         const cam = await navigator.mediaDevices.getUserMedia({ video: true });
         track = cam.getVideoTracks()[0];
       } catch {
-        return; // denied / no camera — stay off
+        return; // denied / no camera – stay off
       }
       camTrackRef.current = track;
       for (const peer of peersRef.current.values()) void peer.videoSender?.replaceTrack(track);
       camOnRef.current = true;
       setCamOff(false);
     } else {
-      // Turn the camera OFF — stop the track so the hardware/indicator goes dark.
+      // Turn the camera OFF – stop the track so the hardware/indicator goes dark.
       for (const peer of peersRef.current.values()) void peer.videoSender?.replaceTrack(null);
       camTrackRef.current?.stop();
       camTrackRef.current = null;

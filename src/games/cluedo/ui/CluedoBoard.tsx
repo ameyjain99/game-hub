@@ -16,7 +16,7 @@ function Token({ p, meId, nameFor }: { p: RedactedPlayer; meId: string; nameFor:
     <span
       className={`cl-token${p.id === meId ? ' is-me' : ''}${p.eliminated ? ' is-out' : ''}`}
       style={{ '--tc': SUSPECT_COLOR[p.suspect], color: inkOn(p.suspect) } as CSSProperties}
-      title={`${nameFor(p.id)} — ${p.suspect}`}
+      title={`${nameFor(p.id)} – ${p.suspect}`}
     >
       {suspectInitial(p.suspect)}
     </span>

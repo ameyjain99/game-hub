@@ -68,7 +68,7 @@ describe('bot liquidity', () => {
   });
 });
 
-describe('timeoutAction — what an idle human defaults to', () => {
+describe('timeoutAction – what an idle human defaults to', () => {
   test('rolls, then declines a purchase, then ends the turn', () => {
     const g = mk();
     expect(timeoutAction(g)).toEqual({ type: 'ROLL' });

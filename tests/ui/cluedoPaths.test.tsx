@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { App } from '../../src/app/App';
+
+// Cluedo is switched off on the hub for now; its flow is still tested as if it were live.
+vi.mock('../../src/games/registry', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../src/games/registry')>();
+  return { ...mod, GAMES: mod.GAMES.map((g) => (g.id === 'cluedo' ? { ...g, status: 'live' as const } : g)) };
+});
 
 afterEach(() => {
   cleanup();

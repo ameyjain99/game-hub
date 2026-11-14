@@ -1,23 +1,41 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState, type MouseEvent } from 'react';
 import { CATEGORIES, GAMES, filterGames, gameColor, type CategoryId } from '../games/registry';
 import { Search } from '../shared/icons';
 import { GameHubLogo } from './GameHubLogo';
 import { GameIcon } from './GameIcon';
 import { HubGridBackdrop } from './HubGridBackdrop';
+import { JoinRoomDialog } from './JoinRoomDialog';
 
 interface Props {
   /** Called with the game id when a live game's Play button is pressed. */
   onSelect: (gameId: string) => void;
+  /** Called with a room's game and code once the code is found to be open. */
+  onJoin: (gameId: string, code: string) => void;
 }
 
-const FEATURED = 'ticket-to-ride';
-
 /** The GameHub home page: hero, the game library, how-it-works, and a CTA. */
-export function HubScreen({ onSelect }: Props) {
-  // Library filters: one category at a time (null = all) plus a name search.
+export function HubScreen({ onSelect, onJoin }: Props) {
+  // "Join a room" opens a small dialog; closing it hands focus back to the button.
+  const [joining, setJoining] = useState(false);
+  const joinFrom = useRef<HTMLElement | null>(null);
+  const openJoin = (e: MouseEvent<HTMLElement>) => {
+    joinFrom.current = e.currentTarget;
+    setJoining(true);
+  };
+  const closeJoin = useCallback(() => {
+    setJoining(false);
+    joinFrom.current?.focus();
+  }, []);
+  // Library filters: playable games only unless "Show all" is ticked, one
+  // category at a time (null = all), and a name search.
+  const [showAll, setShowAll] = useState(false);
   const [category, setCategory] = useState<CategoryId | null>(null);
   const [query, setQuery] = useState('');
-  const shown = filterGames(GAMES, category, query);
+  const pool = showAll ? GAMES : GAMES.filter((g) => g.status === 'live');
+  const countIn = (id: CategoryId) => pool.filter((g) => g.category === id).length;
+  // A category with nothing to show drops out of the pills (unless it's the one picked).
+  const pills = CATEGORIES.filter((c) => countIn(c.id) > 0 || c.id === category);
+  const shown = filterGames(pool, category, query);
 
   return (
     <div className="hub">
@@ -29,8 +47,8 @@ export function HubScreen({ onSelect }: Props) {
         <nav className="hub-nav">
           <a href="#library">Games</a>
           <a href="#how">How it works</a>
-          <button type="button" className="hub-pill" onClick={() => onSelect(FEATURED)}>
-            Create a room
+          <button type="button" className="hub-pill" onClick={openJoin}>
+            Join a room
           </button>
         </nav>
       </header>
@@ -44,18 +62,19 @@ export function HubScreen({ onSelect }: Props) {
           one link away.
         </h1>
         <p className="hub-sub">
-          Ticket to Ride, Monopoly, Cluedo and Catan in your browser. Open a room, send the code, and
+          Ticket to Ride, Monopoly, chess, Ludo, Lineup and more in your browser. Open a room, send the code, and
           everyone's at the same table.
         </p>
         <div className="hub-hero-actions">
-          <button type="button" className="hub-btn-primary" onClick={() => onSelect(FEATURED)}>
-            Create a room
-          </button>
-          <a className="hub-btn-ghost" href="#library">
-            Browse games
+          <a className="hub-btn-primary" href="#library">
+            Pick a game
           </a>
+          <button type="button" className="hub-btn-ghost" onClick={openJoin}>
+            Join a room
+          </button>
         </div>
       </section>
+      {joining && <JoinRoomDialog onJoin={onJoin} onClose={closeJoin} />}
 
       <section id="library" className="hub-library">
         <div className="hub-library-head">
@@ -68,7 +87,7 @@ export function HubScreen({ onSelect }: Props) {
             <input
               type="search"
               aria-label="Search games"
-              placeholder={`Search ${GAMES.length} games`}
+              placeholder={`Search ${pool.length} games`}
               autoComplete="off"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -82,9 +101,9 @@ export function HubScreen({ onSelect }: Props) {
             aria-pressed={category === null}
             onClick={() => setCategory(null)}
           >
-            All <span className="hub-filter-count">{GAMES.length}</span>
+            All <span className="hub-filter-count">{pool.length}</span>
           </button>
-          {CATEGORIES.map((c) => (
+          {pills.map((c) => (
             <button
               key={c.id}
               type="button"
@@ -93,9 +112,22 @@ export function HubScreen({ onSelect }: Props) {
               onClick={() => setCategory(c.id)}
             >
               <span className="hub-filter-swatch" style={{ background: c.color }} aria-hidden="true" />
-              {c.label} <span className="hub-filter-count">{GAMES.filter((g) => g.category === c.id).length}</span>
+              {c.label} <span className="hub-filter-count">{countIn(c.id)}</span>
             </button>
           ))}
+          <label className="hub-showall">
+            <input
+              type="checkbox"
+              className="g-check"
+              checked={showAll}
+              onChange={(e) => {
+                setShowAll(e.target.checked);
+                // Hiding upcoming games can empty the picked category: fall back to All.
+                if (!e.target.checked && category && !GAMES.some((g) => g.category === category && g.status === 'live')) setCategory(null);
+              }}
+            />
+            Show all
+          </label>
         </div>
         {shown.length > 0 ? (
           <ul className="hub-games" aria-label="Games">
@@ -106,7 +138,9 @@ export function HubScreen({ onSelect }: Props) {
                 <li key={g.id} className={`game-card${live ? '' : ' is-soon'}`}>
                   <div className="game-card-tile" style={{ background: color }}>
                     <GameIcon gameId={g.id} accent={color} />
-                    <span className="game-card-status">{live ? 'Available now' : 'Coming soon'}</span>
+                    <span className="game-card-tag">
+                      {live ? CATEGORIES.find((c) => c.id === g.category)?.label : 'Coming soon'}
+                    </span>
                   </div>
                   <h3 className="game-card-title">{g.title}</h3>
                   <p className="game-card-tagline">{g.tagline}</p>
@@ -131,7 +165,7 @@ export function HubScreen({ onSelect }: Props) {
           </ul>
         ) : (
           <p className="hub-empty">
-            No games match “{query.trim()}”
+            No games match "{query.trim()}"
             {category ? ` in ${CATEGORIES.find((c) => c.id === category)?.label}` : ''}. Try another name or
             category.
           </p>
@@ -163,11 +197,11 @@ export function HubScreen({ onSelect }: Props) {
       <section className="hub-cta">
         <div>
           <h2>Gather your table.</h2>
-          <p>Start a Ticket to Ride room now. More games are on the way.</p>
+          <p>Pick any game, open a room and send the code. Everyone plays from their own screen.</p>
         </div>
-        <button type="button" className="hub-btn-primary" onClick={() => onSelect(FEATURED)}>
-          Create a room
-        </button>
+        <a className="hub-btn-primary" href="#library">
+          Pick a game
+        </a>
       </section>
 
       <footer className="hub-footer">

@@ -19,7 +19,7 @@ const PATHS: Record<string, IconSpec> = {
   catan: { d: 'M32 7L54 19.5V44.5L32 57L10 44.5V19.5Z' },
   chess: { d: 'M23 17a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M26 33H38L45 56H19Z' },
   checkers: { d: 'M9 22a23 11 0 1 0 46 0a23 11 0 1 0 -46 0M9 22V42a23 11 0 0 0 46 0V22' },
-  sequence: {
+  lineup: {
     d: 'M30.9 52.9L52.9 30.9A14 14 0 0 0 33.1 11.1L11.1 33.1A14 14 0 0 0 30.9 52.9Z',
     dots: [
       [22, 42, 4],
@@ -50,13 +50,15 @@ const PATHS: Record<string, IconSpec> = {
   poker: {
     d: 'M32 11.7C39.2 21.6 50.9 27 50.9 36.9A8.55 8.55 0 0 1 35.6 42.3L39.2 55.8H24.8L28.4 42.3A8.55 8.55 0 0 1 13.1 36.9C13.1 27 24.8 21.6 32 11.7Z',
   },
-  uno: { d: 'M8 17L28 11L37 45L17 51ZM31 14H55V50H31' },
+  'last-card': { d: 'M8 17L28 11L37 45L17 51ZM31 14H55V50H31' },
   solitaire: { d: 'M8 40V6H38M22 20H54V56H22Z' },
   // Words & puzzles
-  scrabble: {
+  wordgrid: {
     d: 'M14 6H50A8 8 0 0 1 58 14V50A8 8 0 0 1 50 58H14A8 8 0 0 1 6 50V14A8 8 0 0 1 14 6ZM20 49L28.5 17H35.5L44 49M24 39H40',
   },
   sudoku: { d: 'M6 6H58V58H6ZM23.3 6V58M40.7 6V58M6 23.3H58M6 40.7H58' },
+  // A swallowtail flag: the move that defines the game.
+  minesweeper: { d: 'M12.5 60V9M12.5 10H45.5L36.5 22L45.5 34H12.5' },
   'tic-tac-toe': { d: 'M7 22L25 40M25 22L7 40M36 31a9.5 9.5 0 1 0 19 0a9.5 9.5 0 1 0 -19 0' },
   // Party & deduction
   cluedo: { d: 'M10 27a17 17 0 1 0 34 0a17 17 0 1 0 -34 0M39 39L57 57' },
@@ -66,7 +68,7 @@ const PATHS: Record<string, IconSpec> = {
   // Skill & arcade
   carrom: { d: 'M8 8H44V44H8ZM35 44a9 9 0 1 0 18 0a9 9 0 1 0 -18 0' },
   'paper-io': { d: 'M8 32H32V56H8ZM20 32V10H50V34', dots: [[50, 42, 6]] },
-  minecraft: { d: 'M32 8L53 20V44L32 56L11 44V20ZM11 20L32 32L53 20M32 32V56' },
+  blockyard: { d: 'M32 8L53 20V44L32 56L11 44V20ZM11 20L32 32L53 20M32 32V56' },
 };
 
 export function GameIcon({ gameId, accent, size = 44 }: { gameId: string; accent: string; size?: number }) {

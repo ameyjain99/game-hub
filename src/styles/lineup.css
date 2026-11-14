@@ -1,0 +1,223 @@
+/* Sequence: a felt board of 100 card spaces, chips in team colours, and your
+   hand fanned in the sidebar. */
+
+.seq-board {
+  --sq: #fffdf6;
+  padding: clamp(6px, 1.4cqmin, 14px);
+  background: linear-gradient(150deg, #1f6a47 0%, #18553a 60%, #11402b 100%);
+  border-radius: clamp(14px, 2.6cqmin, 24px);
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff26, inset 0 0 0 1px #0000004d;
+  container-type: inline-size;
+}
+
+.seq-grid {
+  display: grid;
+  grid-template: repeat(10, 1fr) / repeat(10, 1fr);
+  gap: 0.45cqw;
+  width: 100%;
+  height: 100%;
+}
+
+.seq-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  font: inherit;
+  color: #1c1d22;
+  background: var(--sq);
+  border: 0;
+  border-radius: 0.7cqw;
+  box-shadow: 0 0.2cqw 0 #0000002e;
+  cursor: default;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+.seq-cell.is-red {
+  color: #cf2e35;
+}
+
+.seq-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.seq-face b {
+  font-size: max(9px, 2.2cqw);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.seq-face i {
+  font-size: max(9px, 2.1cqw);
+  font-style: normal;
+}
+
+.seq-cell.is-corner {
+  background: radial-gradient(circle, #ffe9a6, #f2c548);
+}
+
+.seq-free {
+  width: 52%;
+  height: 52%;
+  color: #8a6200;
+}
+
+/* Where the chosen card can go. */
+.seq-cell.is-target {
+  z-index: 1;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--mine) 22%, var(--sq));
+  box-shadow: 0 0 0 0.45cqw var(--mine), 0 0.2cqw 0 #0000002e;
+  animation: seq-target 1.4s ease-in-out infinite;
+}
+
+@keyframes seq-target {
+  50% {
+    box-shadow: 0 0 0 0.45cqw var(--mine), 0 0 1.6cqw var(--mine);
+  }
+}
+
+.seq-cell.is-target:hover {
+  transform: scale(1.06);
+}
+
+.seq-cell.is-victim {
+  z-index: 1;
+  cursor: pointer;
+}
+
+.seq-cell.is-victim .seq-chip {
+  box-shadow: 0 0 0 0.45cqw #fff, 0 0 0 0.85cqw #e2483b;
+  animation: seq-wobble 0.5s ease-in-out infinite;
+}
+
+@keyframes seq-wobble {
+  25% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
+  }
+}
+
+.seq-cell.is-last {
+  box-shadow: 0 0 0 0.35cqw #fff, 0 0.2cqw 0 #0000002e;
+}
+
+.seq-chip {
+  position: absolute;
+  inset: 12%;
+  background:
+    radial-gradient(circle at 36% 30%, #ffffff8c 0 12%, transparent 13%),
+    radial-gradient(circle, var(--tc) 0 46%, color-mix(in srgb, var(--tc) 70%, #000) 47% 54%, var(--tc) 55% 100%);
+  border-radius: 50%;
+  box-shadow: 0 0.35cqw 0.7cqw #0007, inset 0 -0.3cqw 0 #0003;
+  animation: seq-drop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  transition: opacity 0.2s;
+}
+
+@keyframes seq-drop {
+  from {
+    opacity: 0;
+    transform: scale(1.5) translateY(-20%);
+  }
+}
+
+/* A chip in a completed sequence is sealed with a gold ring. */
+.seq-chip.is-locked {
+  box-shadow: 0 0 0 0.35cqw #f2c548, 0 0.35cqw 0.7cqw #0007;
+}
+
+.seq-cell.is-dim .seq-chip {
+  opacity: 0.25;
+}
+
+.seq-chip.is-token,
+.seq-chip.is-badge {
+  position: static;
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: none;
+}
+
+.seq-chip.is-badge {
+  width: 46px;
+  height: 46px;
+}
+
+/* The hand. */
+.seq-hand-panel {
+  border-color: color-mix(in srgb, var(--tc) 40%, transparent);
+}
+
+.seq-hand {
+  display: flex;
+  padding-top: 10px;
+}
+
+/* Cards overlap like a fanned hand; the one under the pointer comes forward. */
+.seq-card + .seq-card {
+  margin-left: -8px;
+}
+
+.seq-card:hover,
+.seq-card:focus-visible,
+.seq-card.is-selected,
+.seq-card.is-fit {
+  z-index: 1;
+}
+
+.seq-card {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  transition: transform 0.15s;
+}
+
+.seq-card .pc {
+  --pc-w: 50px;
+}
+
+.seq-card:not(:disabled) {
+  cursor: pointer;
+}
+
+.seq-card:not(:disabled):hover,
+.seq-card.is-fit {
+  transform: translateY(-5px);
+}
+
+.seq-card.is-selected {
+  transform: translateY(-9px);
+}
+
+.seq-card.is-selected .pc {
+  box-shadow: 0 0 0 3px var(--tc), 0 8px 18px #0008;
+}
+
+.seq-card.is-fit .pc {
+  box-shadow: 0 0 0 2px #fff, 0 6px 14px #0007;
+}
+
+.seq-card.is-dead .pc {
+  filter: grayscale(0.7);
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seq-cell.is-target,
+  .seq-cell.is-victim .seq-chip,
+  .seq-chip {
+    animation: none;
+  }
+}

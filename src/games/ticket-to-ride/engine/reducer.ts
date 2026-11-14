@@ -83,7 +83,7 @@ function finishGame(state: GameState): GameState {
 }
 
 /**
- * End the game if no human players are left to drive it — e.g. every human has
+ * End the game if no human players are left to drive it – e.g. every human has
  * been removed or replaced by a bot. Otherwise an all-bot game (where Normal
  * bots stop claiming near the end) would never reach the end trigger.
  */
@@ -120,7 +120,7 @@ export function removePlayer(state: GameState, seatIndex: number): GameState {
   p.tickets = [];
   p.pendingTickets = [];
 
-  // Free every route they claimed — the segments reopen for the other players.
+  // Free every route they claimed – the segments reopen for the other players.
   for (const routeId of p.claimedRouteIds) delete s.claimedBy[routeId];
   p.claimedRouteIds = [];
   p.stations = [];
@@ -175,7 +175,7 @@ function applyDrawTrain(state: GameState, action: Extract<Action, { type: 'DRAW_
     const s = clone(after);
     s.players[s.current].hand[card]++;
     s.drawnThisTurn++;
-    // Deck draws are secret — never log the card's color.
+    // Deck draws are secret – never log the card's color.
     pushLog(s, `${s.players[s.current].name} drew a card from the deck.`);
     return s.drawnThisTurn >= 2 || !canDrawAgain(s) ? endTurn(s) : s;
   }
@@ -252,7 +252,7 @@ function applyClaimRoute(
     const extra = tunnelExtra(flipped, action.combo);
 
     if (extra === 0) {
-      // Nothing extra owed — complete the claim immediately.
+      // Nothing extra owed – complete the claim immediately.
       const s = clone(cur);
       const p = s.players[s.current];
       removeCards(p.hand, action.combo);
@@ -265,11 +265,11 @@ function applyClaimRoute(
       return endTurn(s);
     }
 
-    // Extra owed — hand the decision to the player.
+    // Extra owed – hand the decision to the player.
     const s = clone(cur);
     s.pendingTunnel = { routeId: route.id, combo: action.combo, flipped, extra };
     s.phase = 'tunnel-decision';
-    pushLog(s, `${s.players[s.current].name} ${toBe(s.players[s.current].name)} going through a tunnel…`);
+    pushLog(s, `${s.players[s.current].name} ${toBe(s.players[s.current].name)} going through a tunnel...`);
     return s;
   }
 
@@ -378,7 +378,7 @@ function applyDrawTickets(state: GameState): GameState {
   const offered = s.ticketPile.splice(0, modeFor(s.mapId, s.modeId).ticketDraw);
   s.players[s.current].pendingTickets = offered;
   s.phase = 'draw-tickets';
-  pushLog(s, `${s.players[s.current].name} ${toBe(s.players[s.current].name)} choosing destination tickets…`);
+  pushLog(s, `${s.players[s.current].name} ${toBe(s.players[s.current].name)} choosing destination tickets...`);
   return s;
 }
 

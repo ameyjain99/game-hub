@@ -6,23 +6,24 @@ interface Props {
   /** e.g. "2–6 players · 60–120 min" */
   meta: string;
   onBack: () => void;
-  onJoin: (code: string) => void;
-  onStart: () => void;
+  /** Online actions (omit both for a one-player game). */
+  onJoin?: (code: string) => void;
+  onStart?: () => void;
   onLocal: () => void;
   /** The local-game options (player count, bot difficulty) as `.g-field`s. */
   localOptions: ReactNode;
   /** Further local options below them (e.g. a collapsed house-rules section). */
   localMore?: ReactNode;
+  /** False for a one-player game: no online panel, and the local panel leads. */
+  online?: boolean;
 }
 
 /**
  * A game's front door, shared by Monopoly and Cluedo: play online (join with a
- * code, or start a room) and play on this device against bots — the same
+ * code, or start a room) and play on this device against bots – the same
  * join-first structure as Ticket to Ride's landing.
  */
-export function GameLanding({ title, meta, onBack, onJoin, onStart, onLocal, localOptions, localMore }: Props) {
-  const [code, setCode] = useState('');
-  const canJoin = code.length === 4;
+export function GameLanding({ title, meta, onBack, onJoin, onStart, onLocal, localOptions, localMore, online = true }: Props) {
   return (
     <div className="setup-screen g-screen">
       <button type="button" className="back-link" onClick={onBack}>
@@ -34,53 +35,68 @@ export function GameLanding({ title, meta, onBack, onJoin, onStart, onLocal, loc
         <p className="tagline">{meta}</p>
       </header>
 
-      <section className="g-panel" aria-labelledby="g-online-title">
-        <h2 className="g-panel-title" id="g-online-title">
-          Play online
-        </h2>
-        <form
-          className="g-join"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (canJoin) onJoin(code);
-          }}
-        >
-          <label className="g-field g-grow">
-            <span className="g-field-label">Room code</span>
-            <input
-              className="g-input g-code-input"
-              aria-label="Room code"
-              placeholder="ABCD"
-              value={code}
-              maxLength={4}
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-            />
-          </label>
-          <button type="submit" className="g-btn g-btn-light" disabled={!canJoin}>
-            Join game
-          </button>
-        </form>
-        <div className="landing-or">
-          <span>or</span>
-        </div>
-        <button type="button" className="primary g-block" onClick={onStart}>
-          Start a game
-        </button>
-        <p className="g-hint">Create a room, then share its code with friends.</p>
-      </section>
+      {online && onJoin && onStart && <OnlinePanel onJoin={onJoin} onStart={onStart} />}
 
       <section className="g-panel" aria-labelledby="g-local-title">
         <h2 className="g-panel-title" id="g-local-title">
-          Play on this device
+          {online ? 'Play on this device' : 'New game'}
         </h2>
         <div className="g-field-row">{localOptions}</div>
         {localMore}
-        <button type="button" className="g-btn g-btn-ghost g-block" onClick={onLocal}>
-          Start local game
-        </button>
+        {online ? (
+          <button type="button" className="g-btn g-btn-ghost g-block" onClick={onLocal}>
+            Start local game
+          </button>
+        ) : (
+          <button type="button" className="primary g-block" onClick={onLocal}>
+            Start game
+          </button>
+        )}
       </section>
     </div>
+  );
+}
+
+/** Join a room by code, or start one. */
+function OnlinePanel({ onJoin, onStart }: { onJoin: (code: string) => void; onStart: () => void }) {
+  const [code, setCode] = useState('');
+  const canJoin = code.length === 4;
+  return (
+    <section className="g-panel" aria-labelledby="g-online-title">
+      <h2 className="g-panel-title" id="g-online-title">
+        Play online
+      </h2>
+      <form
+        className="g-join"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (canJoin) onJoin(code);
+        }}
+      >
+        <label className="g-field g-grow">
+          <span className="g-field-label">Room code</span>
+          <input
+            className="g-input g-code-input"
+            aria-label="Room code"
+            placeholder="ABCD"
+            value={code}
+            maxLength={4}
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+          />
+        </label>
+        <button type="submit" className="g-btn g-btn-light" disabled={!canJoin}>
+          Join game
+        </button>
+      </form>
+      <div className="landing-or">
+        <span>or</span>
+      </div>
+      <button type="button" className="primary g-block" onClick={onStart}>
+        Start a game
+      </button>
+      <p className="g-hint">Create a room, then share its code with friends.</p>
+    </section>
   );
 }

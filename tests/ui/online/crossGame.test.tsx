@@ -32,8 +32,8 @@ test("clearing one game's session leaves another game's session alone", () => {
 
 test('a URL naming a game wins over a stored session from another game', () => {
   monopolySession();
-  window.history.pushState({}, '', '/cluedo');
-  expect(initialRoute()).toEqual({ kind: 'game', gameId: 'cluedo' });
+  window.history.pushState({}, '', '/tic-tac-toe');
+  expect(initialRoute()).toEqual({ kind: 'game', gameId: 'tic-tac-toe' });
 });
 
 test('opening Ticket to Ride while in a Monopoly room shows the TtR landing, not the foreign room', () => {

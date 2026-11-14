@@ -17,8 +17,8 @@ interface Props {
   code: string | null;
   myPlayerId: string | null;
   difficulties: DifficultyOption[];
-  /** Colour for a seat's token (the game's player colours). */
-  colorFor: (index: number) => string;
+  /** Colour for a seat's token (the game's player colours, which may depend on the table size). */
+  colorFor: (index: number, seatCount: number) => string;
   onSetSeatAi: (index: number, isAI: boolean, difficulty?: string) => void;
   onStart: () => void;
   onLeave: () => void;
@@ -44,11 +44,11 @@ export function OnlineLobby({ gameId, title, lobby, code, myPlayerId, difficulti
       <header className="g-head">
         <p className="g-eyebrow">{title}</p>
         <h1>Lobby</h1>
-        <p className="tagline">{lobby ? `${filled} of ${total} seats filled` : 'Connecting to the room…'}</p>
+        <p className="tagline">{lobby ? `${filled} of ${total} seats filled` : 'Connecting to the room...'}</p>
       </header>
 
       {!lobby || !code ? (
-        <Loader label="Connecting…" />
+        <Loader label="Connecting..." />
       ) : (
         <>
           <section className="g-panel g-invite" aria-label="Invite friends">
@@ -72,7 +72,7 @@ export function OnlineLobby({ gameId, title, lobby, code, myPlayerId, difficulti
                 const me = playerIdForSeat(s.index) === myPlayerId;
                 return (
                   <li key={s.index} className={`g-seat${open ? ' is-open' : ''}`}>
-                    <span className="g-seat-token" style={{ background: open ? 'transparent' : colorFor(s.index), borderColor: colorFor(s.index) }} />
+                    <span className="g-seat-token" style={{ background: open ? 'transparent' : colorFor(s.index, lobby.seatCount), borderColor: colorFor(s.index, lobby.seatCount) }} />
                     <span className="g-seat-name">{seatName(lobby, s)}</span>
                     <span className="g-seat-tags">
                       {me && <span className="g-tag">You</span>}
@@ -80,7 +80,7 @@ export function OnlineLobby({ gameId, title, lobby, code, myPlayerId, difficulti
                       {s.isAI && <span className="g-tag g-tag-dim">Bot · {difficulties.find((d) => d.value === s.difficulty)?.label ?? 'Normal'}</span>}
                       {!s.isAI && s.name !== null && !s.connected && <span className="g-tag g-tag-warn">Offline</span>}
                     </span>
-                    {isHost && open && (
+                    {isHost && open && difficulties.length > 0 && (
                       <span className="g-seat-controls">
                         <select
                           aria-label={`Seat ${s.index + 1} bot difficulty`}
@@ -116,10 +116,16 @@ export function OnlineLobby({ gameId, title, lobby, code, myPlayerId, difficulti
                 <button type="button" className="primary g-block" disabled={!ready} onClick={onStart}>
                   Start game
                 </button>
-                {!ready && <p className="g-hint">Waiting for friends — or add bots to the open seats.</p>}
+                {!ready && (
+                  <p className="g-hint">
+                    {difficulties.length > 0
+                      ? 'Waiting for friends – or add bots to the open seats.'
+                      : 'Waiting for your opponent to join.'}
+                  </p>
+                )}
               </>
             ) : (
-              <Loader label="Waiting for the host to start…" />
+              <Loader label="Waiting for the host to start..." />
             )}
           </footer>
         </>

@@ -1,6 +1,7 @@
 {
   "name": "game-hub",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22.12"
@@ -20,11 +21,13 @@
     "bench:ai": "esbuild scripts/ai-bench.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/ai-bench.mjs --log-level=warning && node node_modules/.cache/ai-bench.mjs"
   },
   "dependencies": {
+    "chess.js": "1.4.0",
     "lucide-react": "^1.61.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "socket.io": "^4.8.4",
     "socket.io-client": "^4.8.4",
+    "three": "0.186.1",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
@@ -33,6 +36,7 @@
     "@types/node": "^22.20.5",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "0.186.0",
     "@vitejs/plugin-react": "^5.2.0",
     "concurrently": "^9.2.5",
     "esbuild": "^0.28.2",

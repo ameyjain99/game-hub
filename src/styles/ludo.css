@@ -1,0 +1,178 @@
+/* Ludo: the classic cross board – four coloured yards, a white track with safe
+   stars, coloured home columns and a pinwheel centre – and glossy tokens. */
+
+.ludo-board {
+  padding: clamp(6px, 1.4cqmin, 14px);
+  background: #f4efe2;
+  border-radius: clamp(14px, 2.6cqmin, 24px);
+  box-shadow: 0 30px 80px #000c, inset 0 0 0 1px #0000001a;
+  container-type: inline-size;
+}
+
+.ludo-grid {
+  display: grid;
+  grid-template: repeat(15, 1fr) / repeat(15, 1fr);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #fffdf8;
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px #bdb39d;
+}
+
+.ludo-cell {
+  display: grid;
+  place-items: center;
+  background: #fffdf8;
+  box-shadow: inset 0 0 0 0.5px #c9bfa9;
+}
+
+.ludo-cell.is-tinted {
+  background: var(--lc);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--lc) 70%, #000);
+}
+
+.ludo-star {
+  width: 64%;
+  height: 64%;
+  color: #b3a88f;
+  stroke-width: 2;
+}
+
+.ludo-cell.is-tinted .ludo-star {
+  color: #fff;
+}
+
+.ludo-yard {
+  position: relative;
+  background: var(--lc);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lc) 65%, #000);
+}
+
+.ludo-yard.is-empty {
+  filter: saturate(0.35) brightness(1.05);
+}
+
+.ludo-yard-inner {
+  position: absolute;
+  inset: 12%;
+  background: #fffdf8;
+  border-radius: 14%;
+  box-shadow: inset 0 2px 6px #0002;
+}
+
+/* Spots sit at the same points the yard's tokens are drawn at. */
+.ludo-yard-spot {
+  position: absolute;
+  width: 24%;
+  aspect-ratio: 1;
+  background: color-mix(in srgb, var(--lc) 22%, #fff);
+  border: max(2px, 0.35cqw) solid color-mix(in srgb, var(--lc) 55%, #fff);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.ludo-centre {
+  width: 100%;
+  height: 100%;
+}
+
+.ludo-tokens {
+  position: absolute;
+  inset: clamp(6px, 1.4cqmin, 14px);
+  pointer-events: none;
+}
+
+.ludo-token {
+  position: absolute;
+  width: 4.9%;
+  aspect-ratio: 1;
+  padding: 0;
+  background:
+    radial-gradient(circle at 35% 30%, #ffffffb3 0 14%, transparent 15%),
+    radial-gradient(circle, color-mix(in srgb, var(--lc) 75%, #000) 0 30%, var(--lc) 31% 100%);
+  border: max(2px, 0.32cqw) solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0.35cqw 0 color-mix(in srgb, var(--lc) 50%, #000), 0 0.6cqw 1.2cqw #0007;
+  transform: translate(-50%, -50%);
+  transition:
+    left 0.12s ease-out,
+    top 0.12s ease-out,
+    opacity 0.2s,
+    transform 0.15s;
+}
+
+.ludo-token.is-moving {
+  transform: translate(-50%, -60%) scale(1.22);
+}
+
+/* A captured token flies back to its yard. */
+.ludo-token.is-flying {
+  transition:
+    left 0.6s cubic-bezier(0.45, 0, 0.25, 1),
+    top 0.6s cubic-bezier(0.45, 0, 0.25, 1);
+}
+
+/* Tokens you can move hop, glow and take the pointer. */
+.ludo-token.is-movable {
+  z-index: 6 !important;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: ludo-hop 0.9s ease-in-out infinite;
+}
+
+.ludo-token.is-movable:hover,
+.ludo-token.is-movable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.5cqw #fff, 0 0 0 0.9cqw var(--lc), 0 0.8cqw 1.6cqw #0008;
+  animation-play-state: paused;
+}
+
+@keyframes ludo-hop {
+  50% {
+    transform: translate(-50%, -68%);
+  }
+}
+
+.ludo-token.is-threatened {
+  animation: ludo-shake 0.35s ease-in-out infinite;
+  box-shadow: 0 0 0 0.45cqw #ff3b30, 0 0.6cqw 1.2cqw #0007;
+}
+
+@keyframes ludo-shake {
+  25% {
+    transform: translate(-56%, -50%);
+  }
+  75% {
+    transform: translate(-44%, -50%);
+  }
+}
+
+.ludo-token.is-dim {
+  opacity: 0.3;
+}
+
+/* Where a hovered token would land. */
+.ludo-ghost {
+  position: absolute;
+  z-index: 1;
+  width: 5.6%;
+  aspect-ratio: 1;
+  border: max(2px, 0.4cqw) dashed var(--lc);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: kit-fade 0.15s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ludo-token,
+  .ludo-token.is-flying {
+    transition: none;
+  }
+
+  .ludo-token.is-movable,
+  .ludo-token.is-threatened {
+    animation: none;
+  }
+}

@@ -128,7 +128,7 @@ export interface MonopolyState {
   housesLeft: number;
   hotelsLeft: number;
   freeParkingPot: number;
-  /** Count of individual turns taken — a safety net to end pathological games. */
+  /** Count of individual turns taken – a safety net to end pathological games. */
   turns: number;
   /** Trade offers made this turn (bots propose at most one, so they can't loop). */
   tradesThisTurn: number;

@@ -199,7 +199,7 @@ export function TradeDialog({
             cashLabel="Cash you give"
           />
           <Side
-            title={`You get from ${partner ? nameFor(partner.id) : '…'}`}
+            title={`You get from ${partner ? nameFor(partner.id) : '...'}`}
             view={view}
             ownerId={to}
             cash={getCash}

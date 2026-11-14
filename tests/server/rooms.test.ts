@@ -149,7 +149,7 @@ test('a disconnect on the disconnected players turn leaves the game paused', () 
 
   expect(store.markDisconnected('sock0')).toEqual({ code });
   const after = viewer(code, 'p1')!;
-  expect(after.current).toBe(0); // still p0's turn — paused, no auto-advance
+  expect(after.current).toBe(0); // still p0's turn – paused, no auto-advance
   expect(store.lobbyView(code).seats[0].connected).toBe(false);
 });
 
@@ -214,7 +214,7 @@ test('a turn timeout with no connected human left ends the game on its own', () 
   store.start(code, hostTok);
   finishSetup(code, hostTok, guestTok); // p0's turn, clock armed
 
-  // Both humans drop — nobody is left to drive the game.
+  // Both humans drop – nobody is left to drive the game.
   store.attachSocket(code, 'p0', 'sock0');
   store.attachSocket(code, 'p1', 'sock1');
   store.markDisconnected('sock0');
@@ -238,7 +238,7 @@ test('a turn timeout with a human still connected just skips, not ends', () => {
   store.markDisconnected('sock0');
 
   store.expireTurns(Date.now() + 10 * 60_000);
-  // Still in play — it's just the guest's turn now.
+  // Still in play – it's just the guest's turn now.
   expect(viewer(code, 'p1')!.phase).not.toBe('game-over');
 });
 

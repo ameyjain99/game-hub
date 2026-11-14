@@ -72,7 +72,7 @@ interface Props {
   /** Subtly, persistently mark (endpoints of the player's kept tickets). */
   subtleCityIds?: Set<string>;
   onClaimRoute?: (routeId: string) => void;
-  /** Routes forming the hovered longest-path chain — drawn brighter and larger. */
+  /** Routes forming the hovered longest-path chain – drawn brighter and larger. */
   highlightRouteIds?: Set<string>;
   /** The hovered route the chain anchors on (shows the length tooltip). */
   hoverAnchorId?: string | null;

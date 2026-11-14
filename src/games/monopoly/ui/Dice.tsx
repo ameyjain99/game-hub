@@ -28,7 +28,7 @@ function Die({ value }: { value: number }) {
 
 /**
  * The last roll as two real dice faces (blank before the first roll). A new
- * roll — a change of `rollKey` — tumbles through random faces before settling;
+ * roll – a change of `rollKey` – tumbles through random faces before settling;
  * the accessible label always states the real result.
  */
 export function Dice({ values, rollKey = 0 }: { values: [number, number] | null; rollKey?: number }) {

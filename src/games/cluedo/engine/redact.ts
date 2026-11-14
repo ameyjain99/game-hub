@@ -34,7 +34,7 @@ export interface RedactedCluedoState {
   lastReveal: RedactedReveal | null;
   history: RedactedReveal[];
   winner: string | null;
-  /** The murder envelope — null until the game is over, then shown to everyone. */
+  /** The murder envelope – null until the game is over, then shown to everyone. */
   solution: Triple | null;
 }
 

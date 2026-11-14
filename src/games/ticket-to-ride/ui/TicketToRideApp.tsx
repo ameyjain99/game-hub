@@ -71,7 +71,7 @@ function stepFromUrl(): Step {
     if (session && session.code === sub.toUpperCase()) {
       return { kind: 'online', intent: { kind: 'resume' } };
     }
-    // Not a member — fall back to our own room if we have one, else the landing
+    // Not a member – fall back to our own room if we have one, else the landing
     // (the URL is corrected to the parent path on mount).
     return session ? { kind: 'online', intent: { kind: 'resume' } } : { kind: 'landing' };
   }
