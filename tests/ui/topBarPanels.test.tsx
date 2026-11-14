@@ -32,6 +32,18 @@ test('the tunnel panel states how many extra cards are needed and of what', () =
   expect(text).toContain('green');
 });
 
+test('the tunnel panel names the route being claimed', () => {
+  render(<TunnelDialog pending={pending} canAfford onResolve={vi.fn()} />);
+  expect(screen.getByTestId('tunnel-dialog').textContent).toContain('Paris → Zurich');
+});
+
+test('flipped cards that did not match are dimmed, so the extra cost is explained', () => {
+  const { container } = render(<TunnelDialog pending={pending} canAfford onResolve={vi.fn()} />);
+  const chips = [...container.querySelectorAll('.tunnel-flipped [data-card]')];
+  // Paid in green: the green and the locomotive match, the red does not.
+  expect(chips.map((c) => c.classList.contains('dimmed'))).toEqual([false, true, false]);
+});
+
 test('a long-route ticket card is marked so it reads as distinct', () => {
   const { container } = render(
     <TicketCard ticket={{ id: 'cadiz__stockholm', a: 'cadiz', b: 'stockholm', points: 21, long: true }} />,

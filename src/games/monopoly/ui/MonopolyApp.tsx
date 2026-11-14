@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useGameRoute } from '../../../online/useGameRoute';
 import { JoinGate } from '../../../online/ui/JoinGate';
 import { GameLanding } from '../../../shared/ui/GameLanding';
-import type { MonopolyDifficulty } from '../engine/state';
+import { DEFAULT_SETTINGS, type MonopolyDifficulty, type Settings } from '../engine/state';
 import { MonopolyLocalGame } from './MonopolyLocalGame';
 import { MonopolyOnlineGame } from './MonopolyOnlineGame';
 import { MonopolyProfile } from './MonopolyProfile';
+import { HOUSE_RULES, HouseRuleSwitches, StartingCashField } from './MonopolyRules';
 
 /** The Monopoly experience below the hub. Every step has its own URL
  *  (`/monopoly`, `/create`, `/join?room=`, `/<code>`, `/play`). */
@@ -13,11 +14,13 @@ export function MonopolyApp({ onBackToHub }: { onBackToHub: () => void }) {
   const { step, navigate, syncCode, exit } = useGameRoute('monopoly', onBackToHub);
   const [playerCount, setPlayerCount] = useState(4);
   const [difficulty, setDifficulty] = useState<MonopolyDifficulty>('normal');
+  const [localRules, setLocalRules] = useState<Settings>(DEFAULT_SETTINGS);
   const toLanding = () => navigate({ kind: 'landing' });
+  const rulesOn = HOUSE_RULES.filter((r) => localRules[r.key]).length;
 
   switch (step.kind) {
     case 'local':
-      return <MonopolyLocalGame playerCount={playerCount} difficulty={difficulty} onBackToHub={exit} />;
+      return <MonopolyLocalGame playerCount={playerCount} difficulty={difficulty} settings={localRules} onBackToHub={exit} />;
     case 'online':
       return <MonopolyOnlineGame intent={step.intent} onExit={exit} onCode={syncCode} />;
     case 'create':
@@ -73,6 +76,20 @@ export function MonopolyApp({ onBackToHub }: { onBackToHub: () => void }) {
                 </select>
               </label>
             </>
+          }
+          localMore={
+            <details className="g-disclosure">
+              <summary>
+                House rules
+                <span className="g-disclosure-meta">
+                  ${localRules.startingCash.toLocaleString()} · {rulesOn} on
+                </span>
+              </summary>
+              <div className="g-disclosure-body">
+                <StartingCashField value={localRules.startingCash} onChange={(c) => setLocalRules((r) => ({ ...r, startingCash: c }))} />
+                <HouseRuleSwitches value={localRules} onChange={setLocalRules} />
+              </div>
+            </details>
           }
         />
       );

@@ -513,22 +513,6 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
         {state.players.map((p, i) => {
           if (p.removed) return null; // a removed player is gone from the board
           // Online human seats get a live video frame; AI/local seats don't.
-          let panelMedia;
-          if (media && !p.isAI) {
-            const isMe = p.id === viewerId;
-            const pm = media.peerMedia.get(p.id);
-            const stream = isMe ? media.localStream : media.remoteStreams.get(p.id) ?? null;
-            panelMedia = {
-              isMe,
-              stream,
-              camOn: isMe ? !media.camOff : pm ? pm.camOn : false,
-              micOn: isMe ? !media.micMuted : pm?.micOn ?? true,
-              micMuted: media.micMuted,
-              camOff: media.camOff,
-              onToggleMic: media.toggleMic,
-              onToggleCam: media.toggleCam,
-            };
-          }
           return (
             <PlayerPanel
               key={p.id}
@@ -537,7 +521,8 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
               isCurrent={i === state.current && state.phase !== 'setup-tickets' && !gameOver}
               cardCount={handCount(p.hand)}
               onHover={(h) => setHoverPlayerId(h ? p.id : null)}
-              media={panelMedia}
+              media={media && !p.isAI ? media : undefined}
+              viewerId={viewerId}
             />
           );
         })}

@@ -1,15 +1,17 @@
-import type { ReactNode } from 'react';
-import { BOARD } from '../engine/board';
-import type { MonopolyState } from '../engine/state';
+import { useState, type ReactNode } from 'react';
+import { BOARD, OWNABLE_IDS } from '../engine/board';
+import type { DrawnCard, MonopolyState } from '../engine/state';
 import type { Action } from '../engine/actions';
 import { monopolyActor } from '../engine/bot';
-import { netWorth } from '../engine/selectors';
-import { ArrowLeftRight, CloseIcon, Crown } from '../../../shared/icons';
+import { canProposeTrade, netWorth, rentFor } from '../engine/selectors';
+import { SetMomentNote, type SetMoment } from './SetMoment';
+import { ArrowLeftRight, CircleHelp, CloseIcon, Crown, Gift } from '../../../shared/icons';
 import { Dice } from './Dice';
 import { MonopolyAuction } from './MonopolyAuction';
 import { TitleDeed } from './TitleDeed';
 import { TradeOffer } from './MonopolyTrade';
-import { renderLogLine } from './logText';
+import { LogLine } from './LogLine';
+import { tokenColor } from './board-layout';
 
 interface Props {
   view: MonopolyState;
@@ -21,6 +23,9 @@ interface Props {
   onCloseInspect: () => void;
   onOpenTrade: () => void;
   onExit: () => void;
+  /** Colour sets just completed, announced above everything else. */
+  moments?: SetMoment[];
+  onDismissMoments?: () => void;
   /** Render everything (default), just the dice + status, or just the card + feed. */
   part?: 'all' | 'head' | 'body';
 }
@@ -35,14 +40,71 @@ function Card({ kicker, title, children }: { kicker?: string; title?: string; ch
   );
 }
 
-/** The board's centre: dice, whose move it is, the one decision in front of the
- *  viewer, and the latest events. */
-export function MonopolyCenter({ view, meId, onAction, nameFor, inspected, onCloseInspect, onOpenTrade, onExit, part = 'all' }: Props) {
+/** Under an open deed: who owns the lot, what's built, and the rent it charges
+ *  right now (utilities depend on the roll, so say how). */
+function ownershipLine(view: MonopolyState, id: number, nameFor: (id: string) => string): string {
+  const own = view.ownership[id];
+  if (!own?.owner) return `Unowned · for sale at $${BOARD[id].price}`;
+  const parts = [`Owned by ${nameFor(own.owner)}`];
+  if (own.houses === 5) parts.push('a hotel');
+  else if (own.houses > 0) parts.push(`${own.houses} house${own.houses > 1 ? 's' : ''}`);
+  if (own.mortgaged) parts.push('mortgaged, no rent');
+  else if (BOARD[id].kind === 'utility') {
+    const both = OWNABLE_IDS.filter((x) => BOARD[x].kind === 'utility' && view.ownership[x].owner === own.owner).length > 1;
+    parts.push(`Rent now ${both ? 10 : 4} × dice`);
+  } else parts.push(`Rent now $${rentFor(view, id, 0)}`);
+  return parts.join(' · ');
+}
+
+/** A Chance / Community Chest card as it's drawn: the deck, its text, and who drew
+ *  it. It flips in (keyed per draw) and stays for that roll's turn. */
+function DrawnCardView({ card, by, onClose }: { card: DrawnCard; by: string; onClose: () => void }) {
+  const chance = card.deck === 'chance';
+  const deck = chance ? 'Chance' : 'Community Chest';
+  return (
+    <div className={`mono-drawn is-${card.deck}`} role="note" aria-label={`${deck} card`}>
+      <div className="mono-drawn-head">
+        <span className="mono-drawn-icon">{chance ? <CircleHelp size={16} /> : <Gift size={16} />}</span>
+        <span className="mono-drawn-deck">{deck}</span>
+        <button type="button" className="mono-drawn-close" aria-label="Put the card away" onClick={onClose}>
+          <CloseIcon size={14} />
+        </button>
+      </div>
+      <p className="mono-drawn-text">{card.text}</p>
+      <p className="mono-drawn-by">Drawn by {by}</p>
+    </div>
+  );
+}
+
+/** The board's centre: dice, whose move it is, the card just drawn, the one
+ *  decision in front of the viewer, and the latest events. */
+export function MonopolyCenter({
+  view,
+  meId,
+  onAction,
+  nameFor,
+  inspected,
+  onCloseInspect,
+  onOpenTrade,
+  onExit,
+  moments = [],
+  onDismissMoments = () => {},
+  part = 'all',
+}: Props) {
   const actor = monopolyActor(view);
   const me = view.players.find((p) => p.id === meId);
   const myMove = actor === meId;
   const current = view.players[view.turnOrder[view.current]];
-  const partners = view.players.filter((p) => p.id !== meId && !p.bankrupt);
+  const colorFor = (id: string) => tokenColor(view.players.findIndex((p) => p.id === id));
+
+  // The card drawn on the current roll, until the viewer puts it away.
+  const [putAway, setPutAway] = useState<string | null>(null);
+  const last = view.lastCard;
+  const lastKey = last ? `${last.atRoll}:${last.deck}:${last.text}` : null;
+  const drawn =
+    last && last.atRoll === view.rollSeq && lastKey !== putAway ? (
+      <DrawnCardView key={lastKey} card={last} by={nameFor(last.playerId)} onClose={() => setPutAway(lastKey)} />
+    ) : null;
 
   let status: string;
   if (view.phase === 'over') status = 'Game over';
@@ -58,10 +120,7 @@ export function MonopolyCenter({ view, meId, onAction, nameFor, inspected, onClo
           <CloseIcon size={15} />
         </button>
         <TitleDeed spaceId={inspected} />
-        <p className="mono-muted">
-          {view.ownership[inspected]?.owner ? `Owned by ${nameFor(view.ownership[inspected].owner!)}` : 'Unowned'}
-          {view.ownership[inspected]?.mortgaged ? ' · mortgaged' : ''}
-        </p>
+        <p className="mono-muted">{ownershipLine(view, inspected, nameFor)}</p>
       </div>
     );
   } else if (view.phase === 'over') {
@@ -166,7 +225,7 @@ export function MonopolyCenter({ view, meId, onAction, nameFor, inspected, onClo
           <button type="button" className="primary" onClick={() => onAction({ type: 'END_TURN' })}>
             {view.dice && view.dice[0] === view.dice[1] && view.doubles > 0 && !me.inJail ? 'Roll again' : 'End turn'}
           </button>
-          {partners.length > 0 && (
+          {canProposeTrade(view, meId) && (
             <button type="button" className="g-btn g-btn-ghost" onClick={onOpenTrade}>
               <ArrowLeftRight size={16} />
               Propose a trade
@@ -181,7 +240,7 @@ export function MonopolyCenter({ view, meId, onAction, nameFor, inspected, onClo
   const lines = view.log.slice(-4).reverse();
   const head = (
     <div className="mono-play-head">
-      <Dice values={view.dice} />
+      <Dice values={view.dice} rollKey={view.rollSeq} />
       <p className="mono-status" aria-live="polite">
         {status}
       </p>
@@ -191,17 +250,32 @@ export function MonopolyCenter({ view, meId, onAction, nameFor, inspected, onClo
     lines.length > 0 ? (
       <ol className="mono-feed" aria-label="Recent events">
         {lines.map((line, i) => (
-          <li key={view.log.length - i}>{renderLogLine(line, nameFor)}</li>
+          <li key={view.log.length - i}>
+            <LogLine line={line} nameFor={nameFor} colorFor={colorFor} />
+          </li>
         ))}
       </ol>
     ) : null;
 
+  const notes = moments.map((m) => (
+    <SetMomentNote
+      key={`${m.group}:${m.owner}`}
+      moment={m}
+      view={view}
+      meId={meId}
+      nameFor={nameFor}
+      onClose={onDismissMoments}
+    />
+  ));
+
   // On narrow screens the board centre only fits the dice + status; the
-  // decision card and feed render below the board instead.
+  // notes, decision card and feed render below the board instead.
   if (part === 'head') return <div className="mono-play">{head}</div>;
   if (part === 'body')
     return (
       <div className="mono-play is-panel">
+        {notes}
+        {drawn}
         {card}
         {feed}
       </div>
@@ -209,6 +283,8 @@ export function MonopolyCenter({ view, meId, onAction, nameFor, inspected, onClo
   return (
     <div className="mono-play">
       {head}
+      {notes}
+      {drawn}
       {card}
       {feed}
     </div>

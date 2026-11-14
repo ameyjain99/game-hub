@@ -1,17 +1,7 @@
 import { useState } from 'react';
 import { GameForm } from '../../../shared/ui/GameForm';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/state';
-
-/** House rules, in display order. Defaults follow the official rulebook. */
-const RULES: { key: keyof Settings; label: string; desc: string }[] = [
-  { key: 'auctions', label: 'Auctions', desc: 'A declined property goes to the highest bidder' },
-  { key: 'doubleRentFullSet', label: 'Double rent on a full set', desc: 'Unbuilt lots in a complete colour set' },
-  { key: 'mortgaging', label: 'Mortgaging', desc: 'Raise half a lot’s price from the bank' },
-  { key: 'evenBuild', label: 'Even building', desc: 'Houses go up evenly across a set' },
-  { key: 'freeParkingJackpot', label: 'Free Parking jackpot', desc: 'Taxes collect there for whoever lands' },
-  { key: 'doubleGoSalary', label: 'Double salary on Go', desc: '$400 for landing exactly on Go' },
-  { key: 'noRentInJail', label: 'No rent from jail', desc: 'Jailed owners can’t collect' },
-];
+import { HouseRuleSwitches, StartingCashField } from './MonopolyRules';
 
 interface Props {
   action: 'start' | 'join';
@@ -65,36 +55,10 @@ export function MonopolyProfile({ action, code, onBack, onSubmit }: Props) {
               </select>
             </label>
           </div>
-          <label className="g-field">
-            <span className="g-field-label">Starting cash</span>
-            <select aria-label="Starting cash" value={startingCash} onChange={(e) => setStartingCash(Number(e.target.value))}>
-              {[500, 1000, 1500, 2000, 2500, 3000].map((c) => (
-                <option key={c} value={c}>
-                  ${c.toLocaleString()}
-                  {c === 1500 ? ' (standard)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
+          <StartingCashField value={startingCash} onChange={setStartingCash} />
           <div className="g-field">
             <span className="g-field-label">House rules</span>
-            <div className="g-switches">
-              {RULES.map((r) => (
-                <label key={r.key} className="g-switch-row">
-                  <span className="g-switch-text">
-                    <span>{r.label}</span>
-                    <span className="g-switch-desc">{r.desc}</span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    className="g-switch"
-                    checked={rules[r.key] as boolean}
-                    onChange={() => setRules((s) => ({ ...s, [r.key]: !s[r.key] }))}
-                  />
-                </label>
-              ))}
-            </div>
+            <HouseRuleSwitches value={rules} onChange={setRules} />
           </div>
         </>
       )}

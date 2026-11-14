@@ -1,5 +1,6 @@
-import type { CSSProperties } from 'react';
-import { GAMES } from '../games/registry';
+import { useState } from 'react';
+import { CATEGORIES, GAMES, filterGames, gameColor, type CategoryId } from '../games/registry';
+import { Search } from '../shared/icons';
 import { GameHubLogo } from './GameHubLogo';
 import { GameIcon } from './GameIcon';
 import { HubGridBackdrop } from './HubGridBackdrop';
@@ -13,6 +14,11 @@ const FEATURED = 'ticket-to-ride';
 
 /** The GameHub home page: hero, the game library, how-it-works, and a CTA. */
 export function HubScreen({ onSelect }: Props) {
+  // Library filters: one category at a time (null = all) plus a name search.
+  const [category, setCategory] = useState<CategoryId | null>(null);
+  const [query, setQuery] = useState('');
+  const shown = filterGames(GAMES, category, query);
+
   return (
     <div className="hub">
       <header className="hub-header">
@@ -52,42 +58,84 @@ export function HubScreen({ onSelect }: Props) {
       </section>
 
       <section id="library" className="hub-library">
-        <p className="hub-eyebrow">The library</p>
-        <h2 className="hub-section-title">Pick a game</h2>
-        <div className="hub-games">
-          {GAMES.map((g) => {
-            const live = g.status === 'live';
-            return (
-              <article
-                key={g.id}
-                className={`game-card${live ? '' : ' is-soon'}`}
-                style={{ '--accent': g.accent } as CSSProperties}
-              >
-                <div className="game-card-tile" style={{ background: g.accent }}>
-                  <GameIcon gameId={g.id} accent={g.accent} />
-                  <span className="game-card-status">{live ? 'Available now' : 'Coming soon'}</span>
-                </div>
-                <h3 className="game-card-title">{g.title}</h3>
-                <p className="game-card-tagline">{g.tagline}</p>
-                <p className="game-card-meta">{g.players}</p>
-                {live ? (
-                  <button
-                    type="button"
-                    className="game-card-btn"
-                    aria-label={`Play ${g.title}`}
-                    onClick={() => onSelect(g.id)}
-                  >
-                    Play now
-                  </button>
-                ) : (
-                  <button type="button" className="game-card-btn soon" disabled>
-                    Coming soon
-                  </button>
-                )}
-              </article>
-            );
-          })}
+        <div className="hub-library-head">
+          <div>
+            <p className="hub-eyebrow">The library</p>
+            <h2 className="hub-section-title">Pick a game</h2>
+          </div>
+          <label className="hub-search">
+            <Search size={18} aria-hidden="true" />
+            <input
+              type="search"
+              aria-label="Search games"
+              placeholder={`Search ${GAMES.length} games`}
+              autoComplete="off"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
         </div>
+        <div className="hub-filters" role="group" aria-label="Filter games by category">
+          <button
+            type="button"
+            className="hub-filter"
+            aria-pressed={category === null}
+            onClick={() => setCategory(null)}
+          >
+            All <span className="hub-filter-count">{GAMES.length}</span>
+          </button>
+          {CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className="hub-filter"
+              aria-pressed={category === c.id}
+              onClick={() => setCategory(c.id)}
+            >
+              <span className="hub-filter-swatch" style={{ background: c.color }} aria-hidden="true" />
+              {c.label} <span className="hub-filter-count">{GAMES.filter((g) => g.category === c.id).length}</span>
+            </button>
+          ))}
+        </div>
+        {shown.length > 0 ? (
+          <ul className="hub-games" aria-label="Games">
+            {shown.map((g) => {
+              const live = g.status === 'live';
+              const color = gameColor(g);
+              return (
+                <li key={g.id} className={`game-card${live ? '' : ' is-soon'}`}>
+                  <div className="game-card-tile" style={{ background: color }}>
+                    <GameIcon gameId={g.id} accent={color} />
+                    <span className="game-card-status">{live ? 'Available now' : 'Coming soon'}</span>
+                  </div>
+                  <h3 className="game-card-title">{g.title}</h3>
+                  <p className="game-card-tagline">{g.tagline}</p>
+                  <p className="game-card-meta">{g.players}</p>
+                  {live ? (
+                    <button
+                      type="button"
+                      className="game-card-btn"
+                      aria-label={`Play ${g.title}`}
+                      onClick={() => onSelect(g.id)}
+                    >
+                      Play now
+                    </button>
+                  ) : (
+                    <button type="button" className="game-card-btn soon" disabled>
+                      Coming soon
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="hub-empty">
+            No games match “{query.trim()}”
+            {category ? ` in ${CATEGORIES.find((c) => c.id === category)?.label}` : ''}. Try another name or
+            category.
+          </p>
+        )}
       </section>
 
       <section id="how" className="hub-how">

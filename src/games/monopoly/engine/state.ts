@@ -84,6 +84,14 @@ export interface PendingTrade {
   receive: TradeBundle;
 }
 
+export interface DrawnCard {
+  deck: 'chance' | 'chest';
+  text: string;
+  playerId: string;
+  /** The `rollSeq` of the roll that led to the draw. */
+  atRoll: number;
+}
+
 export interface SeatConfig {
   name?: string;
   avatar: string;
@@ -100,6 +108,12 @@ export interface MonopolyState {
   settings: Settings;
   ownership: Record<number, Ownership>;
   dice: [number, number] | null;
+  /** Counts every roll of the dice, so the UI can tell a new roll from a repeat
+   *  of the same faces. */
+  rollSeq: number;
+  /** The Chance/Community Chest card drawn most recently (public), and the roll
+   *  it came from, so the UI can reveal it during that roll's turn. */
+  lastCard: DrawnCard | null;
   /** Consecutive doubles this turn (3 → jail). */
   doubles: number;
   /** The space the current player just landed on and may buy, or null. */
@@ -175,6 +189,8 @@ export function createMonopolyGame(
     settings: s,
     ownership,
     dice: null,
+    rollSeq: 0,
+    lastCard: null,
     doubles: 0,
     pendingPurchase: null,
     chanceOrder: shuffled(CHANCE.length, rng),

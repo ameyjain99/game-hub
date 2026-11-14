@@ -143,3 +143,34 @@ export function legalBid(
   const p = player(state, ownerId);
   return { min: highBid + 1, max: p?.cash ?? 0 };
 }
+
+/**
+ * Whether `playerId` can open a trade right now: their own turn, after moving,
+ * with nothing else (a purchase, an auction, a trade, a debt) awaiting them, and
+ * someone left to trade with. Mirrors the reducer's PROPOSE_TRADE guard.
+ */
+export function canProposeTrade(state: MonopolyState, playerId: string): boolean {
+  const me = player(state, playerId);
+  const current = state.players[state.turnOrder[state.current]];
+  return (
+    !!me &&
+    !me.bankrupt &&
+    state.phase === 'action' &&
+    current.id === playerId &&
+    state.pendingPurchase === null &&
+    !state.pendingAuction &&
+    !state.pendingTrade &&
+    !(state.pendingDebt && me.cash < 0) &&
+    state.players.some((p) => p.id !== playerId && !p.bankrupt)
+  );
+}
+
+const COLOR_GROUPS: ColorGroup[] = ['brown', 'lightblue', 'pink', 'orange', 'red', 'yellow', 'green', 'darkblue'];
+
+/** Every colour set one player owns outright (a monopoly), with its owner. */
+export function completedSets(state: MonopolyState): { group: ColorGroup; owner: string }[] {
+  return COLOR_GROUPS.flatMap((group) => {
+    const owner = state.ownership[groupIds(group)[0]].owner;
+    return owner && ownsFullSet(state, owner, group) ? [{ group, owner }] : [];
+  });
+}

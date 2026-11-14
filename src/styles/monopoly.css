@@ -8,6 +8,15 @@
 
 /* ---------------- Screen ---------------- */
 .mono-game {
+  /* The board's paper palette. Set on the screen, not the board, because on
+     phones the deed / drawn card render below the board and still need it. */
+  --board-ink: #1f241b;
+  --board-muted: #5e6656;
+  --board-cell: #fbf8ef;
+  --board-corner: #f2eddd;
+  --board-line: #3a4231;
+  --board-centre: #e6ecdc;
+
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   grid-template-rows: auto minmax(0, 1fr);
@@ -73,14 +82,9 @@
 
 /* ---------------- Board ---------------- */
 .mono-board {
-  --board-ink: #1f241b;
-  --board-muted: #5e6656;
-  --board-cell: #fbf8ef;
-  --board-corner: #f2eddd;
-  --board-line: #3a4231;
-  --board-centre: #e6ecdc;
-
+  position: relative; /* the token layer covers it */
   display: grid;
+  /* Kept in step with tokenAnchor() in board-layout.ts. */
   grid-template-columns: 1.55fr repeat(9, 1fr) 1.55fr;
   grid-template-rows: 1.55fr repeat(9, 1fr) 1.55fr;
   gap: 1px;
@@ -112,7 +116,6 @@
 
 button.mono-cell {
   cursor: pointer;
-  transition: background-color 0.12s;
 }
 
 button.mono-cell:hover {
@@ -123,6 +126,58 @@ button.mono-cell:focus-visible {
   z-index: 1;
   outline: 2px solid var(--board-ink);
   outline-offset: -2px;
+}
+
+/* An owned lot reads at a glance: tinted in its owner's colour, with a solid
+   band on the outer edge (see .mono-owner). */
+.mono-cell.is-owned {
+  background: color-mix(in srgb, var(--oc) 17%, var(--board-cell));
+}
+
+button.mono-cell.is-owned:hover {
+  background: color-mix(in srgb, var(--oc) 26%, var(--board-cell));
+}
+
+/* The lot whose deed is open. */
+.mono-cell.is-inspected {
+  z-index: 1;
+  outline: 2px solid var(--board-ink);
+  outline-offset: -2px;
+}
+
+/* Spotlight: one player's holdings light up, ringed in their colour; every
+   other lot steps back. */
+.mono-cell {
+  transition:
+    background-color 0.12s,
+    filter 0.15s;
+}
+
+.mono-board.is-spotlit .mono-cell:not(.is-lit) {
+  filter: saturate(0.3) brightness(0.88);
+}
+
+.mono-board.is-spotlit .mono-cell.is-lit {
+  z-index: 1;
+  background: color-mix(in srgb, var(--oc) 32%, var(--board-cell));
+  box-shadow: inset 0 0 0 max(2px, 0.35cqw) var(--oc);
+}
+
+/* A colour set just completed: its lots pulse in the owner's colour. */
+.mono-cell.is-set-flash {
+  z-index: 1;
+  animation: mono-set-flash 1.1s ease-in-out 3;
+}
+
+@keyframes mono-set-flash {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+  50% {
+    background: color-mix(in srgb, var(--oc) 42%, var(--board-cell));
+    box-shadow: inset 0 0 0 max(3px, 0.5cqw) var(--oc);
+  }
 }
 
 /* Strip on the inner edge: top on the bottom row, bottom on the top row, etc. */
@@ -290,28 +345,28 @@ button.mono-cell:focus-visible {
   right: 0;
   bottom: 0;
   left: 0;
-  height: max(3px, 0.55cqw);
+  height: max(5px, 0.95cqw);
 }
 
 .side-top .mono-owner {
   top: 0;
   right: 0;
   left: 0;
-  height: max(3px, 0.55cqw);
+  height: max(5px, 0.95cqw);
 }
 
 .side-left .mono-owner {
   top: 0;
   bottom: 0;
   left: 0;
-  width: max(3px, 0.55cqw);
+  width: max(5px, 0.95cqw);
 }
 
 .side-right .mono-owner {
   top: 0;
   right: 0;
   bottom: 0;
-  width: max(3px, 0.55cqw);
+  width: max(5px, 0.95cqw);
 }
 
 .mono-cell.is-mortgaged .mono-cell-body,
@@ -378,47 +433,13 @@ button.mono-cell:focus-visible {
   color: #2f7d32;
 }
 
-/* Tokens sit toward the outer edge, away from the colour strip. */
-.mono-tokens {
+/* Tokens travel on their own layer over the board; each stands on its square's
+   outer edge, away from the colour strip (positions come from board-layout.ts). */
+.mono-token-layer {
   position: absolute;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0;
+  inset: 0;
+  z-index: 2;
   pointer-events: none;
-}
-
-.side-bottom .mono-tokens,
-.side-corner .mono-tokens {
-  right: 0;
-  bottom: 0.5cqw;
-  left: 0;
-}
-
-.side-corner .mono-tokens {
-  bottom: 7%;
-}
-
-.side-top .mono-tokens {
-  top: 0.5cqw;
-  right: 0;
-  left: 0;
-}
-
-.side-left .mono-tokens {
-  top: 0;
-  bottom: 0;
-  left: 0.5cqw;
-  flex-direction: column;
-  align-content: center;
-}
-
-.side-right .mono-tokens {
-  top: 0;
-  right: 0.5cqw;
-  bottom: 0;
-  flex-direction: column;
-  align-content: center;
 }
 
 .mono-token {
@@ -435,14 +456,35 @@ button.mono-cell:focus-visible {
   box-shadow: 0 2px 6px #0007;
 }
 
-.mono-tokens .mono-token + .mono-token {
-  margin-left: -0.6cqw;
+/* A token on the board: a walk slides square to square; a direct move (jail, a
+   card jump) glides; while travelling it lifts off the board. */
+.mono-token.is-placed {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  transition:
+    left 0.11s linear,
+    top 0.11s linear,
+    transform 0.16s ease-out,
+    box-shadow 0.16s ease-out;
 }
 
-.side-left .mono-tokens .mono-token + .mono-token,
-.side-right .mono-tokens .mono-token + .mono-token {
-  margin-top: -0.6cqw;
-  margin-left: 0;
+.mono-token.is-placed.is-gliding {
+  transition:
+    left 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.16s ease-out,
+    box-shadow 0.16s ease-out;
+}
+
+.mono-token.is-placed.is-moving {
+  z-index: 2;
+  transform: translate(-50%, -50%) scale(1.25);
+  box-shadow: 0 6px 14px #0008;
+}
+
+/* While a player is spotlit, everyone else's token steps back too. */
+.mono-token.is-dim {
+  opacity: 0.35;
 }
 
 .mono-token.is-active {
@@ -526,6 +568,192 @@ button.mono-cell:focus-visible {
   opacity: 0.5;
 }
 
+/* A roll: the dice hop and turn while their faces flicker, then land. */
+.mono-dice.is-rolling .mono-die {
+  animation: mono-tumble 0.56s ease-out;
+}
+
+.mono-dice.is-rolling .mono-die:last-child {
+  animation-name: mono-tumble-b;
+}
+
+@keyframes mono-tumble {
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  30% {
+    transform: translateY(-40%) rotate(-25deg);
+  }
+  60% {
+    transform: translateY(6%) rotate(12deg);
+  }
+  80% {
+    transform: translateY(-8%) rotate(-4deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+}
+
+@keyframes mono-tumble-b {
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  25% {
+    transform: translateY(-30%) rotate(30deg);
+  }
+  55% {
+    transform: translateY(4%) rotate(-10deg);
+  }
+  80% {
+    transform: translateY(-6%) rotate(5deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+}
+
+/* ---------------- Drawn card (Chance / Community Chest) ---------------- */
+/* A light card, like the deck it came from, set apart from the dark decision
+   cards; it flips in when drawn. The accent matches its square's icon. */
+.mono-drawn {
+  --deck: #c2410c;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  color: var(--board-ink);
+  background: var(--board-cell);
+  border-top: 4px solid var(--deck);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 26px #0002, 0 0 0 1px #0000001a;
+  transform-origin: 50% 0;
+  animation: mono-flip-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mono-drawn.is-chest {
+  --deck: #1d4ed8;
+}
+
+.mono-drawn-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.mono-drawn-icon {
+  display: grid;
+  place-items: center;
+  color: var(--deck);
+}
+
+.mono-drawn-deck {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--deck);
+  text-transform: uppercase;
+}
+
+.mono-drawn-close {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: -4px -6px -4px 0;
+  padding: 0;
+  color: var(--board-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.mono-drawn-close:hover {
+  color: var(--board-ink);
+  background: #0000000d;
+}
+
+.mono-drawn-close:focus-visible {
+  outline: 2px solid var(--board-ink);
+  outline-offset: 1px;
+}
+
+.mono-drawn-text {
+  margin: 0;
+  font-size: clamp(14px, 1.7cqw, 17px);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.mono-drawn-by {
+  margin: 0;
+  font-size: 12px;
+  color: var(--board-muted);
+}
+
+/* ---------------- Set complete ---------------- */
+/* Same light card as a drawn card, accented in the new owner's colour. */
+.mono-moment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  color: var(--board-ink);
+  background: var(--board-cell);
+  border-top: 4px solid var(--oc);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 26px #0002, 0 0 0 1px #0000001a;
+  transform-origin: 50% 0;
+  animation: mono-flip-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mono-moment-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--oc);
+}
+
+.mono-moment-kicker {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mono-moment-title {
+  margin: 0;
+  font-size: clamp(14px, 1.7cqw, 17px);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.mono-moment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--board-muted);
+}
+
+@keyframes mono-flip-in {
+  0% {
+    opacity: 0;
+    transform: perspective(600px) rotateX(-75deg) translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(600px) rotateX(0) translateY(0);
+  }
+}
+
 /* Decision card (dark, like the rest of the app, set on the light centre). */
 .mono-card {
   position: relative;
@@ -537,6 +765,19 @@ button.mono-cell:focus-visible {
   background: var(--panel);
   border-radius: var(--radius-lg);
   box-shadow: 0 12px 32px #0003, 0 0 0 1px #0000001f;
+  animation: mono-card-in 0.2s ease-out;
+}
+
+/* Each new decision (a purchase, an auction, a jail choice) settles into place. */
+@keyframes mono-card-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .mono-card-kicker {
@@ -625,6 +866,22 @@ button.mono-cell:focus-visible {
 
 .mono-feed li:nth-child(n + 3) {
   opacity: 0.7;
+}
+
+/* A player named in the log: a dot in their token colour, then the name. */
+.mono-log-name {
+  white-space: nowrap;
+}
+
+.mono-log-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 4px 1px 0;
+  vertical-align: middle;
+  background: var(--tc);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #0000001f;
 }
 
 .mono-inspect-close {
@@ -966,6 +1223,12 @@ button.mono-cell:focus-visible {
   box-shadow: inset 0 0 0 1px var(--tc);
 }
 
+/* The spotlit player's row (hovered, or the owner of a hovered lot). */
+.mono-player.is-spot {
+  background: color-mix(in srgb, var(--tc) 12%, var(--panel));
+  border-color: color-mix(in srgb, var(--tc) 70%, transparent);
+}
+
 .mono-player.is-out {
   opacity: 0.45;
 }
@@ -993,10 +1256,123 @@ button.mono-cell:focus-visible {
   white-space: nowrap;
 }
 
+/* Cash over net worth, right-aligned; a change in cash floats up from it. */
+.mono-player-money {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
 .mono-player-cash {
+  position: relative;
   font-size: 15px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+}
+
+.mono-player-worth {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Floats in the gap left of the balance, so it stays inside the row. */
+.mono-cash-delta {
+  position: absolute;
+  top: 0;
+  right: calc(100% + var(--space-2));
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: mono-delta 1.6s ease-out forwards;
+}
+
+.mono-cash-delta.is-gain {
+  color: var(--ok);
+}
+
+.mono-cash-delta.is-loss {
+  color: #ff8a80;
+}
+
+@keyframes mono-delta {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* A seat's token, large, standing in for a camera that's off. */
+.mono-token.is-badge {
+  width: 44px;
+  font-size: 18px;
+  border-width: 3px;
+}
+
+/* ---------------- Game log (sidebar) ---------------- */
+/* A section like the others: its title opens the full history, newest first. */
+.mono-side-log {
+  background: none;
+  border: 0;
+}
+
+.mono-side-log > summary {
+  min-height: 0;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.mono-side-log .g-disclosure-meta {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mono-log {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.mono-log li {
+  padding: 5px 0;
+}
+
+.mono-log li + li {
+  border-top: 1px solid var(--line);
+}
+
+.mono-log .mono-log-name {
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .mono-swatches {
@@ -1184,5 +1560,26 @@ button.mono-cell:focus-visible {
   .mono-token.is-active {
     animation: none;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc) 60%, transparent), 0 2px 6px #0007;
+  }
+
+  /* Tokens jump straight to their square (the walk is skipped in code too), and
+     cards, dice and cash changes appear without moving. */
+  .mono-token.is-placed,
+  .mono-token.is-placed.is-gliding {
+    transition: none;
+  }
+
+  .mono-card,
+  .mono-drawn,
+  .mono-moment,
+  .mono-cash-delta,
+  .mono-dice.is-rolling .mono-die {
+    animation: none;
+  }
+
+  /* A completed set holds a steady ring instead of pulsing. */
+  .mono-cell.is-set-flash {
+    animation: none;
+    box-shadow: inset 0 0 0 max(3px, 0.5cqw) var(--oc);
   }
 }

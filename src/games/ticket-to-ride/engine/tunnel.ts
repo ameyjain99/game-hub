@@ -11,12 +11,17 @@ export function spentCards(combo: CardCombo): TrainCard[] {
 }
 
 /**
- * How many of the 3 flipped cards demand an extra matching card: a flipped
- * locomotive always counts; a flipped colored card counts if it matches the
- * color the player paid with.
+ * Whether a flipped card demands an extra card: a locomotive always does; a
+ * coloured card does if it matches the colour the player paid with (an
+ * all-locomotive payment has no colour, so only locomotives match it).
  */
+export function isTunnelMatch(card: TrainCard, combo: CardCombo): boolean {
+  return card === 'locomotive' || (combo.colorCount > 0 && card === combo.color);
+}
+
+/** How many of the (up to 3) flipped cards demand an extra card. */
 export function tunnelExtra(flipped: TrainCard[], combo: CardCombo): number {
-  return flipped.filter((c) => c === 'locomotive' || (combo.colorCount > 0 && c === combo.color)).length;
+  return flipped.filter((c) => isTunnelMatch(c, combo)).length;
 }
 
 /**

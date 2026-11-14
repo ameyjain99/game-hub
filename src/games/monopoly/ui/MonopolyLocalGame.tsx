@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createMonopolyGame, type MonopolyDifficulty, type SeatConfig } from '../engine/state';
+import { createMonopolyGame, type MonopolyDifficulty, type SeatConfig, type Settings } from '../engine/state';
 import { applyAction } from '../engine/reducer';
 import { chooseMonopolyAction, monopolyActor } from '../engine/bot';
 import { redactFor } from '../engine/redact';
@@ -15,11 +15,14 @@ export function MonopolyLocalGame({
   playerCount,
   difficulty,
   seed,
+  settings,
   onBackToHub,
 }: {
   playerCount: number;
   difficulty: MonopolyDifficulty;
   seed?: number;
+  /** Starting cash and house rules chosen on the landing page. */
+  settings?: Partial<Settings>;
   onBackToHub: () => void;
 }) {
   const configs = useMemo<SeatConfig[]>(
@@ -33,7 +36,8 @@ export function MonopolyLocalGame({
     [playerCount, difficulty],
   );
   const [state, setState] = useState(() =>
-    createMonopolyGame(configs, seed ?? Math.floor(Math.random() * 2 ** 31), { randomizeOrder: false }),
+    // You always go first on your own device.
+    createMonopolyGame(configs, seed ?? Math.floor(Math.random() * 2 ** 31), { ...settings, randomizeOrder: false }),
   );
 
   const actor = monopolyActor(state);

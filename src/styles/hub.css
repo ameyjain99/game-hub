@@ -203,10 +203,110 @@
 }
 
 
+/* Title on the left, search on the right; wraps under the title on narrow screens. */
+.hub-library-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 22px;
+}
+.hub-library-head .hub-section-title {
+  margin-bottom: 0;
+}
+
+.hub-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Grows to fill the row once it wraps under the title on phones. */
+  flex: 1 1 280px;
+  max-width: 360px;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid #2a2c31;
+  border-radius: 999px;
+  background: #141419;
+  color: #6e747c;
+  cursor: text;
+}
+.hub-search:focus-within {
+  border-color: #6e747c;
+}
+.hub-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #ececee;
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+.hub-search input::placeholder {
+  color: #6e747c;
+}
+
+/* Category pills: one active at a time. */
+.hub-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+.hub-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 15px;
+  border: 1px solid #2a2c31;
+  border-radius: 999px;
+  background: transparent;
+  color: #c9ccd1;
+  font-size: 14px;
+  font-weight: 600;
+}
+.hub-filter:hover {
+  border-color: #3a3d44;
+  color: #fff;
+}
+.hub-filter[aria-pressed='true'] {
+  background: #ececee;
+  border-color: #ececee;
+  color: #0b0b0f;
+}
+.hub-filter-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.hub-filter-count {
+  color: #6e747c;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.hub-filter[aria-pressed='true'] .hub-filter-count {
+  color: #55585f;
+}
+
+.hub-empty {
+  margin: 0;
+  padding: 44px 24px;
+  border: 1px dashed #2a2c31;
+  border-radius: 16px;
+  text-align: center;
+  color: #9ba0a6;
+}
+
 .hub-games {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 

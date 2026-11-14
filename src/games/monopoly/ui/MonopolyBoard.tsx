@@ -14,7 +14,8 @@ import {
   Siren,
   TrainFront,
 } from '../../../shared/icons';
-import { cellPos, GROUP_COLOR, sideOf, tokenColor, tokenLabel } from './board-layout';
+import { cellPos, GROUP_COLOR, sideOf, tokenColor } from './board-layout';
+import { MonopolyTokens } from './MonopolyTokens';
 
 const seatOfId = (state: MonopolyState, id: string) => state.players.findIndex((p) => p.id === id);
 
@@ -77,23 +78,42 @@ interface Props {
   nameFor: (id: string) => string;
   /** The player whose move the game is waiting on (their token pulses). */
   actorId: string | undefined;
-  /** Open a lot's title deed. */
+  /** Open (or, if it's already open, close) a lot's title deed. */
   onInspect: (spaceId: number) => void;
+  /** The lot whose deed is open, marked on the board. */
+  inspected?: number | null;
+  /** A player whose holdings are lit up (the rest of the board dims). */
+  spotlight?: string | null;
+  /** Hovering an owned lot spotlights its owner; leaving clears it. */
+  onSpotlight?: (playerId: string | null) => void;
+  /** Lots of a just-completed colour set, flashing in their owner's colour. */
+  flashIds?: ReadonlySet<number>;
   /** The board's centre: the play area. */
   children: ReactNode;
 }
 
-/** The 40-space ring: colour strips on the inner edge, owner bands on the outer
- *  edge, buildings on the strip, tokens on their squares. */
-export function MonopolyBoard({ view, nameFor, actorId, onInspect, children }: Props) {
+/** The 40-space ring: colour strips on the inner edge, owned lots tinted with
+ *  a band in the owner's colour on the outer edge, buildings on the strip, and
+ *  the tokens on a layer above (they travel). */
+export function MonopolyBoard({
+  view,
+  nameFor,
+  actorId,
+  onInspect,
+  inspected = null,
+  spotlight = null,
+  onSpotlight,
+  flashIds,
+  children,
+}: Props) {
   return (
-    <div className="mono-board" role="group" aria-label="Monopoly board">
+    <div className={`mono-board${spotlight ? ' is-spotlit' : ''}`} role="group" aria-label="Monopoly board">
       {BOARD.map((sp) => {
         const { row, col } = cellPos(sp.id);
         const side = sideOf(sp.id);
         const own = view.ownership[sp.id];
         const ownerSeat = own?.owner ? seatOfId(view, own.owner) : -1;
-        const here = view.players.filter((p) => p.position === sp.id && !p.bankrupt);
+        const owner = own?.owner ?? null;
         const ownable = !!own;
         const label = [
           sp.name,
@@ -104,24 +124,31 @@ export function MonopolyBoard({ view, nameFor, actorId, onInspect, children }: P
           .filter(Boolean)
           .join(', ');
 
-        const tokens =
-          here.length > 0 ? (
-            <span className="mono-tokens">
-              {here.map((p) => (
-                <span
-                  key={p.id}
-                  className={`mono-token${p.id === actorId ? ' is-active' : ''}${p.inJail ? ' is-jailed' : ''}`}
-                  title={`${nameFor(p.id)}${p.inJail ? ' (in jail)' : ''}`}
-                  style={{ '--tc': tokenColor(seatOfId(view, p.id)) } as CSSProperties}
-                >
-                  {tokenLabel(nameFor(p.id))}
-                </span>
-              ))}
-            </span>
-          ) : null;
-
-        const style = { gridRow: row, gridColumn: col } as CSSProperties;
-        const className = `mono-cell side-${side} kind-${sp.kind}${own?.mortgaged ? ' is-mortgaged' : ''}`;
+        const style = {
+          gridRow: row,
+          gridColumn: col,
+          ...(owner ? { '--oc': tokenColor(ownerSeat) } : {}),
+        } as CSSProperties;
+        const className = [
+          `mono-cell side-${side} kind-${sp.kind}`,
+          owner ? 'is-owned' : '',
+          own?.mortgaged ? 'is-mortgaged' : '',
+          spotlight && owner === spotlight ? 'is-lit' : '',
+          inspected === sp.id ? 'is-inspected' : '',
+          flashIds?.has(sp.id) ? 'is-set-flash' : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
+        // Hovering (or focusing) an owned lot spotlights everything its owner holds.
+        const spot =
+          owner && onSpotlight
+            ? {
+                onMouseEnter: () => onSpotlight(owner),
+                onMouseLeave: () => onSpotlight(null),
+                onFocus: () => onSpotlight(owner),
+                onBlur: () => onSpotlight(null),
+              }
+            : {};
 
         if (side === 'corner') {
           return (
@@ -129,7 +156,6 @@ export function MonopolyBoard({ view, nameFor, actorId, onInspect, children }: P
               <span className="mono-corner">
                 <Corner sp={sp} pot={view.settings.freeParkingJackpot ? view.freeParkingPot : 0} />
               </span>
-              {tokens}
             </div>
           );
         }
@@ -155,12 +181,20 @@ export function MonopolyBoard({ view, nameFor, actorId, onInspect, children }: P
               {sp.kind === 'tax' && <span className="mono-cell-price">Pay ${sp.taxAmount}</span>}
             </span>
             {ownerSeat >= 0 && <span className="mono-owner" style={{ background: tokenColor(ownerSeat) }} />}
-            {tokens}
           </>
         );
 
         return ownable ? (
-          <button key={sp.id} type="button" className={className} style={style} aria-label={label} onClick={() => onInspect(sp.id)}>
+          <button
+            key={sp.id}
+            type="button"
+            className={className}
+            style={style}
+            aria-label={label}
+            aria-pressed={inspected === sp.id}
+            onClick={() => onInspect(sp.id)}
+            {...spot}
+          >
             {body}
           </button>
         ) : (
@@ -170,6 +204,7 @@ export function MonopolyBoard({ view, nameFor, actorId, onInspect, children }: P
         );
       })}
       <div className="mono-center">{children}</div>
+      <MonopolyTokens view={view} nameFor={nameFor} actorId={actorId} spotlight={spotlight} />
     </div>
   );
 }
