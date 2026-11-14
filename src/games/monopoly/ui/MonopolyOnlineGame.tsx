@@ -1,15 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { BackIcon } from '../../../shared/icons';
 import { useOnlineSession, type OnlineIntent } from '../../../online/useOnlineSession';
+import { useMediaChat } from '../../../online/useMediaChat';
 import { nameForPlayer } from '../../../online/seatNames';
 import { OnlineLobby } from '../../../online/ui/OnlineLobby';
 import { DisconnectBanner } from '../../../online/ui/DisconnectBanner';
 import { TurnClock } from '../../../online/ui/TurnClock';
+import { VideoTiles } from '../../../online/ui/VideoTiles';
 import type { MonopolyState } from '../engine/state';
 import type { Action } from '../engine/actions';
 import { monopolyActor } from '../engine/bot';
 import { MonopolyGame } from './MonopolyGame';
-import { tokenColor } from './board-layout';
+import { tokenColor, tokenLabel } from './board-layout';
+import { playTimeWarning } from './sound';
 
 const DIFFICULTIES = [
   { value: 'easy', label: 'Easy' },
@@ -35,6 +38,15 @@ export function MonopolyOnlineGame({
     onCode?.(code);
   }, [code, onCode]);
 
+  // Voice + video among the human players: the table talk (bots have no tile).
+  const media = useMediaChat({
+    socket: session.socket,
+    code: session.code,
+    myId: session.myPlayerId,
+    enabled: !!session.socket && !!session.code && !!session.myPlayerId,
+    video: true,
+  });
+
   const nameFor = (id: string) => nameForPlayer(lobby, id);
   const leave = () => {
     session.leave();
@@ -59,6 +71,9 @@ export function MonopolyOnlineGame({
 
   if (state && myPlayerId) {
     const actor = monopolyActor(state);
+    const actorIsHuman = state.players.some((p) => p.id === actor && !p.isAI);
+    const humans = state.players.filter((p) => !p.isAI);
+    const seatColor = (id: string) => tokenColor(state.players.findIndex((p) => p.id === id));
     return (
       <MonopolyGame
         view={state}
@@ -69,7 +84,36 @@ export function MonopolyOnlineGame({
         exitLabel="Leave game"
         headerExtra={
           state.phase !== 'over' && actor ? (
-            <TurnClock deadline={lobby?.turnDeadline} label={actor === myPlayerId ? 'Your turn' : nameFor(actor)} />
+            <TurnClock
+              deadline={lobby?.turnDeadline}
+              label={actor === myPlayerId ? 'Your turn' : nameFor(actor)}
+              onGift={actor !== myPlayerId && actorIsHuman ? session.extendTime : undefined}
+              onUrgent={actor === myPlayerId ? playTimeWarning : undefined}
+            />
+          ) : null
+        }
+        sideTop={(onSpotlight) =>
+          humans.length > 1 ? (
+            <section className="mono-side-section">
+              <h2 className="mono-side-title">At the table</h2>
+              <VideoTiles
+                seats={humans.map((p) => ({
+                  id: p.id,
+                  out: p.bankrupt,
+                  accent: seatColor(p.id),
+                  active: p.id === actor,
+                  badge: (
+                    <span className="mono-token is-badge" style={{ '--tc': seatColor(p.id) } as CSSProperties}>
+                      {tokenLabel(nameFor(p.id))}
+                    </span>
+                  ),
+                }))}
+                meId={myPlayerId}
+                nameFor={nameFor}
+                media={media}
+                onSeatHover={onSpotlight}
+              />
+            </section>
           ) : null
         }
         banner={

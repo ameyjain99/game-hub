@@ -1,4 +1,7 @@
 import type { PendingTunnel } from '../../engine/types';
+import { getRoute } from '../../engine/selectors';
+import { cityById } from '../../engine/maps';
+import { isTunnelMatch } from '../../engine/tunnel';
 import { CardChip } from './CardChip';
 
 interface Props {
@@ -11,6 +14,8 @@ interface Props {
 export function TunnelDialog({ pending, canAfford, onResolve }: Props) {
   const { flipped, extra, combo } = pending;
   const unit = combo.colorCount > 0 && combo.color ? combo.color : 'locomotive';
+  const route = getRoute(pending.routeId);
+  const cityName = (id: string) => cityById.get(id)?.name ?? id;
 
   // Same shape as the claim and ticket panels: a fixed head on the left, the
   // flipped cards in a horizontal strip, and the actions pinned to the right —
@@ -18,7 +23,7 @@ export function TunnelDialog({ pending, canAfford, onResolve }: Props) {
   return (
     <div className="popover tunnel-dialog" data-testid="tunnel-dialog">
       <div className="popover-head">
-        <h3>Tunnel!</h3>
+        <h3>{route ? `Tunnel · ${cityName(route.a)} → ${cityName(route.b)}` : 'Tunnel!'}</h3>
         <span className="dialog-sub">
           {canAfford ? (
             <>
@@ -32,9 +37,11 @@ export function TunnelDialog({ pending, canAfford, onResolve }: Props) {
         </span>
       </div>
       <div className="tunnel-flipped" aria-label="Cards flipped from the deck">
-        {flipped.map((c, i) => (
-          <CardChip key={i} card={c} />
-        ))}
+        {/* Cards that don't match are dimmed, so the extra cost explains itself. */}
+        {flipped.map((c, i) => {
+          const match = isTunnelMatch(c, combo);
+          return <CardChip key={i} card={c} dimmed={!match} title={`${c}: ${match ? 'matches' : 'no match'}`} />;
+        })}
       </div>
       <div className="tunnel-actions">
         <button type="button" className="primary" disabled={!canAfford} onClick={() => onResolve(true)}>

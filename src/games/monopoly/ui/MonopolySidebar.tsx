@@ -1,11 +1,21 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { BOARD, OWNABLE_IDS } from '../engine/board';
-import type { MonopolyState } from '../engine/state';
+import type { MonopolyPlayer, MonopolyState } from '../engine/state';
 import type { Action } from '../engine/actions';
 import { monopolyActor } from '../engine/bot';
-import { canBuild, canMortgage, canSellHouse, canUnmortgage, mortgageValue, unmortgageCost } from '../engine/selectors';
-import { House, Hotel, Landmark, Minus, AddIcon } from '../../../shared/icons';
+import {
+  canBuild,
+  canMortgage,
+  canProposeTrade,
+  canSellHouse,
+  canUnmortgage,
+  mortgageValue,
+  netWorth,
+  unmortgageCost,
+} from '../engine/selectors';
+import { ArrowLeftRight, House, Hotel, Landmark, Minus, AddIcon } from '../../../shared/icons';
 import { GROUP_COLOR, tokenColor, tokenLabel } from './board-layout';
+import { LogLine } from './LogLine';
 
 const swatch = (id: number) => (BOARD[id].group ? GROUP_COLOR[BOARD[id].group!] : '#8a8f98');
 
@@ -15,11 +25,81 @@ interface Props {
   nameFor: (id: string) => string;
   onAction: (a: Action) => void;
   onInspect: (spaceId: number) => void;
+  /** Open the trade dialog with this player preselected. */
+  onTradeWith: (playerId: string) => void;
+  /** The player whose holdings are lit on the board (their row lights too). */
+  spotlight?: string | null;
+  /** Hovering a player's row spotlights their holdings; leaving clears it. */
+  onSpotlight?: (playerId: string | null) => void;
+  /** Shown first (the online video table). */
+  top?: ReactNode;
 }
 
-/** The right column: every player's cash and holdings, then the viewer's own
- *  properties with build / sell / mortgage controls. */
-export function MonopolySidebar({ view, meId, nameFor, onAction, onInspect }: Props) {
+/** How long a change in someone's cash floats beside their balance. */
+const DELTA_MS = 1600;
+
+interface CashDelta {
+  key: number;
+  amount: number;
+}
+
+/** Each player's recent cash changes, each kept for DELTA_MS, so a payment shows
+ *  as money leaving one balance and arriving at another. */
+function useCashDeltas(players: MonopolyPlayer[]): Record<string, CashDelta[]> {
+  const before = useRef<Record<string, number>>(Object.fromEntries(players.map((p) => [p.id, p.cash])));
+  const seq = useRef(0);
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const [deltas, setDeltas] = useState<Record<string, CashDelta[]>>({});
+  const signature = players.map((p) => `${p.id}:${p.cash}`).join('|');
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => pending.forEach(clearTimeout);
+  }, []);
+
+  useEffect(() => {
+    const added: (CashDelta & { id: string })[] = [];
+    for (const p of players) {
+      const was = before.current[p.id];
+      if (was !== undefined && was !== p.cash) added.push({ id: p.id, key: ++seq.current, amount: p.cash - was });
+      before.current[p.id] = p.cash;
+    }
+    if (added.length === 0) return;
+    setDeltas((d) => {
+      const next = { ...d };
+      for (const a of added) next[a.id] = [...(next[a.id] ?? []), { key: a.key, amount: a.amount }];
+      return next;
+    });
+    // Each batch removes itself; a later change never cancels an earlier removal.
+    const keys = new Set(added.map((a) => a.key));
+    const t = setTimeout(() => {
+      timers.current.delete(t);
+      setDeltas((d) =>
+        Object.fromEntries(Object.entries(d).map(([id, list]) => [id, list.filter((x) => !keys.has(x.key))])),
+      );
+    }, DELTA_MS);
+    timers.current.add(t);
+  }, [signature]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return deltas;
+}
+
+const money = (n: number) => `$${n.toLocaleString()}`;
+
+/** The right column: the video table (online), every player's cash, worth and
+ *  holdings, the viewer's own properties with build / sell / mortgage controls,
+ *  and the full game log. */
+export function MonopolySidebar({
+  view,
+  meId,
+  nameFor,
+  onAction,
+  onInspect,
+  onTradeWith,
+  spotlight = null,
+  onSpotlight,
+  top,
+}: Props) {
   const actor = monopolyActor(view);
   const me = view.players.find((p) => p.id === meId);
   const current = view.players[view.turnOrder[view.current]];
@@ -33,9 +113,13 @@ export function MonopolySidebar({ view, meId, nameFor, onAction, onInspect }: Pr
     !view.pendingTrade;
   const mine = me ? OWNABLE_IDS.filter((id) => view.ownership[id].owner === meId) : [];
   const order = view.turnOrder.map((seat) => view.players[seat]);
+  const deltas = useCashDeltas(view.players);
+  const canTrade = canProposeTrade(view, meId);
+  const colorFor = (id: string) => tokenColor(view.players.findIndex((p) => p.id === id));
 
   return (
     <aside className="mono-side" aria-label="Players and properties">
+      {top}
       <section className="mono-side-section">
         <h2 className="mono-side-title">Players</h2>
         <ul className="mono-players">
@@ -45,15 +129,45 @@ export function MonopolySidebar({ view, meId, nameFor, onAction, onInspect }: Pr
             return (
               <li
                 key={p.id}
-                className={`mono-player${p.id === actor ? ' is-turn' : ''}${p.bankrupt ? ' is-out' : ''}`}
+                className={`mono-player${p.id === actor ? ' is-turn' : ''}${p.bankrupt ? ' is-out' : ''}${
+                  spotlight === p.id ? ' is-spot' : ''
+                }`}
                 style={{ '--tc': tokenColor(seat) } as CSSProperties}
+                onMouseEnter={onSpotlight ? () => onSpotlight(p.id) : undefined}
+                onMouseLeave={onSpotlight ? () => onSpotlight(null) : undefined}
               >
                 <div className="mono-player-row">
                   <span className="mono-token is-static">{tokenLabel(nameFor(p.id))}</span>
                   <span className="mono-player-name">{nameFor(p.id)}</span>
                   {p.id === meId && nameFor(p.id) !== 'You' && <span className="g-tag">You</span>}
                   {p.inJail && !p.bankrupt && <span className="g-tag g-tag-warn">In jail</span>}
-                  <span className="mono-player-cash">{p.bankrupt ? 'Bankrupt' : `$${p.cash.toLocaleString()}`}</span>
+                  {p.getOutCards > 0 && !p.bankrupt && (
+                    <span className="g-tag" title="Get Out of Jail Free">
+                      Jail-free{p.getOutCards > 1 ? ` ×${p.getOutCards}` : ''}
+                    </span>
+                  )}
+                  <span className="mono-player-money">
+                    <span className="mono-player-cash">
+                      {p.bankrupt ? 'Bankrupt' : money(p.cash)}
+                      {(deltas[p.id] ?? []).map((d) => (
+                        <span key={d.key} className={`mono-cash-delta ${d.amount > 0 ? 'is-gain' : 'is-loss'}`} aria-hidden>
+                          {`${d.amount > 0 ? '+' : '−'}${money(Math.abs(d.amount))}`}
+                        </span>
+                      ))}
+                    </span>
+                    {!p.bankrupt && <span className="mono-player-worth">{`Net ${money(netWorth(view, p.id))}`}</span>}
+                  </span>
+                  {canTrade && p.id !== meId && !p.bankrupt && (
+                    <button
+                      type="button"
+                      className="mono-tool"
+                      aria-label={`Trade with ${nameFor(p.id)}`}
+                      title={`Trade with ${nameFor(p.id)}`}
+                      onClick={() => onTradeWith(p.id)}
+                    >
+                      <ArrowLeftRight size={14} />
+                    </button>
+                  )}
                 </div>
                 {lots.length > 0 && (
                   <div className="mono-swatches">
@@ -175,6 +289,24 @@ export function MonopolySidebar({ view, meId, nameFor, onAction, onInspect }: Pr
             </ul>
           )}
         </section>
+      )}
+
+      {view.log.length > 0 && (
+        <details className="g-disclosure mono-side-log" aria-label="Game log">
+          <summary>
+            Game log
+            <span className="g-disclosure-meta">
+              {view.log.length} {view.log.length === 1 ? 'event' : 'events'}
+            </span>
+          </summary>
+          <ol className="mono-log">
+            {[...view.log].reverse().map((line, i) => (
+              <li key={view.log.length - i}>
+                <LogLine line={line} nameFor={nameFor} colorFor={colorFor} />
+              </li>
+            ))}
+          </ol>
+        </details>
       )}
     </aside>
   );

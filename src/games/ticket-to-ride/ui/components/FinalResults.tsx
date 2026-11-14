@@ -3,6 +3,7 @@ import type { GameState, PlayerState, Ticket } from '../../engine/types';
 import { finalScores, type ScoreBreakdown } from '../../engine/scoring';
 import { bonusesFor } from '../../engine/bonuses';
 import { areConnected, longestPath } from '../../engine/graph';
+import { cityById, routeById } from '../../engine/maps';
 import { playerColor } from '../colors';
 import { cleanName } from '../displayName';
 import { TicketCard } from './TicketCard';
@@ -110,6 +111,14 @@ export function ResultDetail({
       .map((b) => [b.id, b.points]),
   );
   const done = score.ticketsCompleted;
+  // Routes borrowed through stations count toward this player's tickets.
+  const borrowed = score.stationRoutes.flatMap((s) => (s.routeId ? [s.routeId] : []));
+  const network = [...player.claimedRouteIds, ...borrowed];
+  const cityName = (id: string) => cityById.get(id)?.name ?? id;
+  const ownerName = (routeId: string) => {
+    const owner = state.players.find((p) => p.id === state.claimedBy[routeId]);
+    return owner ? cleanName(owner.name) : 'another player';
+  };
 
   return (
     <div className="final-detail" data-testid="final-detail">
@@ -137,13 +146,38 @@ export function ResultDetail({
             <span className="detail-v">{score.stations}</span>
           </div>
         )}
+        {score.stationRoutes.length > 0 && (
+          // Which opponent route each station was counted as using (chosen for
+          // the best ticket score), one short line per station.
+          <div className="detail-stat detail-stations">
+            <span className="detail-k">Station use</span>
+            <ul aria-label="Stations">
+              {score.stationRoutes.map(({ city, routeId }) => {
+                const r = routeId ? routeById.get(routeId) : undefined;
+                return (
+                  <li key={city}>
+                    <b>{cityName(city)}</b>{' '}
+                    {r ? (
+                      <>
+                        borrowed {cityName(r.a)} → {cityName(r.b)}
+                        <span className="detail-sub"> · {ownerName(r.id)}</span>
+                      </>
+                    ) : (
+                      <span className="detail-sub">not needed</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </div>
       <div className="detail-tickets">
         {player.tickets.map((t) => (
           <TicketCard
             key={t.id}
             ticket={t}
-            completed={areConnected(player.claimedRouteIds, t.a, t.b)}
+            completed={areConnected(network, t.a, t.b)}
             onHover={(h) => onHoverTicket(h ? t : null)}
           />
         ))}

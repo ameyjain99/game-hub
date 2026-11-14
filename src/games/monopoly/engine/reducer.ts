@@ -332,6 +332,7 @@ function drawCard(draft: MonopolyState, seat: number, deck: 'chance' | 'chest'):
   else draft.chestPtr = nextPtr;
 
   note(draft, `${tag(draft, seat)} drew ${deck === 'chance' ? 'Chance' : 'Community Chest'}: ${card.text}`);
+  draft.lastCard = { deck, text: card.text, playerId: draft.players[seat].id, atRoll: draft.rollSeq };
   applyCardEffect(draft, seat, deck, card.effect);
 }
 
@@ -532,6 +533,7 @@ function rollJail(draft: MonopolyState): void {
   if (draft.phase !== 'jail' || !me.inJail) illegal('not in jail');
   const [d1, d2] = drawDice(draft);
   draft.dice = [d1, d2];
+  draft.rollSeq += 1;
   if (d1 === d2) {
     note(draft, `${tag(draft, seat)} rolled double ${d1}s and left jail`);
     me.inJail = false;
@@ -572,6 +574,7 @@ function roll(draft: MonopolyState): void {
   const p: MonopolyPlayer = draft.players[seat];
   const [d1, d2] = drawDice(draft);
   draft.dice = [d1, d2];
+  draft.rollSeq += 1;
   note(draft, `${tag(draft, seat)} rolled ${d1} + ${d2}${d1 === d2 ? ', doubles' : ''}`);
 
   if (d1 === d2) {

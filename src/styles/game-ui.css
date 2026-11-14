@@ -547,6 +547,204 @@
   color: inherit;
 }
 
+.g-clock-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Offered to the rest of the table when someone's clock runs low. */
+.g-clock-gift {
+  height: 28px;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--ink);
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.g-clock-gift:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ---------------- Disclosure (collapsed extras) ---------------- */
+.g-disclosure {
+  background: var(--field);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+}
+
+.g-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  padding: 0 var(--space-4);
+  font-size: 14px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.g-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A chevron that turns when open. */
+.g-disclosure > summary::after {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-left: var(--space-1);
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.15s;
+}
+
+.g-disclosure[open] > summary::after {
+  transform: rotate(225deg) translateY(-2px);
+}
+
+.g-disclosure > summary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+.g-disclosure-meta {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.g-disclosure-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+/* A switch list inside a disclosure drops its own box. */
+.g-disclosure-body .g-switches {
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+/* ---------------- Video table (online) ---------------- */
+.g-videos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.g-vtile {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.g-vtile.is-me {
+  border-color: #ffffff59;
+}
+
+/* A seat colour (e.g. a Monopoly token) rings the tile, and lights it on its turn. */
+.g-vtile.has-accent {
+  border-color: color-mix(in srgb, var(--vt) 55%, transparent);
+}
+
+.g-vtile.is-turn {
+  border-color: var(--vt, #fff);
+  box-shadow: 0 0 0 1px var(--vt, #fff), 0 0 18px color-mix(in srgb, var(--vt, #fff) 30%, transparent);
+}
+
+.g-vtile.is-out {
+  opacity: 0.5;
+}
+
+/* Shared by every game's video frame (SeatMedia). */
+.g-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.g-video.is-self {
+  transform: scaleX(-1); /* your own camera, mirrored like a selfie view */
+}
+
+.g-silhouette {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--muted);
+  background: var(--panel);
+}
+
+.g-vlabel {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  background: linear-gradient(transparent, #000b);
+}
+
+.g-vcontrols {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.g-vtile.is-me:hover .g-vcontrols,
+.g-vtile.is-me:focus-within .g-vcontrols {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .g-vcontrols {
+    opacity: 1;
+  }
+}
+
+.g-vcontrols button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #fff;
+  background: #000b;
+  border: 0;
+  border-radius: 7px;
+}
+
 /* ---------------- Small screens ---------------- */
 @media (max-width: 560px) {
   .g-screen {

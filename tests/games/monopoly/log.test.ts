@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { createMonopolyGame, currentSeat, type MonopolyState } from '../../../src/games/monopoly/engine/state';
 import { applyAction, advanceToSpace } from '../../../src/games/monopoly/engine/reducer';
 import { CHANCE } from '../../../src/games/monopoly/engine/cards';
-import { renderLogLine } from '../../../src/games/monopoly/ui/logText';
+import { logParts } from '../../../src/games/monopoly/ui/logText';
 
 function mk(): MonopolyState {
   return createMonopolyGame(
@@ -48,5 +48,8 @@ test('the log keeps only the most recent entries', () => {
 
 test('log lines render player tokens as names', () => {
   const names: Record<string, string> = { p0: 'Amey', p1: 'Bot 1' };
-  expect(renderLogLine('{p0} paid $6 rent to {p1}', (id) => names[id])).toBe('Amey paid $6 rent to Bot 1');
+  const text = logParts('{p0} paid $6 rent to {p1}')
+    .map((part) => ('player' in part ? names[part.player] : part.text))
+    .join('');
+  expect(text).toBe('Amey paid $6 rent to Bot 1');
 });

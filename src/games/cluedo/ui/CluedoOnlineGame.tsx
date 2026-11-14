@@ -10,7 +10,7 @@ import type { RedactedCluedoState } from '../engine/redact';
 import type { CluedoAction } from '../engine/reducer';
 import { SUSPECTS } from '../engine/cards';
 import { CluedoGame } from './CluedoGame';
-import { CluedoVideoTiles } from './CluedoVideoTiles';
+import { VideoTiles } from '../../../online/ui/VideoTiles';
 import { SUSPECT_COLOR } from './palette';
 
 const DIFFICULTIES = [
@@ -94,7 +94,12 @@ export function CluedoOnlineGame({
           humans.length > 1 ? (
             <section className="cl-side-section">
               <h2 className="cl-side-title">At the table</h2>
-              <CluedoVideoTiles players={humans} meId={myPlayerId} nameFor={nameFor} media={media} />
+              <VideoTiles
+                seats={humans.map((p) => ({ id: p.id, out: p.eliminated }))}
+                meId={myPlayerId}
+                nameFor={nameFor}
+                media={media}
+              />
             </section>
           ) : null
         }

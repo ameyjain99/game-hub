@@ -45,6 +45,9 @@ export interface ScoreBreakdown {
   bonuses: number;
   /** Points from unused train stations (Europe): 4 each. */
   stations: number;
+  /** Each built station (in build order) and the opponent route it borrowed for
+   *  scoring — null when borrowing would not have helped any ticket. */
+  stationRoutes: { city: string; routeId: string | null }[];
   total: number;
 }
 
@@ -71,10 +74,14 @@ function ticketDeltaWith(player: PlayerState, extraEdges: string[]): TicketResul
 /**
  * Best ticket result given the player's stations: each station city may borrow
  * one route (owned by another player) leaving that city, for connectivity only.
- * The player picks the borrowed routes for the most points, then most tickets.
+ * The borrowed routes are chosen for the most points, then the most tickets;
+ * a station borrows nothing unless that improves on not borrowing.
  */
-function bestStationTickets(player: PlayerState, players: PlayerState[]): TicketResult {
-  if (player.stations.length === 0) return ticketDeltaWith(player, []);
+function bestStationTickets(
+  player: PlayerState,
+  players: PlayerState[],
+): TicketResult & { borrowed: (string | null)[] } {
+  if (player.stations.length === 0) return { ...ticketDeltaWith(player, []), borrowed: [] };
   const othersRoutes = players
     .filter((q) => q.id !== player.id)
     .flatMap((q) => q.claimedRouteIds);
@@ -86,14 +93,16 @@ function bestStationTickets(player: PlayerState, players: PlayerState[]): Ticket
     return [null as string | null, ...incident];
   });
 
-  let best: TicketResult = { delta: -Infinity, completed: 0 };
-  const search = (i: number, acc: string[]) => {
+  let best: TicketResult & { borrowed: (string | null)[] } = { delta: -Infinity, completed: 0, borrowed: [] };
+  const search = (i: number, choice: (string | null)[]) => {
     if (i === optionsPerCity.length) {
-      const r = ticketDeltaWith(player, acc);
-      if (r.delta > best.delta || (r.delta === best.delta && r.completed > best.completed)) best = r;
+      const r = ticketDeltaWith(player, choice.filter((id): id is string => id !== null));
+      if (r.delta > best.delta || (r.delta === best.delta && r.completed > best.completed)) {
+        best = { ...r, borrowed: choice };
+      }
       return;
     }
-    for (const opt of optionsPerCity[i]) search(i + 1, opt ? [...acc, opt] : acc);
+    for (const opt of optionsPerCity[i]) search(i + 1, [...choice, opt]);
   };
   search(0, []);
   return best;
@@ -107,7 +116,7 @@ export function finalScores(
   const out: Record<string, ScoreBreakdown> = {};
   for (const p of players) {
     const routes = routeScore(p);
-    const { delta: tickets, completed: ticketsCompleted } = bestStationTickets(p, players);
+    const { delta: tickets, completed: ticketsCompleted, borrowed } = bestStationTickets(p, players);
     let bonus = 0;
     for (const a of awardedByRule) if (a.ids.has(p.id)) bonus += a.points;
     const stations = STATION_POINTS * p.stationsLeft;
@@ -117,6 +126,7 @@ export function finalScores(
       ticketsCompleted,
       bonuses: bonus,
       stations,
+      stationRoutes: p.stations.map((city, i) => ({ city, routeId: borrowed[i] ?? null })),
       total: routes + tickets + bonus + stations,
     };
   }

@@ -11,6 +11,8 @@ interface Props {
   onLocal: () => void;
   /** The local-game options (player count, bot difficulty) as `.g-field`s. */
   localOptions: ReactNode;
+  /** Further local options below them (e.g. a collapsed house-rules section). */
+  localMore?: ReactNode;
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * code, or start a room) and play on this device against bots — the same
  * join-first structure as Ticket to Ride's landing.
  */
-export function GameLanding({ title, meta, onBack, onJoin, onStart, onLocal, localOptions }: Props) {
+export function GameLanding({ title, meta, onBack, onJoin, onStart, onLocal, localOptions, localMore }: Props) {
   const [code, setCode] = useState('');
   const canJoin = code.length === 4;
   return (
@@ -74,6 +76,7 @@ export function GameLanding({ title, meta, onBack, onJoin, onStart, onLocal, loc
           Play on this device
         </h2>
         <div className="g-field-row">{localOptions}</div>
+        {localMore}
         <button type="button" className="g-btn g-btn-ghost g-block" onClick={onLocal}>
           Start local game
         </button>

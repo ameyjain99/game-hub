@@ -127,16 +127,21 @@ export function TradeDialog({
   onAction,
   onClose,
   nameFor,
+  initialPartner,
 }: {
   view: MonopolyState;
   meId: string;
   onAction: (a: Action) => void;
   onClose: () => void;
   nameFor: (id: string) => string;
+  /** Start with this player chosen (opened from their row in the sidebar). */
+  initialPartner?: string;
 }) {
   const partners = view.players.filter((p) => p.id !== meId && !p.bankrupt);
   const me = view.players.find((p) => p.id === meId)!;
-  const [to, setTo] = useState(partners[0]?.id ?? '');
+  const [to, setTo] = useState(
+    partners.some((p) => p.id === initialPartner) ? initialPartner! : (partners[0]?.id ?? ''),
+  );
   const [give, setGive] = useState<number[]>([]);
   const [get, setGet] = useState<number[]>([]);
   const [giveCash, setGiveCash] = useState(0);
