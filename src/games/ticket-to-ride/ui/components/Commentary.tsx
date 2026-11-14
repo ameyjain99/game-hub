@@ -19,7 +19,7 @@ export function Commentary({ log, status }: Props) {
   return (
     <div className="commentary">
       <div className="commentary-feed" ref={feedRef}>
-        {log.length === 0 && <div className="commentary-empty">The game is starting…</div>}
+        {log.length === 0 && <div className="commentary-empty">The game is starting...</div>}
         {log.map((line, i) => (
           <div key={i} className="commentary-line">
             {cleanName(line)}

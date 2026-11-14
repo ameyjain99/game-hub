@@ -4,11 +4,11 @@ import type { Settings } from '../engine/state';
 export const HOUSE_RULES: { key: keyof Settings; label: string; desc: string }[] = [
   { key: 'auctions', label: 'Auctions', desc: 'A declined property goes to the highest bidder' },
   { key: 'doubleRentFullSet', label: 'Double rent on a full set', desc: 'Unbuilt lots in a complete colour set' },
-  { key: 'mortgaging', label: 'Mortgaging', desc: 'Raise half a lot’s price from the bank' },
+  { key: 'mortgaging', label: 'Mortgaging', desc: "Raise half a lot's price from the bank" },
   { key: 'evenBuild', label: 'Even building', desc: 'Houses go up evenly across a set' },
   { key: 'freeParkingJackpot', label: 'Free Parking jackpot', desc: 'Taxes collect there for whoever lands' },
   { key: 'doubleGoSalary', label: 'Double salary on Go', desc: '$400 for landing exactly on Go' },
-  { key: 'noRentInJail', label: 'No rent from jail', desc: 'Jailed owners can’t collect' },
+  { key: 'noRentInJail', label: 'No rent from jail', desc: "Jailed owners can't collect" },
 ];
 
 const STARTING_CASH = [500, 1000, 1500, 2000, 2500, 3000];

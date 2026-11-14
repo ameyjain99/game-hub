@@ -4,7 +4,7 @@ import { asLayout } from '../layout';
 
 /**
  * Cities of the Ticket to Ride EUROPE map. Positions (0-1000 x 0-700) live in
- * `europe.layout.json` — generated from real geography and tunable in the dev
+ * `europe.layout.json` – generated from real geography and tunable in the dev
  * board editor (`npm run dev`, then open `/?editor=europe`).
  */
 const NAMES: [id: string, name: string][] = [

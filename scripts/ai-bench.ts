@@ -43,7 +43,7 @@ function actor(s: GameState): string {
 }
 
 function playGame(job: Job, seed: number): GameResult {
-  // Odd seeds put A in seat 0, even seeds in seat 1 (2p) — matches the spec's baseline run.
+  // Odd seeds put A in seat 0, even seeds in seat 1 (2p) – matches the spec's baseline run.
   const aSeat = (seed - 1) % job.players;
   const policyOf = (seat: number) => (seat === aSeat ? job.a : job.b);
   let s = createGame(

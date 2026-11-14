@@ -73,10 +73,10 @@ export function MonopolyAuction({
           <button type="button" className="g-btn g-btn-ghost g-block" onClick={() => onAction({ type: 'PASS_BID' })}>
             Pass
           </button>
-          {min > max && <p className="g-hint">You can’t outbid ${a.highBid} with ${max}.</p>}
+          {min > max && <p className="g-hint">You can't outbid ${a.highBid} with ${max}.</p>}
         </>
       ) : (
-        <p className="mono-waiting">Waiting for {bidderId ? nameFor(bidderId) : 'the next bidder'}…</p>
+        <p className="mono-waiting">Waiting for {bidderId ? nameFor(bidderId) : 'the next bidder'}...</p>
       )}
     </div>
   );

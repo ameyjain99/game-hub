@@ -31,7 +31,7 @@ interface Props {
   onExit?: () => void;
   /** Online play: render from this player's fixed perspective. Omit for local hotseat/AI. */
   viewerId?: string;
-  /** Online A/V mesh — drives the per-player video frames in the right pane. */
+  /** Online A/V mesh – drives the per-player video frames in the right pane. */
   media?: MediaChat;
   /** Epoch ms the current player's turn must end by (online turn clock), or null. */
   turnDeadline?: number | null;
@@ -69,7 +69,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
   const turnTimerRef = useRef<number | null>(null);
   const prevActingRef = useRef(false);
 
-  // Any action the player takes hides the "it's your turn" cue — and the
+  // Any action the player takes hides the "it's your turn" cue – and the
   // last-round banner, which clears the moment they play their final turn.
   const dispatch = (action: Action) => {
     setYourTurnFlash(false);
@@ -170,7 +170,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
   const showExtendPopup =
     remainingSec != null && remainingSec <= 10 && current.id !== viewerId && !current.isAI;
 
-  // A gentle alarm on my own clock at ≤5s — once per deadline value.
+  // A gentle alarm on my own clock at ≤5s – once per deadline value.
   const warnedDeadlineRef = useRef<number | null>(null);
   useEffect(() => {
     if (myClock && remainingSec != null && remainingSec <= 5) {
@@ -187,7 +187,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
       setYourTurnFlash(true);
       playTurn();
       // A new turn clears the previous turn's draw note, so "IT'S YOUR TURN"
-      // never shows stacked under a stale "You drew …" message.
+      // never shows stacked under a stale "You drew ..." message.
       setDrawFlash(null);
       if (drawTimerRef.current) clearTimeout(drawTimerRef.current);
       drawAccumRef.current = []; // fresh turn → don't combine with last turn's draws
@@ -333,7 +333,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
     setClaimRouteId(null);
   };
 
-  // Possessive label, so "You" reads "Your …" not "You's …".
+  // Possessive label, so "You" reads "Your ..." not "You's ...".
   const poss = viewing.name === 'You' ? 'Your' : `${cleanName(viewing.name)}'s`;
 
   // The right side pane holds an active choice (claim / ticket selection) or, once
@@ -346,13 +346,13 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
   if (gameOver) {
     const names = winners(ranked).map((r) => r.player.name);
     const verb = names.length > 1 ? 'tie' : names[0] === 'You' ? 'win' : 'wins';
-    status = `Game over — ${names.join(' & ')} ${verb}!`;
+    status = `Game over – ${names.join(' & ')} ${verb}!`;
   } else if (state.phase === 'setup-tickets') {
-    status = 'Choose your destination tickets…';
+    status = 'Choose your destination tickets...';
   } else if (state.phase === 'tunnel-decision') {
-    status = `${current.name} is going through a tunnel…`;
+    status = `${current.name} is going through a tunnel...`;
   } else if (current.isAI) {
-    status = `${current.name} is playing…`;
+    status = `${current.name} is playing...`;
   } else if (state.drawnThisTurn === 1) {
     status = 'Draw one more card.';
   } else {
@@ -416,7 +416,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
       {showExtendPopup && onExtendTime && (
         <div className="disconnect-overlay" role="alert">
           <span>
-            {cleanName(current.name)} is low on time — {remainingSec}s left.
+            {cleanName(current.name)} is low on time – {remainingSec}s left.
           </span>
           <button type="button" className="primary" onClick={onExtendTime}>
             Give +20s
@@ -473,7 +473,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
             className={`station-btn${placing ? ' active' : ''}`}
             onClick={() => setPlacingStation((v) => !v)}
           >
-            {placing ? 'Click a city…' : `Place station (${viewing.stations.length + 1})`}
+            {placing ? 'Click a city...' : `Place station (${viewing.stations.length + 1})`}
           </button>
         )}
       </aside>
@@ -591,7 +591,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
           role="alert"
           onClick={() => setShowLastRound(false)}
         >
-          Last round — everyone gets one final turn.
+          Last round – everyone gets one final turn.
           <CloseIcon size={15} className="last-round-dismiss" />
         </div>
       )}

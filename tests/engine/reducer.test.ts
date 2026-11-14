@@ -96,7 +96,7 @@ describe('removePlayer', () => {
     });
     const afterRemove = removePlayer(s, 1); // remove the middle player (not current)
     expect(afterRemove.current).toBe(0); // current unaffected when it isn't their turn
-    // p0 claims a route, ending their turn — play should skip removed p1 to p2.
+    // p0 claims a route, ending their turn – play should skip removed p1 to p2.
     const r = applyAction(afterRemove, {
       type: 'CLAIM_ROUTE',
       routeId: 'boston-new-york',

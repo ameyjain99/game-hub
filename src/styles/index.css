@@ -1,5 +1,5 @@
 /*
- * GameHub stylesheet — layered architecture (cascade order matters, so the
+ * GameHub stylesheet – layered architecture (cascade order matters, so the
  * imports below are ordered tokens -> base -> shared chrome -> per-surface).
  * Add a new game by dropping in its own <game>.css and importing it here.
  */
@@ -11,3 +11,16 @@
 @import './ticket-to-ride.css';
 @import './cluedo.css';
 @import './monopoly.css';
+@import './kit.css';
+@import './tic-tac-toe.css';
+@import './checkers.css';
+@import './chess.css';
+@import './snakes-and-ladders.css';
+@import './ludo.css';
+@import './lineup.css';
+@import './solitaire.css';
+@import './sudoku.css';
+@import './blockyard.css';
+@import './last-card.css';
+@import './wordgrid.css';
+@import './minesweeper.css';

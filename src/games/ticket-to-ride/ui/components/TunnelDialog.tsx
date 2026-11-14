@@ -18,7 +18,7 @@ export function TunnelDialog({ pending, canAfford, onResolve }: Props) {
   const cityName = (id: string) => cityById.get(id)?.name ?? id;
 
   // Same shape as the claim and ticket panels: a fixed head on the left, the
-  // flipped cards in a horizontal strip, and the actions pinned to the right —
+  // flipped cards in a horizontal strip, and the actions pinned to the right –
   // so the top bar lays it out in one row instead of a vertical scroll.
   return (
     <div className="popover tunnel-dialog" data-testid="tunnel-dialog">
@@ -31,7 +31,7 @@ export function TunnelDialog({ pending, canAfford, onResolve }: Props) {
             </>
           ) : (
             <>
-              Needs {extra} more <b>{unit}</b> — you can't afford it
+              Needs {extra} more <b>{unit}</b> – you can't afford it
             </>
           )}
         </span>

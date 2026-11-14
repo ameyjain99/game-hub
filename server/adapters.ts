@@ -26,6 +26,17 @@ import {
 import { IllegalActionError as MonopolyIllegalError, type Action as MonopolyActionType } from '../src/games/monopoly/engine/actions';
 import { monopolyActor, advanceMonopolyAi, timeoutAction as monopolyTimeoutAction } from '../src/games/monopoly/engine/bot';
 import { redactFor as redactMonopolyFor } from '../src/games/monopoly/engine/redact';
+import { kitAdapter } from './kitAdapter';
+import { ticTacToeKit } from '../src/games/tic-tac-toe/engine';
+import { checkersKit } from '../src/games/checkers/engine';
+import { chessKit } from '../src/games/chess/engine';
+import { snlKit } from '../src/games/snakes-and-ladders/engine';
+import { ludoKit } from '../src/games/ludo/engine';
+import { lineupKit } from '../src/games/lineup/engine';
+import { blockyardKit } from '../src/games/blockyard/engine';
+import { lastCardKit } from '../src/games/last-card/engine';
+import { wordgridKit } from '../src/games/wordgrid/engine';
+import { ensureDictionary } from './wordlist';
 
 interface TtrOptions {
   mapId?: string;
@@ -261,10 +272,29 @@ const monopolyAdapter: GameAdapter = {
   },
 };
 
+/** Wordgrid checks words against the dictionary, loaded when the first room starts. */
+const wordgridBase = kitAdapter(wordgridKit);
+const wordgridAdapter: GameAdapter = {
+  ...wordgridBase,
+  createGame(configs, seed, options) {
+    ensureDictionary();
+    return wordgridBase.createGame(configs, seed, options);
+  },
+};
+
 const ADAPTERS: Record<string, GameAdapter> = {
   'ticket-to-ride': ticketToRideAdapter,
   cluedo: cluedoAdapter,
   monopoly: monopolyAdapter,
+  'tic-tac-toe': kitAdapter(ticTacToeKit),
+  checkers: kitAdapter(checkersKit),
+  chess: kitAdapter(chessKit),
+  'snakes-and-ladders': kitAdapter(snlKit),
+  ludo: kitAdapter(ludoKit),
+  lineup: kitAdapter(lineupKit),
+  blockyard: kitAdapter(blockyardKit),
+  'last-card': kitAdapter(lastCardKit),
+  wordgrid: wordgridAdapter,
 };
 
 /** The adapter for a game id; throws for an unknown game. */

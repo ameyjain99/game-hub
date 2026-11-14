@@ -10,7 +10,7 @@ import { EDITABLE_MAPS, type EditableMap } from './maps';
  * Dev-only visual editor for a map's board layout (`npm run dev`, then `/?editor=<mapId>`).
  * Drag cities and route-bend handles over a reference image of the printed board;
  * Save writes the map's `<mapId>.layout.json` through the dev server (see vite.config.ts).
- * The reference image stays in this browser — it is never bundled or committed.
+ * The reference image stays in this browser – it is never bundled or committed.
  */
 
 type Drag = { kind: 'city'; id: string } | { kind: 'bend'; key: string; a: string; b: string };
@@ -29,7 +29,7 @@ function write(key: string, value: unknown) {
     if (value === null) localStorage.removeItem(key);
     else localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // storage full or blocked — the editor still works for this session
+    // storage full or blocked – the editor still works for this session
   }
 }
 
@@ -106,7 +106,7 @@ function MapEditor({ mapId, map }: { mapId: string; map: EditableMap }) {
   };
 
   const save = async () => {
-    setStatus('Saving…');
+    setStatus('Saving...');
     try {
       const res = await fetch('/__board-editor/save', {
         method: 'POST',

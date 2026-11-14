@@ -1,0 +1,168 @@
+/* Tic-Tac-Toe: a dark slate board with chalk-bright marks that draw themselves in. */
+
+.ttt-board {
+  --x: #f0524f;
+  --o: #3d8bff;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 30% 15%, #1d1f27 0%, #121318 60%, #0f1014 100%);
+  border: 1px solid #ffffff14;
+  border-radius: clamp(16px, 4cqmin, 32px);
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff0d;
+  transition: box-shadow 0.3s;
+}
+
+/* On your move the board's rim takes on your colour. */
+.ttt-board.is-my-turn {
+  box-shadow:
+    0 30px 80px #000c,
+    inset 0 1px 0 #ffffff0d,
+    0 0 0 1px color-mix(in srgb, var(--mine) 55%, transparent),
+    0 0 40px color-mix(in srgb, var(--mine) 16%, transparent);
+}
+
+.ttt-grid,
+.ttt-strike {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ttt-grid path {
+  fill: none;
+  stroke: #2e3039;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.ttt-cells {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+}
+
+.ttt-cell {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 18%;
+  transition: background-color 0.15s;
+}
+
+.ttt-cell:not(:disabled) {
+  cursor: pointer;
+}
+
+.ttt-cell:not(:disabled):hover {
+  background: #ffffff06;
+}
+
+.ttt-cell:focus-visible {
+  outline: 2px solid #fff6;
+  outline-offset: -10%;
+}
+
+.ttt-mark {
+  width: 74%;
+  height: 74%;
+  overflow: visible;
+  fill: none;
+  stroke-width: 11;
+  stroke-linecap: round;
+  transition:
+    opacity 0.25s,
+    filter 0.25s;
+}
+
+.ttt-mark.is-x {
+  stroke: var(--x);
+}
+
+.ttt-mark.is-o {
+  stroke: var(--o);
+}
+
+/* A new mark draws itself: X stroke by stroke, O round in one sweep. */
+.ttt-mark > * {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: ttt-draw 0.26s ease-out backwards;
+}
+
+.ttt-mark.is-x > :nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.ttt-mark.is-o > circle {
+  animation-duration: 0.34s;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+@keyframes ttt-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+/* Your mark, faint, under the pointer on your move. */
+.ttt-mark.is-ghost {
+  opacity: 0;
+}
+
+.ttt-mark.is-ghost > * {
+  animation: none;
+}
+
+.ttt-cell:hover .ttt-mark.is-ghost,
+.ttt-cell:focus-visible .ttt-mark.is-ghost {
+  opacity: 0.2;
+}
+
+.ttt-cell.is-won .ttt-mark {
+  filter: drop-shadow(0 0 10px currentColor);
+}
+
+.ttt-cell.is-won .ttt-mark.is-x {
+  color: var(--x);
+}
+
+.ttt-cell.is-won .ttt-mark.is-o {
+  color: var(--o);
+}
+
+.ttt-cell.is-dim .ttt-mark {
+  opacity: 0.22;
+}
+
+/* The winning line strikes through, after the last mark lands. */
+.ttt-strike line {
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  filter: drop-shadow(0 0 8px #0009);
+  animation: ttt-draw 0.42s ease-out 0.3s backwards;
+}
+
+.ttt-board.is-over .ttt-cell {
+  cursor: default;
+}
+
+/* A seat's mark, large, standing in for a camera that's off. */
+.ttt-badge {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--vt, #fff);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ttt-mark > *,
+  .ttt-strike line {
+    animation: none;
+  }
+}

@@ -49,7 +49,7 @@ export function momentLots(moments: SetMoment[]): Set<number> {
   return new Set(moments.flatMap((m) => groupIds(m.group)));
 }
 
-/** The note for a completed set: who owns it, and what that unlocks now —
+/** The note for a completed set: who owns it, and what that unlocks now –
  *  stated from the game's actual rules. */
 export function SetMomentNote({
   moment,

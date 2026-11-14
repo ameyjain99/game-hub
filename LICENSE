@@ -1,0 +1,35 @@
+MIT License
+
+Copyright (c) 2026 Amey Jain
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+Third-party components keep their own licenses:
+
+- public/engine/ – Stockfish.js 18 (Stockfish), GNU GPL v3; see
+  public/engine/COPYING.txt. Shipped unmodified and run as a separate program
+  (a Web Worker spoken to over UCI).
+- chess.js – BSD 2-Clause (installed from npm).
+- three.js – MIT (installed from npm).
+- public/words/enable.txt – the ENABLE word list, public domain.
+- Chess pieces in src/games/chess/ui/pieces.ts – the Cburnett set by Colin M.L.
+  Burnett, BSD 3-Clause; notice in that file.
+- public/fonts/ – Inter, SIL Open Font License 1.1 (public/fonts/OFL-Inter.txt).

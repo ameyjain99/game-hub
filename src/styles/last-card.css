@@ -1,0 +1,625 @@
+/* Last Card: a felt table – green by day, deep violet once the deck flips to
+   its dark side – with opponents round the top, the piles in the middle and
+   your hand fanned along the bottom. */
+
+.lc-table {
+  overflow: hidden;
+  border-radius: clamp(16px, 3cqmin, 28px);
+  box-shadow: 0 30px 80px #000c, inset 0 0 0 1px #ffffff1a;
+  container-type: inline-size;
+}
+
+.lc-felt {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 45%, #1d7a5c 0%, #125440 55%, #0b3b2d 100%);
+  transition: filter 0.6s;
+}
+
+.lc-felt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 45%, #2b2368 0%, #1a1545 55%, #0c0a24 100%);
+  opacity: 0;
+  transition: opacity 0.7s;
+}
+
+.lc-table.is-dark .lc-felt::after {
+  opacity: 1;
+}
+
+/* ---- Card faces ---- */
+.lc-card {
+  --lw: 64px;
+  position: relative;
+  display: block;
+  width: var(--lw);
+  aspect-ratio: 5 / 7.4;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #fff;
+  background: var(--cc);
+  border-radius: calc(var(--lw) * 0.12);
+  box-shadow: 0 0.12em 0 #0003, 0 calc(var(--lw) * 0.06) calc(var(--lw) * 0.14) #0007, inset 0 0 0 calc(var(--lw) * 0.035) #ffffff;
+  user-select: none;
+}
+
+/* A soft sheen and an inner frame. */
+.lc-card::before {
+  content: '';
+  position: absolute;
+  inset: 9%;
+  border: calc(var(--lw) * 0.025) solid #ffffffb3;
+  border-radius: calc(var(--lw) * 0.08);
+  background: linear-gradient(150deg, #ffffff38 0%, transparent 45%);
+}
+
+.lc-card.is-dark {
+  color: var(--cc);
+  background: radial-gradient(circle at 30% 20%, #2c3045 0%, #151824 60%, #0e1018 100%);
+  box-shadow: 0 0.12em 0 #0005, 0 calc(var(--lw) * 0.06) calc(var(--lw) * 0.14) #000a, inset 0 0 0 calc(var(--lw) * 0.035) var(--cc);
+}
+
+.lc-card.is-dark::before {
+  border-color: color-mix(in srgb, var(--cc) 70%, transparent);
+  background: none;
+  box-shadow: 0 0 calc(var(--lw) * 0.12) color-mix(in srgb, var(--cc) 40%, transparent), inset 0 0 calc(var(--lw) * 0.12) color-mix(in srgb, var(--cc) 30%, transparent);
+}
+
+.lc-card.is-wild {
+  --cc: #20232c;
+  color: #fff;
+  background: #20232c;
+}
+
+.lc-card.is-wild.is-dark {
+  background: #0d0f16;
+  box-shadow: 0 0.12em 0 #0005, 0 calc(var(--lw) * 0.06) calc(var(--lw) * 0.14) #000a, inset 0 0 0 calc(var(--lw) * 0.035) #3a3f55;
+}
+
+.lc-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.lc-glyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--lw) * 0.44);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-shadow: 0 calc(var(--lw) * 0.03) 0 #0004;
+}
+
+.lc-card.is-dark .lc-glyph {
+  text-shadow: 0 0 calc(var(--lw) * 0.12) color-mix(in srgb, var(--cc) 70%, transparent);
+}
+
+.lc-glyph svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* The wheel on a wild: the four colours of its side. */
+.lc-wheel {
+  position: absolute;
+  width: 64%;
+  aspect-ratio: 1;
+  background: conic-gradient(#e5383b 0 25%, #f2b705 0 50%, #20a464 0 75%, #2b6be0 0);
+  border: calc(var(--lw) * 0.03) solid #fff;
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+
+.lc-card.is-dark .lc-wheel {
+  background: conic-gradient(#ff4f8b 0 25%, #ff9f1c 0 50%, #14c3a2 0 75%, #9b6bff 0);
+  border-color: #0d0f16;
+  box-shadow: 0 0 calc(var(--lw) * 0.15) #9b6bff88;
+}
+
+.lc-card.is-wild .lc-glyph {
+  color: #fff;
+  text-shadow: 0 calc(var(--lw) * 0.02) calc(var(--lw) * 0.05) #000a;
+}
+
+.lc-w {
+  font-size: 0.7em;
+}
+
+.lc-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.9;
+}
+
+.lc-stack i {
+  font-size: 0.32em;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.lc-corner {
+  position: absolute;
+  top: 5%;
+  left: 9%;
+  z-index: 1;
+  font-size: calc(var(--lw) * 0.17);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.lc-corner svg {
+  width: 1em;
+  height: 1em;
+}
+
+.lc-corner .lc-stack i {
+  display: none;
+}
+
+.lc-corner.is-flip {
+  top: auto;
+  right: 9%;
+  bottom: 5%;
+  left: auto;
+  transform: rotate(180deg);
+}
+
+.lc-card.is-back {
+  background:
+    radial-gradient(circle at 50% 50%, #ffffff1f 0 26%, transparent 27%),
+    repeating-linear-gradient(135deg, #1f2b55 0 6%, #182346 6% 12%);
+  box-shadow: 0 0.12em 0 #0003, 0 calc(var(--lw) * 0.06) calc(var(--lw) * 0.14) #0007, inset 0 0 0 calc(var(--lw) * 0.04) #fff;
+}
+
+.lc-card.is-back::before {
+  display: none;
+}
+
+.lc-back-mark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--lw) * 0.26);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #fff;
+  transform: rotate(-20deg);
+}
+
+/* ---- Opponents ---- */
+.lc-opponents {
+  position: absolute;
+  inset: 0;
+}
+
+.lc-opp {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6cqw;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.2s;
+}
+
+.lc-opp.is-out {
+  opacity: 0.35;
+}
+
+.lc-opp-cards {
+  position: relative;
+  width: 12cqw;
+  height: 7cqw;
+}
+
+.lc-opp-cards .lc-card {
+  --lw: 4.6cqw;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform-origin: 50% 120%;
+  transform: translateX(-50%) translateX(calc(var(--i) * 1.1cqw)) rotate(calc(var(--i) * 6deg));
+}
+
+.lc-opp-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7cqw;
+  padding: 0.4cqw 1cqw;
+  font-size: max(11px, 1.35cqw);
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  background: #0009;
+  border: 1px solid #ffffff1a;
+  border-radius: var(--radius-pill);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.lc-dot {
+  width: 0.9cqw;
+  min-width: 7px;
+  aspect-ratio: 1;
+  background: var(--tc);
+  border-radius: 50%;
+}
+
+.lc-count {
+  padding: 0 0.6cqw;
+  font-size: 0.9em;
+  color: #0b0b0f;
+  background: #fff;
+  border-radius: var(--radius-pill);
+}
+
+.lc-opp.is-turn .lc-opp-name {
+  border-color: var(--tc);
+  box-shadow: 0 0 0 2px var(--tc), 0 0 18px color-mix(in srgb, var(--tc) 60%, transparent);
+}
+
+.lc-opp.is-spot .lc-opp-name {
+  border-color: #fff;
+}
+
+.lc-catch,
+.lc-one {
+  padding: 0.3cqw 1.1cqw;
+  font-size: max(11px, 1.3cqw);
+  font-weight: 900;
+  border-radius: var(--radius-pill);
+}
+
+.lc-catch {
+  color: #fff;
+  background: #e2483b;
+  border: 0;
+  box-shadow: 0 4px 12px #e2483b88;
+  animation: lc-bounce 0.7s ease-in-out infinite;
+}
+
+.lc-one {
+  color: #3d2a00;
+  background: #ffd25a;
+}
+
+@keyframes lc-bounce {
+  50% {
+    transform: translateY(-20%);
+  }
+}
+
+/* ---- Middle: piles and the direction of play ---- */
+.lc-centre {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 5cqw;
+  transform: translate(-50%, -50%);
+}
+
+.lc-direction {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 46cqw;
+  height: 24cqw;
+  border: 0.35cqw dashed #ffffff26;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: lc-spin 14s linear infinite;
+  pointer-events: none;
+}
+
+.lc-direction::before,
+.lc-direction::after {
+  content: '';
+  position: absolute;
+  width: 1.6cqw;
+  height: 1.6cqw;
+  border-top: 0.45cqw solid #ffffff55;
+  border-right: 0.45cqw solid #ffffff55;
+}
+
+.lc-direction::before {
+  top: -0.9cqw;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.lc-direction::after {
+  bottom: -0.9cqw;
+  left: 50%;
+  transform: translateX(-50%) rotate(-135deg);
+}
+
+.lc-direction.is-ccw {
+  animation-direction: reverse;
+}
+
+.lc-direction.is-ccw::before {
+  transform: translateX(-50%) rotate(-135deg);
+}
+
+.lc-direction.is-ccw::after {
+  transform: translateX(-50%) rotate(45deg);
+}
+
+@keyframes lc-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.lc-pile .lc-card {
+  --lw: 12cqw;
+}
+
+.lc-deck {
+  position: relative;
+  padding: 0;
+  background: none;
+  border: 0;
+  transition: transform 0.15s;
+}
+
+.lc-deck-stack {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(12cqw * 0.12);
+  box-shadow: 0.4cqw 0.4cqw 0 #ffffffcc, 0.8cqw 0.8cqw 0 #0005, 1.2cqw 1.2cqw 0 #ffffff99;
+}
+
+.lc-deck.is-live {
+  cursor: pointer;
+}
+
+.lc-deck.is-live:hover {
+  transform: translateY(-1cqw) rotate(-2deg);
+}
+
+.lc-deck.is-live .lc-card {
+  box-shadow: 0 0 0 0.4cqw #fff, 0 0 2cqw #ffffffaa;
+  animation: lc-glow 1.4s ease-in-out infinite;
+}
+
+@keyframes lc-glow {
+  50% {
+    box-shadow: 0 0 0 0.4cqw #fff, 0 0 3.5cqw #ffffff;
+  }
+}
+
+.lc-deck-count {
+  position: absolute;
+  right: -1cqw;
+  bottom: -1cqw;
+  z-index: 2;
+  padding: 0.2cqw 0.9cqw;
+  font-size: max(11px, 1.3cqw);
+  font-weight: 800;
+  color: #0b0b0f;
+  background: #fff;
+  border-radius: var(--radius-pill);
+}
+
+.lc-discard {
+  position: relative;
+  width: 12cqw;
+  aspect-ratio: 5 / 7.4;
+}
+
+/* The colour in play glows under the pile. */
+.lc-discard::before {
+  content: '';
+  position: absolute;
+  inset: -2.4cqw;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cc) 60%, transparent) 0%, transparent 70%);
+  transition: background 0.4s;
+}
+
+.lc-discard .lc-card {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--r));
+}
+
+.lc-discard .lc-card.is-top {
+  animation: lc-land 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes lc-land {
+  from {
+    opacity: 0;
+    transform: translateY(18cqw) rotate(calc(var(--r) + 20deg)) scale(1.2);
+  }
+}
+
+.lc-colour {
+  position: absolute;
+  bottom: -4.2cqw;
+  left: 50%;
+  padding: 0.2cqw 1cqw;
+  font-size: max(11px, 1.3cqw);
+  font-weight: 800;
+  color: #0b0b0f;
+  white-space: nowrap;
+  background: var(--cc);
+  border-radius: var(--radius-pill);
+  transform: translateX(-50%);
+}
+
+/* ---- Your hand ---- */
+.lc-controls {
+  position: absolute;
+  bottom: 19cqw;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  gap: 1cqw;
+  transform: translateX(-50%);
+}
+
+.lc-call {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #3d2a00;
+  background: #ffe9a8;
+  border: 2px solid #ffd25a;
+  border-radius: var(--radius-pill);
+}
+
+.lc-call.is-armed {
+  background: #ffd25a;
+  box-shadow: 0 0 18px #ffd25aaa;
+}
+
+.lc-call.is-urgent {
+  color: #fff;
+  background: #e2483b;
+  border-color: #ff8a80;
+  animation: lc-bounce 0.7s ease-in-out infinite;
+}
+
+.lc-hand {
+  --gap: min(8.5cqw, calc(84cqw / max(var(--n), 1)));
+  position: absolute;
+  right: 0;
+  bottom: 2.4cqw;
+  left: 0;
+  height: 18cqw;
+}
+
+.lc-hand-card {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  padding: 0;
+  background: none;
+  border: 0;
+  transform: translateX(-50%) translateX(calc(var(--i) * var(--gap))) rotate(calc(var(--i) * 1.6deg));
+  transform-origin: 50% 160%;
+  transition: transform 0.18s, filter 0.2s;
+  animation: lc-deal 0.35s ease-out backwards;
+}
+
+.lc-hand-card .lc-card {
+  --lw: 10.5cqw;
+}
+
+.lc-hand-card.is-ok {
+  cursor: pointer;
+}
+
+.lc-hand-card.is-ok:hover,
+.lc-hand-card.is-ok:focus-visible {
+  z-index: 2;
+  outline: none;
+  transform: translateX(-50%) translateX(calc(var(--i) * var(--gap))) translateY(-3cqw) rotate(calc(var(--i) * 1.6deg)) scale(1.06);
+}
+
+.lc-table.is-my-turn .lc-hand-card.is-ok .lc-card {
+  box-shadow: 0 0.12em 0 #0003, 0 1cqw 2cqw #0008, inset 0 0 0 calc(var(--lw) * 0.035) #fff, 0 0 0 0.35cqw #ffffffd9;
+}
+
+.lc-table.is-my-turn .lc-hand-card:not(.is-ok) {
+  filter: brightness(0.55) saturate(0.6);
+}
+
+.lc-hand-card.is-drawn {
+  z-index: 3;
+  transform: translateX(-50%) translateX(calc(var(--i) * var(--gap))) translateY(-4cqw) rotate(0deg) scale(1.1);
+}
+
+/* A table flip turns every card in your hand. */
+@keyframes lc-deal {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateX(calc(var(--i) * var(--gap))) rotateY(90deg);
+  }
+}
+
+/* ---- Colour picker ---- */
+.lc-picker {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  background: #0b0b0fb3;
+  backdrop-filter: blur(3px);
+  animation: kit-fade 0.18s ease-out;
+}
+
+.lc-picker > p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.lc-swatches {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.lc-swatch {
+  width: clamp(110px, 18cqw, 170px);
+  height: clamp(64px, 10cqw, 96px);
+  font-size: 16px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 1px 2px #0008;
+  background: var(--cc);
+  border: 3px solid #ffffffcc;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 20px #0008;
+  transition: transform 0.12s;
+}
+
+.lc-swatch:hover {
+  transform: scale(1.05);
+}
+
+.lc-picker-cancel {
+  padding: 6px 10px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+}
+
+/* The sidebar's tokens and badges. */
+.g-silhouette .lc-card {
+  --lw: 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lc-direction,
+  .lc-catch,
+  .lc-call.is-urgent,
+  .lc-deck.is-live .lc-card,
+  .lc-discard .lc-card.is-top,
+  .lc-hand-card {
+    animation: none;
+  }
+}

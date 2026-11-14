@@ -18,7 +18,7 @@ export interface CluedoPlayer {
   room: Room | null;
   /** Private hand of cards. */
   hand: Card[];
-  /** Out after a wrong accusation — keeps disproving but can't win. */
+  /** Out after a wrong accusation – keeps disproving but can't win. */
   eliminated: boolean;
   isAI: boolean;
   /** Bot strength (bots only); undefined is treated as 'normal'. */
@@ -38,7 +38,7 @@ export interface CluedoState {
   players: CluedoPlayer[];
   current: number;
   phase: Phase;
-  /** The hidden murder envelope — stripped from client state by redaction. */
+  /** The hidden murder envelope – stripped from client state by redaction. */
   solution: Triple;
   weaponRooms: Record<Weapon, Room>;
   /** Valid destinations while phase === 'move'. */
@@ -49,7 +49,7 @@ export interface CluedoState {
   /** Every resolved suggestion, oldest first (the public game log). */
   history: Reveal[];
   winner: string | null;
-  /** Turns taken so far — a safety net so a game can't run forever. */
+  /** Turns taken so far – a safety net so a game can't run forever. */
   turn: number;
   /** Seeded RNG state, advanced on each die roll. */
   rngState: number;

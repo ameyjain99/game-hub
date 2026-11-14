@@ -88,7 +88,7 @@ export function RouteSegment({
   const slotBorder = COLOR_BORDER[route.color];
 
   // Inset the cars from both cities so routes don't converge onto the node and
-  // merge with their neighbours — leaving a clear gap at every junction.
+  // merge with their neighbours – leaving a clear gap at every junction.
   const pad = Math.min(19, len * 0.16);
   const span = Math.max(len - 2 * pad, route.length * 6);
   const slot = span / route.length;

@@ -46,7 +46,7 @@ export interface ScoreBreakdown {
   /** Points from unused train stations (Europe): 4 each. */
   stations: number;
   /** Each built station (in build order) and the opponent route it borrowed for
-   *  scoring — null when borrowing would not have helped any ticket. */
+   *  scoring – null when borrowing would not have helped any ticket. */
   stationRoutes: { city: string; routeId: string | null }[];
   total: number;
 }

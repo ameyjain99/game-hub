@@ -1,4 +1,4 @@
-/** The GameHub "GH" monogram — G and H drawn as twin parallel lines on a dark
+/** The GameHub "GH" monogram – G and H drawn as twin parallel lines on a dark
  * rounded square (from the GameHub design). Used in the header and the favicon. */
 export function GameHubLogo({ size = 40 }: { size?: number }) {
   const d = 'M45.5 30.5H28A19.5 19.5 0 0 0 28 69.5H37V41.5 M63 22V78 M86 78V22 M63 50H86';

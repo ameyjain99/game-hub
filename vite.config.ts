@@ -42,7 +42,7 @@ export default defineConfig({
   plugins: [react(), boardEditorSave()],
   // Absolute base so hashed asset URLs resolve from the domain root on any deep
   // path (e.g. /ticket-to-ride/create or /ticket-to-ride/<code>); a relative
-  // base would make a refreshed deep link request /ticket-to-ride/assets/… and
+  // base would make a refreshed deep link request /ticket-to-ride/assets/... and
   // 404 into a blank page.
   base: '/',
   // Dev: proxy socket.io + the JSON API to the Node game server

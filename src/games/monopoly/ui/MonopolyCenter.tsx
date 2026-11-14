@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { BOARD, OWNABLE_IDS } from '../engine/board';
 import type { DrawnCard, MonopolyState } from '../engine/state';
 import type { Action } from '../engine/actions';
@@ -106,11 +106,24 @@ export function MonopolyCenter({
       <DrawnCardView key={lastKey} card={last} by={nameFor(last.playerId)} onClose={() => setPutAway(lastKey)} />
     ) : null;
 
+  // Space rolls when it's your roll.
+  const rollReady = actor === meId && view.phase === 'roll' && !view.pendingAuction && !view.pendingTrade;
+  useEffect(() => {
+    if (!rollReady) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || (e.target instanceof Element && e.target.closest('input, textarea, select, button'))) return;
+      e.preventDefault();
+      onAction({ type: 'ROLL' });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [rollReady, onAction]);
+
   let status: string;
   if (view.phase === 'over') status = 'Game over';
   else if (view.pendingAuction) status = myMove ? 'Your bid' : `${nameFor(actor!)} is bidding`;
   else if (view.pendingTrade) status = myMove ? 'A trade offer for you' : `${nameFor(view.pendingTrade.to)} is considering a trade`;
-  else status = myMove ? 'Your turn' : `${nameFor(current.id)}’s turn`;
+  else status = myMove ? 'Your turn' : `${nameFor(current.id)}'s turn`;
 
   let card: ReactNode;
   if (inspected !== null) {
@@ -153,7 +166,7 @@ export function MonopolyCenter({
         <Card kicker="Trade">
           <p className="mono-waiting">
             {view.pendingTrade.from === meId
-              ? `Waiting for ${nameFor(view.pendingTrade.to)} to answer your offer…`
+              ? `Waiting for ${nameFor(view.pendingTrade.to)} to answer your offer...`
               : `${nameFor(view.pendingTrade.from)} offered ${nameFor(view.pendingTrade.to)} a trade.`}
           </p>
         </Card>
@@ -182,13 +195,7 @@ export function MonopolyCenter({
       </Card>
     );
   } else if (view.phase === 'roll') {
-    card = (
-      <Card kicker={view.doubles > 0 ? 'Doubles — roll again' : undefined}>
-        <button type="button" className="primary mono-roll" onClick={() => onAction({ type: 'ROLL' })}>
-          Roll dice
-        </button>
-      </Card>
-    );
+    card = null; // a small Roll button sits beside the dice instead
   } else if (view.pendingDebt && me.cash < 0) {
     card = (
       <Card kicker="Short on cash" title={`You owe $${-me.cash} more`}>
@@ -213,7 +220,7 @@ export function MonopolyCenter({
           </button>
         </div>
         <p className="g-hint">
-          {!affordable ? 'You can’t afford it. ' : ''}
+          {!affordable ? "You can't afford it. " : ''}
           {view.settings.auctions ? 'A declined lot goes to auction.' : 'A declined lot stays with the bank.'}
         </p>
       </Card>
@@ -238,12 +245,18 @@ export function MonopolyCenter({
   }
 
   const lines = view.log.slice(-4).reverse();
+  const canRoll = myMove && !!me && view.phase === 'roll' && !view.pendingAuction && !view.pendingTrade && inspected === null;
   const head = (
     <div className="mono-play-head">
       <Dice values={view.dice} rollKey={view.rollSeq} />
       <p className="mono-status" aria-live="polite">
-        {status}
+        {canRoll && view.doubles > 0 ? 'Doubles – roll again' : status}
       </p>
+      {canRoll && (
+        <button type="button" className="mono-roll" aria-label="Roll dice" title="Roll (Space)" onClick={() => onAction({ type: 'ROLL' })}>
+          Roll
+        </button>
+      )}
     </div>
   );
   const feed =

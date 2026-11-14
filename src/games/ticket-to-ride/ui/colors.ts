@@ -3,9 +3,9 @@ import type { RouteColor, TrainCard } from '../engine/types';
 /**
  * Card/route color -> display hex. Chosen for strong separation in BOTH hue and
  * lightness so neighbours don't blur together:
- *   red / orange / yellow  — warm ramp, clearly different lightness
- *   purple ("pink")        — magenta pink, NOT violet
- *   white / grey / black   — light / mid / dark, wide lightness spread
+ *   red / orange / yellow  – warm ramp, clearly different lightness
+ *   purple ("pink")        – magenta pink, NOT violet
+ *   white / grey / black   – light / mid / dark, wide lightness spread
  */
 export const COLOR_HEX: Record<RouteColor | 'locomotive', string> = {
   red: '#d42c25',
@@ -46,7 +46,7 @@ export function cardText(card: TrainCard): string {
   return LIGHT_CARDS.has(card) ? '#15151a' : '#ffffff';
 }
 
-/** CSS background for a card face — the loco is a rainbow sweep, others solid. */
+/** CSS background for a card face – the loco is a rainbow sweep, others solid. */
 /** The locomotive card's rainbow, shared by the CSS card face and SVG ferry slots. */
 export const LOCO_STOPS = ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#e85fae'];
 export const LOCO_GRADIENT = `linear-gradient(135deg,${LOCO_STOPS.join(',')})`;
@@ -59,14 +59,14 @@ export function cardBorder(card: TrainCard): string {
   return COLOR_BORDER[card];
 }
 
-/** Per-seat player token colors (up to 5) — distinct from each other. */
+/** Per-seat player token colors (up to 5) – distinct from each other. */
 export const PLAYER_COLORS = ['#d1352b', '#2f6fdb', '#2fa84f', '#e8a41c', '#333338'];
 
 export function playerColor(index: number): string {
   return PLAYER_COLORS[index % PLAYER_COLORS.length];
 }
 
-/** Mix a #rrggbb hex toward white by `amount` (0..1) — used to brighten highlights. */
+/** Mix a #rrggbb hex toward white by `amount` (0..1) – used to brighten highlights. */
 export function lighten(hex: string, amount: number): string {
   const n = parseInt(hex.slice(1), 16);
   const mix = (c: number) => Math.round(c + (255 - c) * amount);

@@ -12,14 +12,14 @@ interface Props {
 
 /**
  * Banner shown when a human player has dropped. Any remaining player can swap the
- * dropped seat for an AI so the game never stalls — including a dropped host
+ * dropped seat for an AI so the game never stalls – including a dropped host
  * (otherwise the one person allowed to replace would be the one who's gone).
  */
 export function DisconnectOverlay({ lobby, currentPlayerId, onReplace, onRemove }: Props) {
   const dropped = lobby.seats.filter((s) => !s.isAI && s.name !== null && !s.connected);
   if (dropped.length === 0) return null;
 
-  // Prefer the player the game is actually waiting on — it's paused on their turn.
+  // Prefer the player the game is actually waiting on – it's paused on their turn.
   const current = dropped.find((s) => playerIdForSeat(s.index) === currentPlayerId);
   const seat = current ?? dropped[0];
   const who = seat.name ? cleanName(seat.name) : `Player ${seat.index + 1}`;
@@ -27,7 +27,7 @@ export function DisconnectOverlay({ lobby, currentPlayerId, onReplace, onRemove 
   return (
     <div className="disconnect-overlay" role="alert">
       <span>
-        {who} disconnected{current ? ' — waiting for them to return…' : ''}
+        {who} disconnected{current ? ' – waiting for them to return...' : ''}
       </span>
       <div className="disconnect-actions">
         <button type="button" className="primary" onClick={() => onReplace(seat.index)}>

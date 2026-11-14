@@ -1,0 +1,188 @@
+/* Chess: a classic maple-and-walnut board with the Cburnett pieces. */
+
+.ch-board {
+  --sq-light: #f0d9b5;
+  --sq-dark: #b58863;
+  --sq-last: #cdd26a;
+  --sq-select: #9bc26a;
+  --sq-hint: #1a1a1f80;
+  padding: clamp(6px, 1.4cqmin, 14px);
+  background: linear-gradient(150deg, #4e3524 0%, #3a2618 60%, #2c1c11 100%);
+  border-radius: clamp(12px, 2.2cqmin, 20px);
+  box-shadow: 0 30px 80px #000c, inset 0 1px 0 #ffffff1f, inset 0 0 0 1px #0000004d;
+}
+
+.ch-board .sq-board {
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px #1f140b;
+}
+
+.ch-piece {
+  display: block;
+  width: 92%;
+  height: 92%;
+  overflow: visible;
+}
+
+/* Pieces you can move lift a touch under the pointer. */
+.sq.is-movable:hover .sq-piece:not(.is-lifted) {
+  transform: translateY(-3%) scale(1.04);
+}
+
+.sq.is-movable {
+  cursor: grab;
+}
+
+/* The king in check glows red. */
+.sq.is-check {
+  background: radial-gradient(circle, #ff3b30 0%, #e2483bcc 30%, #e2483b33 65%, transparent 85%), var(--sq-dark);
+}
+
+.sq.is-light.is-check {
+  background: radial-gradient(circle, #ff3b30 0%, #e2483bcc 30%, #e2483b33 65%, transparent 85%), var(--sq-light);
+}
+
+/* Choosing a promotion. */
+.ch-promote {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  color: var(--ink);
+  background: #0b0b0fb3;
+  backdrop-filter: blur(2px);
+  border-radius: inherit;
+  animation: kit-fade 0.18s ease-out;
+}
+
+.ch-promote > p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.ch-promote-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ch-promote-row button {
+  display: grid;
+  place-items: center;
+  width: clamp(56px, 10cqmin, 92px);
+  aspect-ratio: 1;
+  padding: 6px;
+  background: var(--sq-light);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 20px #0008;
+  transition: transform 0.12s;
+}
+
+.ch-promote-row button:hover {
+  transform: translateY(-3px) scale(1.05);
+}
+
+.ch-promote-cancel {
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+}
+
+/* Captured pieces under each player, with the material lead. */
+.ch-taken {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 18px;
+}
+
+.ch-taken-piece {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  margin-right: -5px;
+}
+
+.ch-taken-piece .ch-piece {
+  width: 100%;
+  height: 100%;
+}
+
+.ch-lead {
+  margin-left: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* The king's head in a players row / video tile. */
+.kit-player .kit-token .ch-piece {
+  width: 100%;
+  height: 100%;
+}
+
+.ch-game .kit-token {
+  background: #2a2c33;
+}
+
+.g-silhouette .ch-piece {
+  width: 54px;
+  height: 54px;
+}
+
+.ch-engine-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 14px;
+}
+
+.ch-engine-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  background: var(--muted);
+  border-radius: 50%;
+}
+
+.ch-engine-dot.is-ready {
+  background: var(--ok);
+}
+
+.ch-engine-dot.is-failed {
+  background: var(--warn);
+}
+
+.ch-engine-dot.is-thinking {
+  animation: ch-think 0.9s ease-in-out infinite;
+}
+
+@keyframes ch-think {
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+}
+
+.ch-engine a {
+  color: var(--muted);
+}
+
+.ch-strong {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-engine-dot.is-thinking {
+    animation: none;
+  }
+}

@@ -60,7 +60,7 @@ export function CluedoOnlineGame({
         </button>
         <header className="g-head">
           <p className="g-eyebrow">Cluedo</p>
-          <h1>Can’t open this room</h1>
+          <h1>Can't open this room</h1>
           <p className="tagline">{error}</p>
         </header>
       </div>

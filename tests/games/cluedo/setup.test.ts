@@ -13,7 +13,7 @@ test('the solution is exactly one suspect, one weapon, and one room', () => {
 test('every non-solution card is dealt exactly once, and no hand holds a solution card', () => {
   const g = setupCluedo(['a', 'b', 'c'], makeRng(7));
   const dealt = Object.values(g.hands).flat();
-  expect(dealt).toHaveLength(18); // 21 cards − 3 in the envelope
+  expect(dealt).toHaveLength(18); // 21 cards - 3 in the envelope
   expect(new Set(dealt).size).toBe(18); // no duplicates
   for (const c of [g.solution.suspect, g.solution.weapon, g.solution.room]) {
     expect(dealt).not.toContain(c);

@@ -27,7 +27,7 @@ beforeEach(() => {
     Promise.resolve(fakeStream(fakeTrack(c.video ? 'video' : 'audio'))),
   );
   Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia }, configurable: true });
-  // refreshLocal() builds `new MediaStream(tracks)` — jsdom has no such constructor.
+  // refreshLocal() builds `new MediaStream(tracks)` – jsdom has no such constructor.
   vi.stubGlobal(
     'MediaStream',
     class {
@@ -53,7 +53,7 @@ test('joining a room acquires no media; mic/cam are acquired only when toggled o
     useMediaChat({ socket: socket as never, code: 'ABCD', myId: 'p0', enabled: true, video: true }),
   );
 
-  // Nothing is captured on join — no permission prompt, mic and camera both off.
+  // Nothing is captured on join – no permission prompt, mic and camera both off.
   expect(getUserMedia).not.toHaveBeenCalled();
   expect(result.current.micMuted).toBe(true);
   expect(result.current.camOff).toBe(true);

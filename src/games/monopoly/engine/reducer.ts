@@ -435,7 +435,7 @@ function decline(draft: MonopolyState): void {
   }
 }
 
-/** Building, selling and mortgaging happen on the current player's own turn —
+/** Building, selling and mortgaging happen on the current player's own turn –
  *  never while an auction or trade has handed the floor to someone else. */
 function requireOwnTurn(draft: MonopolyState): void {
   const ownTurn = draft.phase === 'roll' || draft.phase === 'jail' || draft.phase === 'action';
@@ -632,7 +632,7 @@ function respondTrade(draft: MonopolyState, accept: boolean): void {
     note(draft, `{${t.to}} turned down the trade`);
     return;
   }
-  // Re-validate both sides at accept time — no partial transfer.
+  // Re-validate both sides at accept time – no partial transfer.
   if (!canDeliver(draft, t.from, t.give) || !canDeliver(draft, t.to, t.receive)) {
     note(draft, `The trade between {${t.from}} and {${t.to}} fell through`);
     return;

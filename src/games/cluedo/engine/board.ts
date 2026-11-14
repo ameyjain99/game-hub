@@ -3,7 +3,7 @@ import { SECRET_PASSAGES, type Room } from './cards';
 /**
  * Abstracted board: the nine rooms as a graph. On the real board rooms connect
  * through corridor squares; here each edge is one "step" of a dice roll. This is
- * a deliberate simplification — the deduction game (suggest/disprove/accuse) is
+ * a deliberate simplification – the deduction game (suggest/disprove/accuse) is
  * faithful; physical square-by-square movement is not modelled.
  */
 const ADJACENCY: Record<Room, Room[]> = {

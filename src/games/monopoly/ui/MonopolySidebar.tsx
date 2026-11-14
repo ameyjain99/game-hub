@@ -151,7 +151,7 @@ export function MonopolySidebar({
                       {p.bankrupt ? 'Bankrupt' : money(p.cash)}
                       {(deltas[p.id] ?? []).map((d) => (
                         <span key={d.key} className={`mono-cash-delta ${d.amount > 0 ? 'is-gain' : 'is-loss'}`} aria-hidden>
-                          {`${d.amount > 0 ? '+' : '−'}${money(Math.abs(d.amount))}`}
+                          {`${d.amount > 0 ? '+' : '-'}${money(Math.abs(d.amount))}`}
                         </span>
                       ))}
                     </span>
@@ -196,7 +196,7 @@ export function MonopolySidebar({
             </span>
           </h2>
           {mine.length === 0 ? (
-            <p className="mono-muted">You don’t own anything yet. Land on an unowned lot to buy it.</p>
+            <p className="mono-muted">You don't own anything yet. Land on an unowned lot to buy it.</p>
           ) : (
             <ul className="mono-props">
               {mine.map((id) => {

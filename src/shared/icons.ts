@@ -13,6 +13,7 @@ export const CloseIcon = X; // close / leave / dismiss / remove
 export const TicketDoneIcon = Check;
 export const TicketFailIcon = X;
 export const LocoIcon = Star; // the wild locomotive card mark
+export const SafeSquareIcon = Star; // Ludo's safe star squares
 export const AddIcon = Plus; // add player / add AI
 export const CopyIcon = Copy; // copy to clipboard
 export const CheckIcon = Check; // confirmed / copied
@@ -51,4 +52,11 @@ export {
   // Cluedo
   Search,
   DoorOpen,
+  // Last Card, Wordgrid
+  Ban,
+  Repeat2,
+  FlipVertical2,
+  Megaphone,
+  Shuffle,
+  Undo2,
 } from 'lucide-react';

@@ -26,7 +26,7 @@ test('the Board dropdown is on the create page and picking a single-mode board h
   expect(link.getAttribute('href')).toBe(rulebookUrl('europe.pdf'));
 });
 
-test('joining only collects name and avatar — no mode or player count', () => {
+test('joining only collects name and avatar – no mode or player count', () => {
   const onSubmit = vi.fn();
   render(<TicketToRideProfile action="join" onBack={vi.fn()} onSubmit={onSubmit} />);
   expect(screen.queryByLabelText('Mode')).toBeNull();

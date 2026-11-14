@@ -145,7 +145,7 @@ export function LobbyScreen({ lobby, isHost, mySeatIndex = -1, onSetSeatAi, onSe
           </button>
         </div>
       ) : (
-        <Loader label="Waiting for the host to start…" />
+        <Loader label="Waiting for the host to start..." />
       )}
     </div>
   );
