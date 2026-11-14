@@ -260,13 +260,19 @@ const WIN = 100_000;
 interface SearchCtx {
   nodes: number;
   limit: number;
+  /** Set when the budget runs out: the depth being searched is abandoned. */
+  out: boolean;
 }
 
 function negamax(board: Piece[], side: Side, depth: number, alpha: number, beta: number, ctx: SearchCtx, ply: number): number {
+  if (ctx.nodes >= ctx.limit) {
+    ctx.out = true;
+    return 0;
+  }
   const moves = legalMoves(board, side);
   if (moves.length === 0) return -WIN + ply;
   // Keep searching through forced captures so exchanges aren't cut off midway.
-  if (depth <= 0 && (moves[0].captures.length === 0 || ctx.nodes > ctx.limit)) {
+  if (depth <= 0 && moves[0].captures.length === 0) {
     const e = evaluate(board);
     return side === 'black' ? e : -e;
   }
@@ -274,6 +280,7 @@ function negamax(board: Piece[], side: Side, depth: number, alpha: number, beta:
   let best = -Infinity;
   for (const m of moves) {
     const v = -negamax(playMove(board, m), other(side), depth - 1, -beta, -alpha, ctx, ply + 1);
+    if (ctx.out) return 0;
     if (v > best) best = v;
     if (v > alpha) alpha = v;
     if (alpha >= beta) break;
@@ -281,34 +288,46 @@ function negamax(board: Piece[], side: Side, depth: number, alpha: number, beta:
   return best;
 }
 
-const LEVEL: Record<CheckersDifficulty, { depth: number; noise: number; limit: number }> = {
+export const BOT_LEVELS: Record<CheckersDifficulty, { depth: number; noise: number; limit: number }> = {
   easy: { depth: 2, noise: 0.35, limit: 2_000 },
   normal: { depth: 5, noise: 0.08, limit: 40_000 },
   hard: { depth: 9, noise: 0, limit: 160_000 },
 };
 
-/** The bot's whole move for `side` (choices from `moves`). */
-export function chooseMove(board: Piece[], side: Side, moves: FullMove[], level: CheckersDifficulty, rand: () => number): FullMove {
-  if (moves.length === 1) return moves[0];
-  const cfg = LEVEL[level] ?? LEVEL.normal;
-  if (rand() < cfg.noise) return moves[Math.floor(rand() * moves.length)];
-  let best: FullMove[] = [];
-  // Iterative deepening keeps the deepest completed result within the node budget.
-  for (let depth = 1; depth <= cfg.depth; depth++) {
-    const ctx = { nodes: 0, limit: cfg.limit };
+/** The search behind a bot move: the equally best of `moves` for `side`, and
+ *  how many positions it looked at to find them. */
+export function bestMoves(board: Piece[], side: Side, moves: FullMove[], level: CheckersDifficulty): { picks: FullMove[]; nodes: number } {
+  const cfg = BOT_LEVELS[level] ?? BOT_LEVELS.normal;
+  // One budget for the whole move. Iterative deepening keeps the deepest depth
+  // that finished inside it; a depth the budget cuts short is thrown away.
+  const ctx: SearchCtx = { nodes: 0, limit: cfg.limit, out: false };
+  let best: FullMove[] = moves;
+  for (let depth = 1; depth <= cfg.depth && !ctx.out; depth++) {
     let top = -Infinity;
     let picks: FullMove[] = [];
     for (const m of moves) {
-      const v = -negamax(playMove(board, m), other(side), depth - 1, -Infinity, Infinity, ctx, 1);
+      // Only a move that could tie the best so far needs its exact score, so the
+      // rest are searched just far enough to show they fall short. Scores are
+      // whole numbers, so "top - 0.5" separates a tie from a worse move.
+      const v = -negamax(playMove(board, m), other(side), depth - 1, -Infinity, -(top - 0.5), ctx, 1);
+      if (ctx.out) break;
       if (v > top + 0.5) {
         top = v;
         picks = [m];
       } else if (Math.abs(v - top) <= 0.5) picks.push(m);
     }
-    best = picks;
-    if (ctx.nodes > cfg.limit) break;
+    if (!ctx.out) best = picks;
   }
-  return best[Math.floor(rand() * best.length)];
+  return { picks: best, nodes: ctx.nodes };
+}
+
+/** The bot's whole move for `side` (choices from `moves`). */
+export function chooseMove(board: Piece[], side: Side, moves: FullMove[], level: CheckersDifficulty, rand: () => number): FullMove {
+  if (moves.length === 1) return moves[0];
+  const cfg = BOT_LEVELS[level] ?? BOT_LEVELS.normal;
+  if (rand() < cfg.noise) return moves[Math.floor(rand() * moves.length)];
+  const { picks } = bestMoves(board, side, moves, level);
+  return picks[Math.floor(rand() * picks.length)];
 }
 
 /** The bot's next hop (its chosen move's first hop, or the next hop of a chain). */

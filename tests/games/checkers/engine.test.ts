@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest';
 import { IllegalMove } from '../../../src/games/kit/engine';
 import {
   applyCheckers,
+  bestMoves,
+  BOT_LEVELS,
   checkersKit,
   createCheckers,
   legalHops,
@@ -151,6 +153,16 @@ describe('bot', () => {
     const s = { ...position({ b: [14, 3], w: [18, 30] }), players: [{ id: 'p0', name: 'B', isAI: true, difficulty: 'hard' }, { id: 'p1', name: 'W', isAI: false }] };
     const hop = checkersKit.bot(s, () => 0.5);
     expect(hop).toEqual({ type: 'MOVE', from: sq(14), to: sq(23) });
+  });
+
+  test("the hard bot never searches past its budget, so a move can't stall the table", () => {
+    // A busy middlegame where the search used to run to 2.6x its budget.
+    const s = position({ b: [1, 3, 4, 6, 11, 14, 19], w: [17, 21, 28, 29, 30, 31, 32] });
+    const moves = legalMoves(s.board, 'black');
+    const { picks, nodes } = bestMoves(s.board, 'black', moves, 'hard');
+    expect(nodes).toBeLessThanOrEqual(BOT_LEVELS.hard.limit + 1);
+    expect(picks.length).toBeGreaterThan(0);
+    for (const p of picks) expect(moves).toContain(p);
   });
 
   test('hard beats easy over a full game', () => {
