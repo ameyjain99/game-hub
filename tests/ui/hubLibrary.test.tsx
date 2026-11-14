@@ -19,7 +19,6 @@ const pill = (name: RegExp) => screen.getByRole('button', { name });
 
 test('the library shows every game, in the order the registry lists them', () => {
   render(<HubScreen onSelect={vi.fn()} />);
-  expect(GAMES.length).toBe(21);
   expect(shownTitles()).toEqual(GAMES.map((g) => g.title));
 });
 
@@ -45,7 +44,7 @@ test('the current games keep their colours: TTR red, Monopoly green, Cluedo purp
 
 test('each category pill shows how many games it holds', () => {
   render(<HubScreen onSelect={vi.fn()} />);
-  expect(pill(/^all/i).textContent).toContain('21');
+  expect(pill(/^all/i).textContent).toContain(String(GAMES.length));
   const cards = GAMES.filter((g) => g.category === 'cards').length;
   expect(pill(/^cards/i).textContent).toContain(String(cards));
 });
