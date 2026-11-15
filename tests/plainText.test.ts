@@ -7,7 +7,8 @@ import { join } from 'node:path';
 // multiplication sign stays by choice (8×8 boards, ×2 counts).
 const LOOKALIKES = /[\u2013\u2014\u2212\u2018\u2019\u201C\u201D\u00A0]/;
 
-const ROOTS = ['src', 'server', 'tests', 'scripts', 'docs', 'README.md', 'CONTRIBUTING.md', 'index.html', 'render.yaml'];
+// Only paths git tracks: an ignored folder (docs/) exists locally but not in CI.
+const ROOTS = ['src', 'server', 'tests', 'scripts', 'README.md', 'CONTRIBUTING.md', 'GAME_STANDARDS.md', 'index.html', 'render.yaml'];
 const TEXT = /\.(ts|tsx|js|css|md|html|json|ya?ml)$/;
 
 function files(path: string): string[] {
