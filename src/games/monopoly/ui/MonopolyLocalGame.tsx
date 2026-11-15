@@ -10,7 +10,7 @@ const BOT_DELAY_MS = 650;
 const BOT_BID_DELAY_MS = 350;
 const HUMAN_ID = 'p0';
 
-/** Local Monopoly vs bots: owns the reducer and drives bot turns on a timer. */
+/** Local Monopoly vs bots: owns the reducer. */
 export function MonopolyLocalGame({
   playerCount,
   difficulty,

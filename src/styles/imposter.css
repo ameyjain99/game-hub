@@ -1,0 +1,620 @@
+/* Imposter: a round header with the category and your face-down word card,
+   a wall of player tiles holding each player's clues (they become vote
+   targets in the vote), and a dock under the wall for the step at hand.
+   Party purple for the game's own marks, red for the imposter. */
+
+.kit-game.im-game {
+  --im: #9b6bff;
+  --im-deep: #4b2c7a;
+  max-width: calc(100dvh + 460px);
+}
+
+.kit-board.im-board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+/* ---- Round header and your card ---- */
+.im-top {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.im-round {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.im-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.im-category {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.im-card {
+  flex: none;
+  width: 210px;
+  height: 116px;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  perspective: 900px;
+  cursor: pointer;
+}
+
+.im-card-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+.im-card.is-open .im-card-inner {
+  transform: rotateY(180deg);
+}
+
+.im-card-back,
+.im-card-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 14px;
+  text-align: center;
+  border-radius: var(--radius-lg);
+  backface-visibility: hidden;
+  box-shadow: 0 10px 26px #0009;
+}
+
+.im-card-back {
+  color: #fff;
+  background: linear-gradient(145deg, var(--im), var(--im-deep));
+  box-shadow: inset 0 0 0 1px #ffffff33, 0 10px 26px #0009;
+}
+
+.im-card-back .im-mask {
+  fill: #ffffffd9;
+}
+
+.im-card-back b {
+  font-size: 15px;
+}
+
+.im-card small {
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.im-card-face {
+  color: #17171c;
+  background: #f5efe1;
+  transform: rotateY(180deg);
+}
+
+.im-card.is-imposter .im-card-face {
+  color: #fff;
+  background: linear-gradient(145deg, #e5383b, #8f1d22);
+}
+
+.im-card-word {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+}
+
+.im-card.is-imposter .im-card-word {
+  font-size: 21px;
+}
+
+.im-card:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+  border-radius: var(--radius-lg);
+}
+
+/* ---- The clue wall ---- */
+.im-wall {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  align-content: center;
+  gap: var(--space-3);
+  min-height: 0;
+  margin: 0;
+  padding: 2px;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.im-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 150px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, opacity 0.2s, transform 0.15s;
+}
+
+.im-tile.is-turn {
+  border-color: var(--tc);
+  box-shadow: 0 0 0 1px var(--tc), 0 0 24px color-mix(in srgb, var(--tc) 30%, transparent);
+}
+
+.im-tile.is-spot {
+  background: var(--panel-2);
+}
+
+.im-tile.is-out,
+.im-tile.is-dim {
+  opacity: 0.42;
+}
+
+.im-tile.is-votable:hover {
+  border-color: #fff;
+  transform: translateY(-2px);
+}
+
+.im-tile.is-chosen {
+  border-color: #fff;
+  box-shadow: 0 0 0 1px #fff;
+}
+
+.im-tile.is-imposter {
+  background: #e2483b14;
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px var(--danger);
+}
+
+.im-tile-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.im-tile-head .kit-token {
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+}
+
+.im-tile-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.im-tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  text-transform: uppercase;
+  background: #ffffff10;
+  border-radius: var(--radius-pill);
+}
+
+.im-tag.is-done {
+  color: var(--ok);
+  background: #39d98a1a;
+}
+
+.im-tag.is-imposter {
+  color: #fff;
+  background: var(--danger);
+}
+
+.im-tag .im-mask {
+  fill: currentColor;
+}
+
+.im-clues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.im-clue {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 13px;
+  font-size: 17px;
+  font-weight: 700;
+  background: #ffffff12;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  animation: im-pop 0.25s ease-out;
+}
+
+.im-clue.is-empty {
+  min-width: 64px;
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  animation: none;
+}
+
+.im-clue.is-typing {
+  border-color: var(--tc);
+  border-style: solid;
+}
+
+.im-clue.is-none {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.im-dots::after {
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  vertical-align: bottom;
+  content: '...';
+  animation: im-dots 1.2s steps(4) infinite;
+}
+
+/* ---- Votes ---- */
+.im-tile-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.im-votes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.im-vote-dot {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--tc);
+  border-radius: 50%;
+  animation: im-pop 0.25s ease-out;
+}
+
+.im-votes b {
+  margin-left: 4px;
+  font-size: 12.5px;
+}
+
+.im-stamp {
+  margin-left: auto;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--danger);
+  text-transform: uppercase;
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-sm);
+  transform: rotate(-6deg);
+  animation: im-stamp 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.im-vote-btn {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 10px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+}
+
+.im-vote-btn span {
+  padding: 4px 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0b0b0f;
+  background: #ffffffd9;
+  border-radius: var(--radius-pill);
+  transition: background 0.15s;
+}
+
+.im-vote-btn:hover span,
+.im-vote-btn:focus-visible span {
+  background: #fff;
+}
+
+.im-vote-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ---- The dock ---- */
+.im-dock {
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-height: 78px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  animation: im-rise 0.25s ease-out;
+}
+
+.im-dock p {
+  margin: 0;
+}
+
+.im-dock-title {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.im-dock-line {
+  font-size: 15px;
+}
+
+.im-clue-form,
+.im-guess,
+.im-reveal {
+  width: 100%;
+}
+
+.im-clue-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.im-clue-row .g-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.im-hint {
+  margin-top: 6px !important;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.im-hint.is-error {
+  color: var(--danger);
+}
+
+.im-talk {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.im-timer {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 4px;
+  overflow: hidden;
+  background: #ffffff14;
+  border-radius: var(--radius-pill);
+}
+
+.im-timer::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: var(--im);
+  transform-origin: left;
+  animation: im-timer var(--ms) linear forwards;
+}
+
+.im-guess-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--space-2);
+}
+
+.im-reveal-words {
+  font-size: 15px;
+}
+
+.im-reveal-words b {
+  font-size: 17px;
+}
+
+/* ---- Sidebar and result ---- */
+.im-history li {
+  line-height: 1.45;
+}
+
+.im-scoring {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--muted);
+  list-style: none;
+}
+
+.im-scoring b {
+  color: var(--ink);
+}
+
+.im-standings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.im-standings li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* ---- Motion ---- */
+@keyframes im-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes im-dots {
+  to {
+    width: 1.2em;
+  }
+}
+
+@keyframes im-stamp {
+  from {
+    opacity: 0;
+    transform: rotate(-6deg) scale(1.8);
+  }
+}
+
+@keyframes im-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes im-timer {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (max-width: 1100px) {
+  .kit-board.im-board {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+  }
+
+  .im-wall {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    overflow: visible;
+  }
+}
+
+@media (max-width: 720px) {
+  .im-top {
+    align-items: flex-start;
+  }
+
+  .im-category {
+    font-size: 22px;
+  }
+
+  .im-card {
+    width: 150px;
+    height: 96px;
+  }
+
+  .im-card-word {
+    font-size: 20px;
+  }
+
+  .im-card.is-imposter .im-card-word {
+    font-size: 16px;
+  }
+
+  .im-wall {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .im-wall > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .im-tile {
+    min-height: 96px;
+    padding: 10px;
+  }
+
+  .im-clue {
+    height: 28px;
+    padding: 0 9px;
+    font-size: 14px;
+  }
+
+  .im-tag-text {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .im-card-inner,
+  .im-clue,
+  .im-vote-dot,
+  .im-stamp,
+  .im-dock,
+  .im-dots::after,
+  .im-timer::after {
+    transition: none;
+    animation: none;
+  }
+}

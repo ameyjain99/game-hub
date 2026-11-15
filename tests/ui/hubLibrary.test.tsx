@@ -5,6 +5,14 @@ import { HubScreen } from '../../src/app/HubScreen';
 import { GameIcon } from '../../src/app/GameIcon';
 import { CATEGORIES, GAMES } from '../../src/games/registry';
 
+// Every catalogue game is live today; an upcoming one is added here so the
+// "Show all" switch (offered only while something is upcoming) stays covered.
+vi.mock('../../src/games/registry', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../src/games/registry')>();
+  const upcoming = { id: 'carrom', title: 'Carrom', tagline: 'Flick the striker.', players: '2-4 · 20-30 min', status: 'soon' as const, category: 'arcade' as const };
+  return { ...mod, GAMES: [...mod.GAMES, upcoming] };
+});
+
 afterEach(cleanup);
 
 /** Titles of the game cards currently shown, in grid order. */
@@ -45,8 +53,8 @@ test('the current games keep their colours: TTR red, Monopoly green, Cluedo purp
   expect(color('ticket-to-ride')).toBe('#D93A3F');
   expect(color('monopoly')).toBe('#2F9E62');
   expect(color('cluedo')).toBe('#7C4DBA');
-  // Catan follows its category (strategy) instead of keeping its own colour.
-  expect(color('catan')).toBe(color('ticket-to-ride'));
+  // Hexstead follows its category (strategy) instead of keeping its own colour.
+  expect(color('hexstead')).toBe(color('ticket-to-ride'));
   expect(color('last-card')).toBe(color('poker'));
 });
 

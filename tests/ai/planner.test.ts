@@ -13,7 +13,7 @@ const byLength = (r: { length: number }) => r.length;
 describe('cheapestPath', () => {
   it('finds the cheapest route chain on an open board', () => {
     const p = cheapestPath('usa', 'boston', 'washington', byLength)!;
-    expect(p.cost).toBe(4); // Boston–New York (2) + New York–Washington (2)
+    expect(p.cost).toBe(4); // Boston-New York (2) + New York-Washington (2)
     expect(p.routeIds).toHaveLength(2);
   });
 
@@ -26,7 +26,7 @@ describe('planTickets', () => {
   it('shares track between overlapping tickets', () => {
     const s = makeState({ tickets: { p0: [ticket('boston', 'washington', 7), ticket('new-york', 'washington', 4)] } });
     const plan = planTickets(s, s.players[0]);
-    expect(plan.trainsNeeded).toBe(4); // not 6: New York–Washington is shared
+    expect(plan.trainsNeeded).toBe(4); // not 6: New York-Washington is shared
     expect(plan.reachable).toHaveLength(2);
     expect(plan.blocked).toHaveLength(0);
   });
@@ -53,11 +53,11 @@ describe('planTickets', () => {
 
   it('lengthBias prefers a long route that scores more per train', () => {
     const s = makeState({ tickets: { p0: [ticket('duluth', 'toronto', 10)] } });
-    // Fewest trains: Duluth–Sault St. Marie (3) + Sault St. Marie–Toronto (2) = 5 trains, 6 points.
+    // Fewest trains: Duluth-Sault St. Marie (3) + Sault St. Marie-Toronto (2) = 5 trains, 6 points.
     const fewest = planTickets(s, s.players[0]);
     expect([...fewest.routeIds].sort()).toEqual(['duluth-sault-ste-marie', 'sault-ste-marie-toronto']);
     expect(fewest.trainsNeeded).toBe(5);
-    // With a bias: the direct Duluth–Toronto (6 trains, 15 points).
+    // With a bias: the direct Duluth-Toronto (6 trains, 15 points).
     const biased = planTickets(s, s.players[0], s.players[0].tickets, 0.4);
     expect([...biased.routeIds]).toEqual(['duluth-toronto']);
     expect(biased.trainsNeeded).toBe(6);

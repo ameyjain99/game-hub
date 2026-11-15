@@ -1,8 +1,8 @@
 /**
  * Wordgrid's dictionary: the ENABLE word list (public domain) as a set for
  * checking words and a compact trie (typed arrays, first-child / next-sibling)
- * for the bot's move search. Loaded once per process – from the network in the
- * browser, from disk on the server – and shared.
+ * for the bot's move search. Loaded once per process - from the network in the
+ * browser, from disk on the server - and shared.
  */
 
 export interface Trie {
@@ -10,7 +10,7 @@ export interface Trie {
   child: Int32Array;
   /** Next sibling of a node (0 = none). */
   sibling: Int32Array;
-  /** The letter on the edge into a node (0–25). */
+  /** The letter on the edge into a node (0-25). */
   letter: Uint8Array;
   /** Whether a word ends at a node. */
   end: Uint8Array;
@@ -71,7 +71,7 @@ export function buildDictionary(text: string): Dictionary {
   return { words: new Set(list), trie: { child, sibling, letter, end } };
 }
 
-/** The child of `node` along `ch` (0–25), or 0. */
+/** The child of `node` along `ch` (0-25), or 0. */
 export function step(t: Trie, node: number, ch: number): number {
   for (let k = t.child[node]; k; k = t.sibling[k]) if (t.letter[k] === ch) return k;
   return 0;

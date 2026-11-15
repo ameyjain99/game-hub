@@ -20,7 +20,7 @@ export function getMap(id: MapId): GameMap {
   return m;
 }
 
-/** The mode to use for a map: the named one, or the default (first). */
+/** The mode to use for a map: the named one, or the default one. */
 export function modeFor(mapId: MapId, modeId?: string): GameMode {
   const map = getMap(mapId);
   return (modeId && map.modes.find((m) => m.id === modeId)) || map.modes[0];

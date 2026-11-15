@@ -87,8 +87,8 @@ export function legalActions(state: GameState, playerId: string): Action[] {
   const isCurrent = state.players[state.current]?.id === playerId;
 
   if (state.phase === 'setup-tickets') {
-    // Any player who still has pending setup tickets may confirm, keeping at
-    // least the mode's minimum.
+    // Any player who still has pending setup tickets may confirm, keeping
+    // at least the mode's minimum.
     if (player.pendingTickets.length === 0) return [];
     const ids = player.pendingTickets.map((t) => t.id);
     return subsets(ids, modeFor(state.mapId, state.modeId).setupKeep).map((keptIds) => ({

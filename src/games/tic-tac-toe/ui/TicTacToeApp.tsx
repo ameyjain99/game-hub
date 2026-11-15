@@ -3,6 +3,7 @@ import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
 import { createTtt, ticTacToeKit } from '../engine';
 import { MARK_COLOR, TttGame } from './TttGame';
+import { TIC_TAC_TOE_RULES } from '../rules';
 
 const DIFFICULTIES = [
   { value: 'easy', label: 'Easy' },
@@ -13,7 +14,7 @@ const DIFFICULTIES = [
 const CONFIG: KitAppConfig = {
   gameId: 'tic-tac-toe',
   title: 'Tic-Tac-Toe',
-  meta: '2 players · 1–2 min a round',
+  meta: '2 players · 1-2 min a round',
   localSeats: [2],
   onlineSeats: [2],
   defaultSeats: 2,
@@ -25,6 +26,7 @@ const seatColor = (i: number) => (i === 0 ? MARK_COLOR.X : MARK_COLOR.O);
 export function TicTacToeApp({ onBackToHub }: { onBackToHub: () => void }) {
   return (
     <KitApp
+      rules={TIC_TAC_TOE_RULES}
       config={CONFIG}
       onBackToHub={onBackToHub}
       renderLocal={(setup, onExit) => (

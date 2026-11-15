@@ -66,7 +66,8 @@ export function SudokuGame({ difficulty, mistakeLimit, onExit }: { difficulty: D
 
   const undoOnce = () => {
     if (undo.length === 0 || state.won || state.lost) return;
-    const prev = undo[undo.length - 1];
+    // Undo takes back the grid, never the record: mistakes and hints stay counted.
+    const prev = { ...undo[undo.length - 1], mistakes: state.mistakes, hints: state.hints };
     live.current = prev;
     setState(prev);
     setUndo(undo.slice(0, -1));
@@ -158,7 +159,7 @@ export function SudokuGame({ difficulty, mistakeLimit, onExit }: { difficulty: D
         <p>
           {state.won
             ? `${LABEL[difficulty]} in ${clock(elapsed)} · ${state.mistakes} ${state.mistakes === 1 ? 'mistake' : 'mistakes'}${state.hints ? ` · ${state.hints} ${state.hints === 1 ? 'hint' : 'hints'}` : ''}`
-            : `${mistakeLimit} mistakes. The grid stays as you left it – try another.`}
+            : `${mistakeLimit} mistakes. The grid stays as you left it - try another.`}
         </p>
       </ResultCard>
     ) : null;
@@ -208,7 +209,7 @@ export function SudokuGame({ difficulty, mistakeLimit, onExit }: { difficulty: D
             Hint
           </button>
         </div>
-        <p className="kit-muted">Type 1–9 or use the pad; arrows move, N toggles notes, ⌫ erases. Each row, column and box holds 1–9 once.</p>
+        <p className="kit-muted">Type 1-9 or use the pad; arrows move, N toggles notes, ⌫ erases. Each row, column and box holds 1-9 once.</p>
       </div>
       <button type="button" className="g-btn g-btn-ghost" onClick={restart}>
         New puzzle

@@ -1,6 +1,6 @@
 /**
- * The game-specific operations the RoomStore delegates to. Everything else –
- * room codes, seats, tokens, host, connect/reconnect, avatars – is game-agnostic
+ * The game-specific operations the RoomStore delegates to. Everything else -
+ * room codes, seats, tokens, host, connect/reconnect, avatars - is game-agnostic
  * and lives in the store. Each game registers one adapter.
  *
  * Game state, actions, and options are opaque (`unknown`) to the store; each
@@ -49,7 +49,7 @@ export interface GameAdapter {
    *  the player skipped and excluded from scoring), then let the game advance. */
   removeSeat(game: unknown, seatIndex: number): unknown;
 
-  /** Force the game to end now (the room is abandoned – no connected humans). */
+  /** Force the game to end now (the room is abandoned - no connected humans). */
   endGame(game: unknown): unknown;
 
   /** The human player whose turn is on the clock, or null when no turn timer

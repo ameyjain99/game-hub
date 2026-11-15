@@ -46,7 +46,7 @@ describe('board', () => {
 });
 
 describe('rules', () => {
-  test('only a 6 brings a token out – and it rolls again', () => {
+  test('only a 6 brings a token out - and it rolls again', () => {
     const s = createLudo(seats(), 1);
     const five = roll(s, 5);
     expect(five.last?.kind).toBe('no-move');
@@ -73,7 +73,7 @@ describe('rules', () => {
     let s = tokens(createLudo(seats(), 1), 0, [10, YARD, YARD, YARD]);
     s = tokens(s, 1, [39, YARD, YARD, YARD]);
     expect(trackIndex('yellow', 39)).toBe(13);
-    s = roll(s, 3); // 13 is green's start – a safe square, so no capture
+    s = roll(s, 3); // 13 is green's start - a safe square, so no capture
     expect(s.players[1].tokens[0]).toBe(39);
     let t = tokens(createLudo(seats(), 1), 0, [10, YARD, YARD, YARD]);
     t = tokens(t, 1, [38, YARD, YARD, YARD]); // yellow on track 12

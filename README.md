@@ -1,28 +1,35 @@
 # Game Hub
 
 Board games in the browser, together. Open a room, share a four-letter code (or
-a join link), and everyone is at the same table – no accounts, no installs.
+a join link), and everyone is at the same table - no accounts, no installs.
 
 | Game | Players | Modes |
 |---|---|---|
-| **Ticket to Ride** (USA, Europe) | 2–5 | Online, local vs bots, pass-and-play |
-| **Monopoly** (classic US board) | 2–6 | Online, local vs bots |
+| **Ticket to Ride** (USA: classic, 1910, Mega, Big Cities; Europe) | 2-5 | Online, local vs bots, pass-and-play |
+| **Monopoly** (classic US board) | 2-6 | Online, local vs bots |
+| **Hexstead** (hex-island trading and building; a larger island for 5-6; Open Sea and Wardens expansions) | 3-6 | Online, local vs bots |
+| **Cluedo** (murder mystery on GameHub's own mansion board) | 3-6 | Online, local vs bots |
+| **Poker** (Texas Hold'em, Omaha, Short Deck, Seven-Card Stud, Razz) | 2-9 | Online, local vs bots; sit-and-go tournaments |
 | **Chess** | 2 | Online, local vs Stockfish (five strengths) |
 | **Checkers** (American) | 2 | Online, local vs bots |
 | **Tic-Tac-Toe** | 2 | Online, local vs bots (one never loses) |
-| **Ludo** | 2–4 | Online, local vs bots |
-| **Snakes & Ladders** | 2–6 | Online, local vs bots |
-| **Lineup** (five-in-a-row with cards and chips) | 2–12, in teams | Online, local vs bots (with a bot partner) |
-| **Last Card** (colour-matching card game: Classic and Flip) | 2–10 | Online, local vs bots |
-| **Wordgrid** (crossword tile game) | 2–4 | Online, local vs bots |
-| **Blockyard** (3D block-building sandbox) | 1–8 | Online (shared world), local (saved in the browser) |
+| **Ludo** | 2-4 | Online, local vs bots |
+| **Snakes & Ladders** | 2-6 | Online, local vs bots |
+| **Lineup** (five-in-a-row with cards and chips) | 2-12, in teams | Online, local vs bots (with a bot partner) |
+| **Last Card** (colour-matching card game: Classic and Flip) | 2-10 | Online, local vs bots |
+| **Wordgrid** (crossword tile game) | 2-4 | Online, local vs bots |
+| **Blockyard** (3D block-building sandbox) | 1-8 | Online (shared world), local (saved in the browser) |
 | **Solitaire** (Klondike) | 1 | Draw one or three, undo, hints |
 | **Sudoku** | 1 | Four levels, notes, hints |
 | **Minesweeper** | 1 | Four levels (Easy 9×9 to Expert 30×24), first click always safe, chording |
-| **Cluedo** | 3–6 | Built, switched off on the hub for now |
+| **Imposter** (one-word clues; find the player bluffing: Classic and Decoy) | 3-10 | Online (talk on video), local vs bots |
 
 Every game has bots at several difficulty levels, so a table can always be
 filled, and a player who drops can be handed to a bot without stopping play.
+
+Every game also carries its complete rules in the app (the book button in the
+game's header, or How to play on its landing page), written to match exactly
+what the game enforces, with a tab for each variant.
 
 ## Quick start
 
@@ -38,6 +45,11 @@ npm test           # the full test suite
 proxies `/socket.io` and `/api` to the server.
 
 ## Design principles
+
+How a game should look, feel, play and be ruled on (the full checklist for
+every game) is in [GAME_STANDARDS.md](GAME_STANDARDS.md). The mantra:
+**aesthetic and feel, and closeness to reality, come first.** The engineering
+principles underneath:
 
 1. **Rules are pure functions.** Each game's engine is a deterministic reducer:
    `applyAction(state, action) → state`, with all randomness drawn from a seed
@@ -89,9 +101,9 @@ proxies `/socket.io` and `/api` to the server.
 ```
 server/
   index.ts          HTTP + socket.io entry; serves the built client in production
-  rooms.ts          RoomStore – game-agnostic rooms, seats, clocks, disconnects
+  rooms.ts          RoomStore - game-agnostic rooms, seats, clocks, disconnects
   gameAdapter.ts    the adapter contract
-  adapters.ts       Ticket to Ride, Cluedo and Monopoly adapters, and the kit games
+  adapters.ts       Ticket to Ride and Monopoly adapters, and the kit games
   kitAdapter.ts     one adapter for every kit game (bots step one move at a time)
 src/
   app/              hub page and top-level routing (/<game>/...)
@@ -99,12 +111,12 @@ src/
     registry.ts     the game catalogue shown on the hub
     ticket-to-ride/ engine · ai · net · ui
     monopoly/       engine · ui
-    cluedo/         engine · ui
     kit/            the shared contract, screen, lobby wiring and boards for the
                     newer games (chess, checkers, tic-tac-toe, ludo,
                     snakes-and-ladders, lineup, last-card, wordgrid,
-                    blockyard, solitaire, sudoku, minesweeper – each
-                    engine.ts + ui/)
+                    blockyard, solitaire, sudoku, minesweeper, poker,
+                    hexstead, cluedo, imposter - each engine.ts + ui/ +
+                    rules.ts)
   online/           socket session hook, session storage, URL routing,
                     shared online UI (lobby, join gate, turn clock, ...)
   net/protocol.ts   socket event names and payload types
@@ -121,7 +133,9 @@ Each game's URL steps are `/<game>` (landing), `/<game>/create`,
 ## Deployment
 
 The app ships as **one Node process** that serves the built client, the small
-JSON API (`/api/room-exists`) and socket.io from the same origin.
+JSON API (`/api/room-exists`; `/api/contributors`, the home page's contributor
+list, fetched from GitHub at most once an hour) and socket.io from the same
+origin.
 
 ```bash
 npm run build && npm run build:server   # dist/ (client) + dist-server/ (server)
@@ -134,8 +148,6 @@ npm start                               # PORT defaults to 3001
 - **Run exactly one instance.** Rooms live in memory, so instances can't share
   them and a restart ends games in progress. Scaling out would need shared room
   storage and sticky sessions first.
-- **Rulebooks** (PDF links in Ticket to Ride) load from object storage; set
-  `VITE_RULES_BASE` at build time to change the host (see `.env.example`).
 
 ## Decisions worth knowing
 
@@ -188,9 +200,43 @@ npm start                               # PORT defaults to 3001
   snow, trees); creative building with a hotbar and a palette of 21 blocks; fly
   mode. A room stores only the seed and the edited blocks; positions travel on a
   separate, throwaway presence relay ten times a second.
-- **Cluedo movement is abstracted.** Rooms form a graph (adjacent rooms plus the
-  secret passages); one die roll moves you along it. Suggestions, disproving and
-  accusations follow the real rules.
+- **Cluedo.** GameHub's own 24×24 mansion plan: nine rooms round a central case
+  file, doors, corridors and corner-to-corner secret passages. Roll two dice and
+  walk up to the total; entering a room ends the move; you may suggest only in a
+  room you entered this turn (or were pulled into by a suggestion); accuse any
+  time on your turn. Bots reason from their own view at three depths (cards seen;
+  plus passes; plus every clue and hand size). The notebook fills in your cards,
+  cards shown to you and passes, and takes your own marks.
+- **Hexstead expansions.** 5-6 players get a 30-tile island, a 24-card bank, a
+  34-card charter deck and a special build phase after every turn. Open Sea
+  (3-4 players, 13 points) plays the New Shores map: the home island, a strait
+  and three outer islands with goldfields; ships (built and moved on sea sides,
+  joined to roads only at your own building), a corsair at sea, goldfield pay
+  of your choice, 2-point Landfall bonuses and a Longest Route of roads and ships.
+  Wardens (3-4 players, 13 points): towns on forest, pasture and mountains make
+  parchment, linen and silver; three guilds (5 levels, abilities at 3, a Capital
+  for the first to 4); wardens of strength 1-3 that muster, move, displace and
+  chase the raider; an omen die that sails the marauder fleet in (it lands on
+  space 7 against the mustered wardens) or draws edicts by guild level; walls;
+  no charters. The three edict decks hold the original's 54 progress cards (18
+  each, renamed where the name was the game's own), Alchemist, Inventor,
+  Deserter, Diplomat, Intrigue, Merchant and Commercial Harbour included. Every
+  choice the original gives a player is theirs here: which cards a Saboteur,
+  Wedding or Commercial Harbour costs them, what a Master Merchant or Spy takes
+  (shown only to that player), which town the marauders take, which deck a tied
+  defender draws from, which fifth edict goes back, and where a pushed warden
+  goes. Such a choice holds the table (one player acts at a time), and a roll
+  that lands the marauders pays out only after it. Commodities trade between
+  players. GameHub's calls where the rulebook is silent: a played edict goes
+  under its own deck; a Commercial Harbour offer to a player with no
+  commodities still uses up that player for the turn; the Deserter's free warden
+  can't act on the turn it arrives.
+- **Imposter.** Twelve categories of ten words, in close pairs (Lion and Tiger).
+  Classic: the imposter sees only the category and, if voted out, can still score
+  by naming the word. Decoy: the imposter gets the other word of the pair and isn't
+  told. One-word clues round the table, a talk (on video), then a secret vote with
+  one runoff on a tie. Bots clue from per-word clue lists and vote on how well
+  each player's clues fit their word.
 - **Monopoly house rules are opt-in toggles.** Defaults follow the official
   rules (auctions on; Free Parking jackpot off).
 
@@ -216,13 +262,20 @@ Conventions:
 
 ### Adding a game
 
-1. Write the engine in `src/games/<game>/engine/`: state, a pure reducer, a
-   redaction function, and a bot. Test it headlessly (an all-bot game should
-   always finish).
-2. Add an adapter in `server/adapters.ts`, including `SKIP_TURN` handling.
-3. Build the screens with `useGameRoute`, `GameLanding`, `GameForm` and
-   `OnlineLobby`, then list the game in `src/games/registry.ts` and route it in
-   `src/app/App.tsx`.
+Read [GAME_STANDARDS.md](GAME_STANDARDS.md) first: it lists everything a
+game ships with. Then:
+
+1. Write the engine in `src/games/<game>/engine.ts` as a `GameKit`
+   (`src/games/kit/engine.ts`): state, a pure `apply`, `redact`, `timeout`, and a
+   bot in `bot.ts`. Test it headlessly: all-bot games of every level finish, and
+   stronger levels win more.
+2. Serve it with `kitAdapter(<game>Kit)` in `server/adapters.ts`.
+3. Build the screen on `GameShell` (`ui/<Game>Game.tsx`) and the flow with
+   `KitApp`, `KitLocal` and `KitOnline` (`ui/<Game>App.tsx`), with sounds in
+   `ui/sound.ts`.
+4. Write the rule book in `rules.ts` (figures in `ui/ruleFigures.tsx`), list the
+   game in `src/games/registry.ts`, give it an icon in `src/app/GameIcon.tsx` and
+   route it in `src/app/App.tsx`.
 
 ## License
 

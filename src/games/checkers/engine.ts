@@ -1,11 +1,11 @@
 /**
- * Checkers – American checkers / English draughts on an 8×8 board.
+ * Checkers - American checkers / English draughts on an 8×8 board.
  *
- * Rules: the dark squares are played. Black starts on squares 1–12 (top) and
- * moves first; White on 21–32. Men move one square diagonally forward; kings one
+ * Rules: the dark squares are played. Black starts on squares 1-12 (top) and
+ * moves first; White on 21-32. Men move one square diagonally forward; kings one
  * square in any diagonal direction. Captures are compulsory, the player may
  * choose which capture to make, and a capturing piece must keep jumping while it
- * can – except that a man reaching the far row is crowned and its move ends. A
+ * can - except that a man reaching the far row is crowned and its move ends. A
  * player with no legal move (or no pieces) loses. Forty moves each (80 plies)
  * with no capture and no man moved is a draw.
  *
@@ -55,7 +55,7 @@ export const DRAW_PLIES = 80;
 export const rowOf = (sq: number) => Math.floor(sq / 8);
 export const colOf = (sq: number) => sq % 8;
 export const isDark = (sq: number) => (rowOf(sq) + colOf(sq)) % 2 === 1;
-/** Standard checkers numbering: 1–32 across the dark squares from Black's side. */
+/** Standard checkers numbering: 1-32 across the dark squares from Black's side. */
 export const squareNumber = (sq: number) => rowOf(sq) * 4 + Math.floor(colOf(sq) / 2) + 1;
 
 export const sideOf = (p: Piece): Side | null => (p > 0 ? 'black' : p < 0 ? 'white' : null);

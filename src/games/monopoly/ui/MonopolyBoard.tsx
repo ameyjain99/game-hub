@@ -94,7 +94,7 @@ interface Props {
 
 /** The 40-space ring: colour strips on the inner edge, owned lots tinted with
  *  a band in the owner's colour on the outer edge, buildings on the strip, and
- *  the tokens on a layer above (they travel). */
+ *  the tokens on a layer above. */
 export function MonopolyBoard({
   view,
   nameFor,

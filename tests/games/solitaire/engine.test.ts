@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { applySol, autoFinishStep, autoTarget, canAutoFinish, canMove, fitsTableau, hint, newDeal, type SolState } from '../../../src/games/solitaire/engine';
 
 describe('deal', () => {
-  test('seven piles of 1–7 cards, top one up; 24 in the stock', () => {
+  test('seven piles of 1-7 cards, top one up; 24 in the stock', () => {
     const s = newDeal(1, 1);
     expect(s.tableau.map((p) => p.cards.length)).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(s.tableau.every((p) => p.up === 1)).toBe(true);

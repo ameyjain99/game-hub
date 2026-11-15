@@ -7,10 +7,20 @@ import { MonopolyLocalGame } from './MonopolyLocalGame';
 import { MonopolyOnlineGame } from './MonopolyOnlineGame';
 import { MonopolyProfile } from './MonopolyProfile';
 import { HOUSE_RULES, HouseRuleSwitches, StartingCashField } from './MonopolyRules';
+import { RulesContext } from '../../../shared/rules';
+import { MONOPOLY_RULES } from '../rules';
 
 /** The Monopoly experience below the hub. Every step has its own URL
  *  (`/monopoly`, `/create`, `/join?room=`, `/<code>`, `/play`). */
 export function MonopolyApp({ onBackToHub }: { onBackToHub: () => void }) {
+  return (
+    <RulesContext.Provider value={{ rules: MONOPOLY_RULES }}>
+      <MonopolyScreens onBackToHub={onBackToHub} />
+    </RulesContext.Provider>
+  );
+}
+
+function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
   const { step, navigate, syncCode, exit } = useGameRoute('monopoly', onBackToHub);
   const [playerCount, setPlayerCount] = useState(4);
   const [difficulty, setDifficulty] = useState<MonopolyDifficulty>('normal');
@@ -50,7 +60,7 @@ export function MonopolyApp({ onBackToHub }: { onBackToHub: () => void }) {
       return (
         <GameLanding
           title="Monopoly"
-          meta="2–6 players · 60–120 min"
+          meta="2-6 players · 60-120 min"
           onBack={exit}
           onJoin={(code) => navigate({ kind: 'join', code })}
           onStart={() => navigate({ kind: 'create' })}

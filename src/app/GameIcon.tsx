@@ -16,7 +16,8 @@ interface IconSpec {
 const PATHS: Record<string, IconSpec> = {
   // Strategy
   'ticket-to-ride': { d: 'M6 50C26 50 30 14 58 14', outer: 13 },
-  catan: { d: 'M32 7L54 19.5V44.5L32 57L10 44.5V19.5Z' },
+  // A hex tile with a homestead on it.
+  hexstead: { d: 'M32 7L54 19.5V44.5L32 57L10 44.5V19.5ZM25 41V32L32 26L39 32V41Z' },
   chess: { d: 'M23 17a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M26 33H38L45 56H19Z' },
   checkers: { d: 'M9 22a23 11 0 1 0 46 0a23 11 0 1 0 -46 0M9 22V42a23 11 0 0 0 46 0V22' },
   lineup: {

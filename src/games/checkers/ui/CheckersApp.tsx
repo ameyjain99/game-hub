@@ -3,6 +3,7 @@ import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
 import { checkersKit, createCheckers } from '../engine';
 import { CheckersGame } from './CheckersGame';
+import { CHECKERS_RULES } from '../rules';
 
 const DIFFICULTIES = [
   { value: 'easy', label: 'Easy' },
@@ -13,7 +14,7 @@ const DIFFICULTIES = [
 const CONFIG: KitAppConfig = {
   gameId: 'checkers',
   title: 'Checkers',
-  meta: '2 players · 15–30 min',
+  meta: '2 players · 15-30 min',
   localSeats: [2],
   onlineSeats: [2],
   defaultSeats: 2,
@@ -25,6 +26,7 @@ const seatColor = (i: number) => (i === 0 ? '#8d97ab' : '#efe8da');
 export function CheckersApp({ onBackToHub }: { onBackToHub: () => void }) {
   return (
     <KitApp
+      rules={CHECKERS_RULES}
       config={CONFIG}
       onBackToHub={onBackToHub}
       renderLocal={(setup, onExit) => (

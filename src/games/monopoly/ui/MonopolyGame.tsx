@@ -11,6 +11,8 @@ import { MonopolyCenter } from './MonopolyCenter';
 import { MonopolySidebar } from './MonopolySidebar';
 import { TradeDialog } from './MonopolyTrade';
 import { momentLots, useSetMoments } from './SetMoment';
+import { RulesButton } from '../../../shared/ui/Rules';
+import { MONOPOLY_RULES } from '../rules';
 
 interface Props {
   view: MonopolyState;
@@ -38,7 +40,7 @@ function useMonopolySounds(view: MonopolyState, meId: string): void {
   }, [view, meId]);
 }
 
-/** The full Monopoly screen – header, board with its play area, and sidebar –
+/** The full Monopoly screen - header, board with its play area, and sidebar -
  *  shared by local and online games. */
 export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel, headerExtra, banner, sideTop }: Props) {
   const [inspected, setInspected] = useState<number | null>(null);
@@ -94,6 +96,7 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         <h1 className="mono-title">Monopoly</h1>
         <div className="mono-head-extra">
           {headerExtra}
+          <RulesButton rules={MONOPOLY_RULES} />
           <button
             type="button"
             className="g-icon-btn"

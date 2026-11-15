@@ -90,7 +90,7 @@ describe('plays', () => {
   });
 
   test('a second sequence may reuse one chip of the first, and two win', () => {
-    // Row 1: 10–14 is the first; 14–18 shares only 14.
+    // Row 1: 10-14 is the first; 14-18 shares only 14.
     let s = chipsAt(createLineup(seats(), 1), [10, 11, 12, 13, 14, 15, 16, 17], 0);
     s = { ...s, sequences: [{ team: 0, cells: [10, 11, 12, 13, 14] }] };
     s = withHand(s, 0, [BOARD[18]]);

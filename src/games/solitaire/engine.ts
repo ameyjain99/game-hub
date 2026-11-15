@@ -1,7 +1,7 @@
 /**
- * Klondike solitaire – the classic "Solitaire".
+ * Klondike solitaire - the classic "Solitaire".
  *
- * Seven tableau piles are dealt with 1–7 cards, the top one face up; the rest
+ * Seven tableau piles are dealt with 1-7 cards, the top one face up; the rest
  * of the deck is the stock. Build the tableau down in alternating colours (a
  * red Queen on a black King); any face-up run moves as a unit, and only a King
  * (or a run headed by one) fills an empty pile. Build the four foundations up by

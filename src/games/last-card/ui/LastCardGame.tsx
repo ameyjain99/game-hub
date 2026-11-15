@@ -28,7 +28,7 @@ function describe(e: LcEvent, who: (id: string) => string, side: 'light' | 'dark
     case 'call':
       return `${who(e.player)} called "Last card!"`;
     case 'catch':
-      return `${who(e.player)} caught ${who(e.target!)} – draw ${e.count}`;
+      return `${who(e.player)} caught ${who(e.target!)} - draw ${e.count}`;
   }
 }
 
@@ -150,7 +150,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           )}
           {view.exposed === meId && (
             <button type="button" className="lc-call is-urgent" onClick={() => onAction({ type: 'CALL' })}>
-              <Megaphone size={15} /> Last card! – call it now
+              <Megaphone size={15} /> Last card! - call it now
             </button>
           )}
         </div>
@@ -237,7 +237,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           .map((p) => ({ id: p.id, accent: lcSeatColor(view.players.indexOf(p)), active: actor === p.id, badge: <span className="kit-badge" style={{ '--tc': lcSeatColor(view.players.indexOf(p)) } as CSSProperties}>{tokenLabel(nameFor(p.id))}</span> }))}
       />
       <PlayersPanel
-        title={`Hand ${view.game} · ${view.variant === 'flip' ? `Flip – ${side} side` : 'Classic'}`}
+        title={`Hand ${view.game} · ${view.variant === 'flip' ? `Flip - ${side} side` : 'Classic'}`}
         spotlight={spotlight}
         onSpotlight={setSpotlight}
         players={view.players.map((p, i) => ({
@@ -254,7 +254,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
       <SideSection title="Recent plays">
         {view.history.length === 0 ? (
           <p className="kit-muted">
-            Match the colour or the symbol. {view.variant === 'flip' ? 'A Flip card turns the whole table over to the dark side – and back.' : 'Wild Draw 4 only when you have nothing of the colour.'}
+            Match the colour or the symbol. {view.variant === 'flip' ? 'A Flip card turns the whole table over to the dark side - and back.' : 'Wild Draw 4 only when you have nothing of the colour.'}
           </p>
         ) : (
           <ul className="kit-log">
@@ -269,12 +269,16 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
 
   let status;
   if (view.over && view.winner) status = <><strong>{who(view.winner)}</strong> {view.winner === meId ? 'win' : 'wins'} the hand</>;
-  else if (myTurn) status = view.drawn !== null ? <><strong>Play it or keep it</strong></> : <><strong>Your turn</strong> · {topFace ? `on ${faceName(topFace)}` : ''}</>;
+  else if (myTurn) {
+    const onWhat = !topFace || view.color === null ? 'play any card' : topFace.color === null ? `on ${faceName(topFace)} · ${COLOR_NAME[view.color]}` : `on ${faceName(topFace)}`;
+    status = view.drawn !== null ? <><strong>Play it or keep it</strong></> : <><strong>Your turn</strong> · {onWhat}</>;
+  }
   else status = <><strong>{nameFor(actor ?? '')}</strong> is playing...</>;
 
   return (
     <GameShell
       className={`lc-game${side === 'dark' ? ' is-dark-side' : ''}`}
+      rulesVariant={view.variant}
       title="Last Card"
       exitLabel={exitLabel}
       onExit={onExit}

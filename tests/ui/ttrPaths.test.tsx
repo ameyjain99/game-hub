@@ -17,20 +17,20 @@ function openTtR() {
 test('"play on this device" routes to /ticket-to-ride/setup', () => {
   openTtR();
   expect(window.location.pathname).toBe('/ticket-to-ride');
-  fireEvent.click(screen.getByRole('button', { name: /play on this device/i }));
+  fireEvent.click(screen.getByRole('button', { name: /start local game/i }));
   expect(window.location.pathname).toBe('/ticket-to-ride/setup');
 });
 
 test('starting a local game routes to /ticket-to-ride/play', () => {
   openTtR();
-  fireEvent.click(screen.getByRole('button', { name: /play on this device/i }));
+  fireEvent.click(screen.getByRole('button', { name: /start local game/i }));
   fireEvent.click(screen.getByRole('button', { name: /^start game$/i }));
   expect(window.location.pathname).toBe('/ticket-to-ride/play');
 });
 
 test('hosting an online game routes to /ticket-to-ride/create', () => {
   openTtR();
-  fireEvent.click(screen.getByRole('button', { name: /^start game$/i }));
+  fireEvent.click(screen.getByRole('button', { name: /^start a game$/i }));
   expect(window.location.pathname).toBe('/ticket-to-ride/create');
   expect(screen.getByRole('heading', { name: /who are you/i })).toBeTruthy();
   // The board is chosen here on the create page, not on the landing.
@@ -49,7 +49,7 @@ test('opening /ticket-to-ride/join with no room bounces to the landing', () => {
   render(<App />);
   expect(window.location.pathname).toBe('/ticket-to-ride');
   expect(screen.queryByRole('heading', { name: /who are you/i })).toBeNull();
-  expect(screen.getByRole('button', { name: /start game/i })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /start a game/i })).toBeTruthy();
 });
 
 test('a /join?room=ABCD link opens the join flow once the room is confirmed', async () => {
@@ -67,5 +67,5 @@ test('a /<code> link this browser does not belong to bounces to the landing', ()
   // No stored session for ABCD → not a member → redirected to the parent page.
   expect(window.location.pathname).toBe('/ticket-to-ride');
   expect(screen.queryByRole('heading', { name: /who are you/i })).toBeNull();
-  expect(screen.getByRole('button', { name: /start game/i })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /start a game/i })).toBeTruthy();
 });

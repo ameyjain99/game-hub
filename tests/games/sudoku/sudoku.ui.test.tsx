@@ -13,6 +13,22 @@ test('pick an empty cell and type: a number goes in, and the pad counts it', () 
   expect(empty.getAttribute('aria-label')).toMatch(/, 4/);
 });
 
+test('undo takes back a wrong digit but the mistake stays counted', () => {
+  render(<SudokuGame difficulty="easy" mistakeLimit={3} onExit={() => {}} />);
+  const mistakes = () => screen.getByText('Mistakes').nextElementSibling!.textContent;
+  const empty = screen.getAllByRole('gridcell').find((c) => c.getAttribute('aria-label')!.endsWith('empty'))!;
+  fireEvent.click(empty);
+  // Try digits until one is wrong.
+  for (const d of '123456789') {
+    fireEvent.keyDown(window, { key: d });
+    if (mistakes() === '1/3') break;
+    fireEvent.keyDown(window, { key: 'Backspace' });
+  }
+  expect(mistakes()).toBe('1/3');
+  fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+  expect(mistakes()).toBe('1/3');
+});
+
 test('notes mode pencils digits instead', () => {
   render(<SudokuGame difficulty="easy" mistakeLimit={3} onExit={() => {}} />);
   const empty = screen.getAllByRole('gridcell').find((c) => c.getAttribute('aria-label')!.endsWith('empty'))!;

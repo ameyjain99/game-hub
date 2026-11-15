@@ -56,7 +56,7 @@ describe('heuristicAction', () => {
   });
 
   it('draws instead of spending cards and trains on an off-plan blocking claim', () => {
-    // Saint Louis–Chicago (2, green) is under pressure from two opponent routes,
+    // Saint Louis-Chicago (2, green) is under pressure from two opponent routes,
     // but it is not on p0's plan (Boston → Washington), so p0 keeps drawing.
     const base = makeState({
       owned: { p1: ['duluth-chicago', 'kansas-city-saint-louis'] },

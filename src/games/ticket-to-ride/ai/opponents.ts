@@ -4,7 +4,7 @@ import { getRoute } from '../engine/selectors';
 
 /**
  * Opponent pressure on each unclaimed route: how many opponent-owned routes
- * touch its two cities. Uses only public information (claimed routes). In 4–5
+ * touch its two cities. Uses only public information (claimed routes). In 4-5
  * player games a double route keeps a spare rail, so its pressure is halved.
  */
 export function threatMap(state: GameState, playerId: string): Map<string, number> {

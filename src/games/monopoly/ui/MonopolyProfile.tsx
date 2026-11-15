@@ -11,7 +11,7 @@ interface Props {
   onSubmit: (name: string, seatCount?: number, settings?: Partial<Settings>) => void;
 }
 
-/** Name, plus – when hosting – players, board, starting cash and house rules. */
+/** Name, plus - when hosting - players, board, starting cash and house rules. */
 export function MonopolyProfile({ action, code, onBack, onSubmit }: Props) {
   const [name, setName] = useState('');
   const [seatCount, setSeatCount] = useState(4);

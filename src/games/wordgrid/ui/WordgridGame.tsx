@@ -19,7 +19,7 @@ interface Pending {
   blank: boolean;
 }
 
-function TileFace({ letter, blank, className, style }: { letter: string; blank?: boolean; className?: string; style?: CSSProperties }) {
+export function TileFace({ letter, blank, className, style }: { letter: string; blank?: boolean; className?: string; style?: CSSProperties }) {
   return (
     <span className={`wg-tile${blank ? ' is-blank' : ''}${className ? ` ${className}` : ''}`} style={style}>
       <b>{letter === '?' ? '' : letter}</b>
@@ -32,7 +32,7 @@ function describe(m: WgMove, who: (id: string) => string): string {
   if (m.kind === 'pass') return `${who(m.player)} passed`;
   if (m.kind === 'exchange') return `${who(m.player)} swapped ${m.count} ${m.count === 1 ? 'tile' : 'tiles'}`;
   const words = m.words?.map((w) => w.word).join(', ') ?? '';
-  return `${who(m.player)} played ${words} for ${m.score}${m.bingo ? ' – all seven!' : ''}`;
+  return `${who(m.player)} played ${words} for ${m.score}${m.bingo ? ' - all seven!' : ''}`;
 }
 
 /** The Wordgrid screen: drag, click or type tiles onto the board; the score of what you've laid shows as you go. */

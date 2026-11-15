@@ -1,7 +1,7 @@
 /**
- * Blockyard's world: a 96×40×96 grid of blocks generated from a seed – rolling
+ * Blockyard's world: a 96×40×96 grid of blocks generated from a seed - rolling
  * hills of grass over dirt and stone, sandy shores, water in the hollows, snow
- * on the peaks and trees scattered over the grass – plus the edits players make.
+ * on the peaks and trees scattered over the grass - plus the edits players make.
  *
  * Generation is deterministic, so a room only ever stores the seed and the
  * edits; every client builds the same world from them.

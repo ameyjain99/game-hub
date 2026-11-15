@@ -27,9 +27,9 @@ export const W = {
   locoCost: 1.5,
   /** Points-per-train risk charged when choosing tickets. */
   ticketRisk: 0.45,
-  /** Points charged per kept ticket – completion is never certain (keeps 2, not 3). */
+  /** Points charged per kept ticket - completion is never certain (keeps 2, not 3). */
   perTicket: 10,
-  /** Only draw new tickets with at least this many trains left. Never: mid-game tickets were completed only 41–65%. */
+  /** Only draw new tickets with at least this many trains left. Never: mid-game tickets were completed only 41-65%. */
   drawTicketsMinTrains: Infinity,
   /** Endgame once our trains, or any opponent's, fall to this. */
   endgameTrains: 6,

@@ -45,7 +45,7 @@ export function rentFor(state: MonopolyState, spaceId: number, diceTotal: number
     const full = ownsFullSet(state, own.owner, sp.group!);
     return full && state.settings.doubleRentFullSet ? base * 2 : base;
   }
-  return rent[own.houses]; // houses 1–4 -> rent[1..4]; hotel (5) -> rent[5]
+  return rent[own.houses]; // houses 1-4 -> rent[1..4]; hotel (5) -> rent[5]
 }
 
 /** Whether `ownerId` could legally add a house/hotel to `spaceId` right now. */

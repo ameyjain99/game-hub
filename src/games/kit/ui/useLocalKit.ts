@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BOT_DELAY_MS, IllegalMove, type GameKit, type KitCommonAction } from '../engine';
+import { BOT_DELAY_MS, DEALER_ID, IllegalMove, type GameKit, type KitCommonAction } from '../engine';
 
 /** The human's seat in a local game. */
 export const LOCAL_ME = 'p0';
@@ -20,9 +20,18 @@ export function useLocalKit<S, A extends { type: string }>(
 
   const actor = kit.actor(state);
   const botUp = !kit.isOver(state) && !!actor && !!kit.players(state).find((p) => p.id === actor)?.isAI;
+  const auto = !!kit.auto?.(state);
+
+  // The game's own steps (a dealer dealing the next street) come first.
+  useEffect(() => {
+    const step = kit.auto?.(state);
+    if (!step) return;
+    const timer = setTimeout(() => setState((s) => (s === state ? kit.apply(s, step.action, DEALER_ID) : s)), step.delay);
+    return () => clearTimeout(timer);
+  }, [state, kit]);
 
   useEffect(() => {
-    if (!botUp || !actor) return;
+    if (auto || !botUp || !actor) return;
     let live = true;
     const timer = setTimeout(async () => {
       const action = asyncBot.current ? await asyncBot.current(state) : kit.bot(state);
@@ -33,7 +42,7 @@ export function useLocalKit<S, A extends { type: string }>(
       live = false;
       clearTimeout(timer);
     };
-  }, [state, botUp, actor, kit]);
+  }, [state, auto, botUp, actor, kit]);
 
   /** The human's action; an illegal one (a stale click) is ignored. */
   const dispatch = useCallback(

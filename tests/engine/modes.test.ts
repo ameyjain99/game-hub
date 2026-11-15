@@ -91,6 +91,17 @@ describe('Mega Game tickets (rulebook: all 69 tickets)', () => {
   });
 });
 
+describe('Big Cities tickets (rulebook: every ticket naming a big city, 35 in all)', () => {
+  const big = new Set(['chicago', 'dallas', 'houston', 'los-angeles', 'miami', 'new-york', 'seattle']);
+  const tickets = modeFor('usa', 'big-cities').tickets;
+
+  it('uses the 35 tickets of the full 1910 set that touch Chicago, Dallas, Houston, Los Angeles, Miami, New York or Seattle', () => {
+    expect(tickets).toHaveLength(35);
+    expect(new Set(tickets.map((t) => t.id)).size).toBe(35);
+    for (const t of tickets) expect(big.has(t.a) || big.has(t.b), `${t.a}-${t.b}`).toBe(true);
+  });
+});
+
 /** Every player keeps the minimum, so the game is in its first turn. */
 function started(modeId: string, keep: number): GameState {
   let g = createGame(twoHumans, 1, 'usa', modeId);
@@ -105,6 +116,7 @@ describe.each([
   { modeId: 'default', deal: 3, keep: 2, draw: 3 },
   { modeId: '1910', deal: 3, keep: 2, draw: 3 },
   { modeId: 'mega', deal: 5, keep: 3, draw: 4 },
+  { modeId: 'big-cities', deal: 4, keep: 2, draw: 4 },
 ])('$modeId mode ticket rules', ({ modeId, deal, keep, draw }) => {
   it(`deals ${deal} tickets to each player and records the mode`, () => {
     const g = createGame(twoHumans, 1, 'usa', modeId);
@@ -170,6 +182,10 @@ describe('end-game bonus cards by mode', () => {
 
   it('mega: both bonus cards are in play', () => {
     expect(finish(lastTurn('mega'))).toEqual([4 + 10, 2 + 2 + 15]);
+  });
+
+  it('big cities: the standard Longest Path bonus (+10), as the rulebook changes only the tickets', () => {
+    expect(finish(lastTurn('big-cities'))).toEqual([4 + 10, 2 + 2]);
   });
 });
 

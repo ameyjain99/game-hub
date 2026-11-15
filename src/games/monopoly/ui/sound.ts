@@ -1,6 +1,4 @@
-// Monopoly's cues, on the shared sound engine (src/shared/sound.ts). Every cue
-// is soft and short; `soundCues` decides, from one state change, which play on
-// a given player's screen.
+// Monopoly's cues, on the shared sound engine (src/shared/sound.ts).
 
 import type { MonopolyState } from '../engine/state';
 import { completedSets } from '../engine/selectors';

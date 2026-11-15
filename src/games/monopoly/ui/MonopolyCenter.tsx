@@ -250,7 +250,7 @@ export function MonopolyCenter({
     <div className="mono-play-head">
       <Dice values={view.dice} rollKey={view.rollSeq} />
       <p className="mono-status" aria-live="polite">
-        {canRoll && view.doubles > 0 ? 'Doubles – roll again' : status}
+        {canRoll && view.doubles > 0 ? 'Doubles - roll again' : status}
       </p>
       {canRoll && (
         <button type="button" className="mono-roll" aria-label="Roll dice" title="Roll (Space)" onClick={() => onAction({ type: 'ROLL' })}>

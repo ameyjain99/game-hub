@@ -119,7 +119,7 @@ export function OnlineLobby({ gameId, title, lobby, code, myPlayerId, difficulti
                 {!ready && (
                   <p className="g-hint">
                     {difficulties.length > 0
-                      ? 'Waiting for friends – or add bots to the open seats.'
+                      ? 'Waiting for friends - or add bots to the open seats.'
                       : 'Waiting for your opponent to join.'}
                   </p>
                 )}

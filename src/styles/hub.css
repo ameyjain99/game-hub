@@ -77,10 +77,16 @@
   white-space: nowrap;
 }
 
-/* Phones: the header keeps just the brand and "Join a room" (the footer has the links). */
-@media (max-width: 560px) {
+/* Narrow screens: the header keeps just the brand and "Join a room" (the footer has the links). */
+@media (max-width: 680px) {
   .hub-header .hub-nav a {
     display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .hub-cta {
+    padding: 24px;
   }
 }
 
@@ -175,6 +181,7 @@
 .hub-btn-primary {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   height: 46px;
   background: #fff;
   color: #0b0b0f;
@@ -189,12 +196,14 @@
 .hub-btn-ghost {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   height: 46px;
   padding: 0 18px;
   border: 1px solid #2a2c31;
   border-radius: 10px;
   background: transparent;
   color: #ececee;
+  text-decoration: none;
   font-weight: 600;
   font-size: 15px;
 }
@@ -538,9 +547,344 @@
 
 
 
+/* ---- About: what GameHub is, and six things every game is built to ---- */
+.hub-about,
+.hub-open,
+.hub-faq {
+  padding-top: 48px;
+  padding-bottom: 48px;
+  border-top: 1px solid #1c1d22;
+}
+
+.hub-about-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 16px 48px;
+  margin-bottom: 32px;
+}
+.hub-about-head .hub-section-title {
+  margin-bottom: 0;
+}
+.hub-about-lead,
+.hub-open-lead {
+  margin: 0;
+  color: #9ba0a6;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.hub-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.hub-points li {
+  padding: 22px;
+  border: 1px solid #22232a;
+  border-radius: 16px;
+  background: #141419;
+}
+.hub-point-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  color: #fff;
+  box-shadow: inset 0 1px 0 #ffffff2e, 0 6px 16px -8px #000;
+}
+.hub-points h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.hub-points p {
+  margin: 0;
+  color: #9ba0a6;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ---- Open source: the repository, how to help, and who built it ---- */
+.hub-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 32px 48px;
+}
+.hub-open-lead {
+  max-width: 520px;
+  margin-bottom: 24px;
+}
+.hub-open-lead a {
+  color: #ececee;
+  text-decoration: underline;
+  text-decoration-color: #4a4d55;
+  text-underline-offset: 3px;
+}
+.hub-open-lead a:hover {
+  text-decoration-color: #ececee;
+}
+.hub-open-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hub-people {
+  padding: 22px;
+  border: 1px solid #22232a;
+  border-radius: 18px;
+  background: #141419;
+}
+.hub-people-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.hub-people-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.hub-people-head span {
+  color: #6e747c;
+  font-size: 13px;
+}
+.hub-people-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.hub-person a,
+.hub-person.is-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 14px 6px 12px;
+  border-radius: 12px;
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.hub-person a:hover {
+  background: #1c1d23;
+  transform: translateY(-2px);
+}
+.hub-person-face {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 7px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #22232a;
+  box-shadow:
+    0 0 0 2px #141419,
+    0 0 0 3.5px #2f3138;
+}
+.hub-person a:hover .hub-person-face {
+  box-shadow:
+    0 0 0 2px #1c1d23,
+    0 0 0 3.5px #ececee;
+}
+.hub-person-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hub-person-meta {
+  color: #6e747c;
+  font-size: 12px;
+}
+/* "You?": an empty seat, drawn dashed, that leads to the contributing guide. */
+.hub-person.is-you .hub-person-face,
+.hub-person.is-you a:hover .hub-person-face {
+  border: 1.5px dashed #3a3d44;
+  background: transparent;
+  box-shadow: none;
+  color: #8a9099;
+}
+.hub-person.is-you a:hover .hub-person-face {
+  border-color: #ececee;
+  color: #fff;
+}
+.hub-person.is-loading .hub-person-face,
+.hub-person.is-loading .hub-person-name {
+  animation: hub-loading 1.2s ease-in-out infinite alternate;
+}
+.hub-person.is-loading .hub-person-name {
+  width: 64px;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: 5px;
+  background: #22232a;
+}
+@keyframes hub-loading {
+  to {
+    opacity: 0.45;
+  }
+}
+.hub-people-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #9ba0a6;
+  font-size: 13.5px;
+  text-decoration: none;
+}
+.hub-people-all:hover {
+  color: #fff;
+}
+
+/* ---- FAQ: folded answers, one rule between each ---- */
+.hub-faq {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 0 48px;
+}
+/* The heading stays in view while the answers below it unfold. */
+.hub-faq-head {
+  position: sticky;
+  top: 24px;
+}
+.hub-faq-ask {
+  margin: -12px 0 28px;
+  color: #9ba0a6;
+  font-size: 15px;
+}
+.hub-faq-ask a {
+  color: #ececee;
+  text-decoration: underline;
+  text-decoration-color: #4a4d55;
+  text-underline-offset: 3px;
+}
+.hub-faq-ask a:hover {
+  text-decoration-color: #ececee;
+}
+.hub-faq-list {
+  border-top: 1px solid #22232a;
+}
+.hub-q {
+  border-bottom: 1px solid #22232a;
+}
+.hub-q summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  font-size: 16px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+.hub-q summary::-webkit-details-marker {
+  display: none;
+}
+.hub-q summary:focus-visible {
+  outline: 2px solid #ececee;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.hub-q summary svg {
+  flex: none;
+  color: #6e747c;
+  transition: transform 0.2s ease;
+}
+.hub-q summary:hover svg,
+.hub-q[open] summary svg {
+  color: #ececee;
+}
+.hub-q[open] summary svg {
+  transform: rotate(45deg);
+}
+.hub-q p {
+  margin: 0 0 18px;
+  padding-right: 34px;
+  color: #9ba0a6;
+  font-size: 15px;
+  line-height: 1.6;
+  animation: hub-answer 0.2s ease;
+}
+@keyframes hub-answer {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-person a,
+  .hub-q summary svg {
+    transition: none;
+  }
+  .hub-person.is-loading .hub-person-face,
+  .hub-person.is-loading .hub-person-name,
+  .hub-q p {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .hub-about-head,
+  .hub-open,
+  .hub-faq {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hub-points {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hub-faq-head {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .hub-points {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Icon beside the words, so six points don't make a long scroll. */
+  .hub-points {
+    gap: 10px;
+  }
+  .hub-points li {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: 14px;
+    padding: 16px;
+  }
+  .hub-point-icon {
+    grid-row: span 2;
+    margin-bottom: 0;
+  }
+  .hub-open-actions {
+    flex-direction: column;
+  }
+  .hub-open-actions a {
+    justify-content: center;
+  }
+}
+
 .hub-cta {
-  margin-top: 40px;
-  margin-bottom: 40px;
+  /* A filled card, so it keeps the page gutter the other sections get from their padding. */
+  width: calc(100% - 48px);
   padding: 32px;
   border-radius: 18px;
   background: #141419;
@@ -552,6 +896,11 @@
   flex-wrap: wrap;
 }
 
+
+/* Beats `.hub > section`'s margin, which otherwise sits the card flush on the footer line. */
+.hub > .hub-cta {
+  margin-bottom: 40px;
+}
 
 .hub-cta h2 {
   margin: 0 0 6px;
@@ -578,4 +927,22 @@
   font-size: 13px;
   flex-wrap: wrap;
   gap: 12px;
+}
+.hub-footer .hub-brand a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: #3a3d44;
+  text-underline-offset: 3px;
+}
+.hub-footer .hub-brand a:hover {
+  color: #fff;
+}
+.hub-footer .hub-nav {
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.hub-footer .hub-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }

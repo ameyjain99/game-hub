@@ -12,7 +12,7 @@ export const MARK_COLOR: Record<Mark, string> = { X: '#F0524F', O: '#3D8BFF' };
 /** The centre of a cell on the 300-unit board. */
 const centre = (cell: number) => ({ x: 50 + (cell % 3) * 100, y: 50 + Math.floor(cell / 3) * 100 });
 
-function MarkGlyph({ mark, ghost }: { mark: Mark; ghost?: boolean }) {
+export function MarkGlyph({ mark, ghost }: { mark: Mark; ghost?: boolean }) {
   return (
     <svg viewBox="0 0 100 100" className={`ttt-mark is-${mark.toLowerCase()}${ghost ? ' is-ghost' : ''}`} aria-hidden="true">
       {mark === 'X' ? (
@@ -93,7 +93,7 @@ export function TttGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
   );
 
   const score = (id: string) => view.score[id] ?? 0;
-  const scoreLine = `${who(meId)} ${score(meId)} – ${score(opponent.id)} ${nameFor(opponent.id)}${view.draws ? ` · ${view.draws} ${view.draws === 1 ? 'draw' : 'draws'}` : ''}`;
+  const scoreLine = `${who(meId)} ${score(meId)} - ${score(opponent.id)} ${nameFor(opponent.id)}${view.draws ? ` · ${view.draws} ${view.draws === 1 ? 'draw' : 'draws'}` : ''}`;
 
   const overlay = view.roundOver ? (
     <ResultCard
@@ -143,7 +143,7 @@ export function TttGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
       <SideSection title="Series">
         <p className="kit-muted">
           {view.draws === 0 ? 'No draws yet.' : `${view.draws} ${view.draws === 1 ? 'draw' : 'draws'} so far.`} Starts alternate each round, and
-          the starter plays X. Three in a row – across, down or diagonal – wins.
+          the starter plays X. Three in a row - across, down or diagonal - wins.
         </p>
       </SideSection>
     </>

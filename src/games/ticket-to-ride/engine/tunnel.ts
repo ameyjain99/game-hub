@@ -44,7 +44,7 @@ export function payExtra(hand: Hand, combo: CardCombo, extra: number): TrainCard
   return need > 0 ? null : paid;
 }
 
-/** Whether the player can afford the tunnel's extra cost right now. */
+/** Can the player can afford the tunnel's extra cost right now? */
 export function canAffordTunnel(hand: Hand, combo: CardCombo, extra: number): boolean {
   return payExtra(hand, combo, extra) !== null;
 }

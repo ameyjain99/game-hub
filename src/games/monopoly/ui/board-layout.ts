@@ -55,7 +55,7 @@ const centre = (n: number) => (trackStart(n) + trackSize(n) / 2) / TRACK;
 const along = (n: number, f: number) => (trackStart(n) + trackSize(n) * f) / TRACK;
 
 /**
- * Where a token stands on a square, as fractions of the board (0–1), and the
+ * Where a token stands on a square, as fractions of the board (0-1), and the
  * axis several tokens on that square fan out along. Tokens keep to the outer
  * edge, away from the colour strip, as on a printed board.
  */

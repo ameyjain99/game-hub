@@ -24,6 +24,9 @@ const GAME_APPS: Record<string, GameApp> = {
   chess: lazy(() => import('../games/chess/ui/ChessApp').then((m) => ({ default: m.ChessApp }))),
   wordgrid: lazy(() => import('../games/wordgrid/ui/WordgridApp').then((m) => ({ default: m.WordgridApp }))),
   'last-card': lazy(() => import('../games/last-card/ui/LastCardApp').then((m) => ({ default: m.LastCardApp }))),
+  poker: lazy(() => import('../games/poker/ui/PokerApp').then((m) => ({ default: m.PokerApp }))),
+  imposter: lazy(() => import('../games/imposter/ui/ImposterApp').then((m) => ({ default: m.ImposterApp }))),
+  hexstead: lazy(() => import('../games/hexstead/ui/HexsteadApp').then((m) => ({ default: m.HexsteadApp }))),
   blockyard: lazy(() => import('../games/blockyard/ui/BlockyardApp').then((m) => ({ default: m.BlockyardApp }))),
   minesweeper: lazy(() => import('../games/minesweeper/ui/MinesweeperApp').then((m) => ({ default: m.MinesweeperApp }))),
   sudoku: lazy(() => import('../games/sudoku/ui/SudokuApp').then((m) => ({ default: m.SudokuApp }))),
@@ -85,7 +88,7 @@ export function App() {
     );
   }
 
-  // The hub – and the fallback for any game without a flow wired up yet.
+  // The hub - and the fallback for any game without a flow wired up yet.
   return (
     <HubScreen
       onSelect={(id) => navigate({ kind: 'game', gameId: id }, `/${id}`)}

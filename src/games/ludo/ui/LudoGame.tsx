@@ -41,7 +41,7 @@ const YARD_SPOTS: [number, number][] = [
 const WALK_DELAY_MS = 420;
 const STEP_MS = 140;
 
-/** A token's centre in grid units (row, col), 0–15. */
+/** A token's centre in grid units (row, col), 0-15. */
 function spot(color: LudoColor, progress: number, token: number): [number, number] {
   if (progress === YARD) {
     const [r, c] = YARD_AT[color];
@@ -121,12 +121,12 @@ function useTokenWalk(view: LudoState) {
 }
 
 function describe(e: LudoEvent, name: string, color: LudoColor): string {
-  if (e.kind === 'three-sixes') return `${name} rolled a third 6 – turn over`;
-  if (e.kind === 'no-move') return `${name} rolled ${e.roll} – no move`;
+  if (e.kind === 'three-sixes') return `${name} rolled a third 6 - turn over`;
+  if (e.kind === 'no-move') return `${name} rolled ${e.roll} - no move`;
   let text = `${name} rolled ${e.roll}`;
-  if (e.from === YARD) text += ' – a token comes out';
-  else if (e.to === HOME) text += ' – a token reaches home';
-  else text += ` – moved ${NAME[color].toLowerCase()} ${e.token! + 1}`;
+  if (e.from === YARD) text += ' - a token comes out';
+  else if (e.to === HOME) text += ' - a token reaches home';
+  else text += ` - moved ${NAME[color].toLowerCase()} ${e.token! + 1}`;
   if (e.captured?.length) text += `, capturing ${e.captured.length === 1 ? 'a token' : `${e.captured.length} tokens`}`;
   if (e.bonus) text += ' · rolls again';
   return text;
@@ -293,7 +293,7 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
           <span className="snl-tray-kicker">{view.over ? 'Game over' : myTurn ? 'Your turn' : `${nameFor(current.id)}'s turn`}</span>
           <span className="snl-tray-line">
             {choosing
-              ? `You rolled ${view.dice} – pick a token to move.`
+              ? `You rolled ${view.dice} - pick a token to move.`
               : view.last && roller
                 ? describe(view.last, who(roller.id), roller.color)
                 : 'Roll a 6 to bring a token out.'}

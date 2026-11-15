@@ -1,5 +1,5 @@
 /**
- * Sudoku: fill the 9×9 grid so every row, column and 3×3 box holds 1–9 once.
+ * Sudoku: fill the 9×9 grid so every row, column and 3×3 box holds 1-9 once.
  *
  * Puzzles are generated fresh: a random complete grid, then clues are removed
  * one at a time in random order, keeping only removals that leave exactly one
@@ -21,7 +21,7 @@ export const PEERS: number[][] = Array.from({ length: 81 }, (_, i) =>
   Array.from({ length: 81 }, (_, j) => j).filter((j) => j !== i && (rowOf(j) === rowOf(i) || colOf(j) === colOf(i) || boxOf(j) === boxOf(i))),
 );
 
-const ALL = 0x3fe; // bits 1–9
+const ALL = 0x3fe; // bits 1-9
 const bit = (v: number) => 1 << v;
 
 /** The digits still allowed in each cell, as bitmasks. */
@@ -122,7 +122,7 @@ export interface SudokuState {
   puzzle: number[];
   solution: number[];
   values: number[];
-  /** Pencil marks, as bitmasks of digits 1–9. */
+  /** Pencil marks, as bitmasks of digits 1-9. */
   notes: number[];
   mistakes: number;
   /** 0 = no limit. */

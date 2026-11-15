@@ -18,7 +18,7 @@ interface Props {
   viewerId?: string | null;
 }
 
-/** A player's card: a video frame (the shared SeatMedia) with their name and
+/** A player's card: a video frame with their name and
  *  score over it, then their trains, cards and tickets. */
 export function PlayerPanel({ player, color, isCurrent, cardCount, onHover, media, viewerId }: Props) {
   const seat = media ? seatMediaState(media, player.id, viewerId ?? '') : null;

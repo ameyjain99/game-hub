@@ -11,7 +11,7 @@ afterEach(() => {
   cleanup();
 });
 
-// p0 owns a triangle Montreal–Boston(2), Boston–NY(2), Montreal–NY(3): the longest
+// p0 owns a triangle Montreal-Boston(2), Boston-NY(2), Montreal-NY(3): the longest
 // path through any of its edges is all three = 7 trains.
 const TRIANGLE = ['montreal-boston', 'boston-new-york', 'montreal-new-york'];
 

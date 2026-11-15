@@ -1,7 +1,7 @@
 /**
  * Blockyard's renderer (three.js). The world is cut into 16×16 columns; each
- * becomes two meshes – solid blocks (leaves cut out) and see-through ones
- * (water, glass) – with only the faces that touch open space, shaded per side
+ * becomes two meshes - solid blocks (leaves cut out) and see-through ones
+ * (water, glass) - with only the faces that touch open space, shaded per side
  * and darkened in corners (ambient occlusion). A change rebuilds just the
  * columns it touches.
  */

@@ -3,6 +3,7 @@ import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
 import { createSnl, snlKit } from '../engine';
 import { SnlGame, snlColor } from './SnlGame';
+import { SNAKES_AND_LADDERS_RULES } from '../rules';
 
 // The dice decide everything, so bots have one level.
 const DIFFICULTIES = [{ value: 'normal', label: 'Bot' }];
@@ -10,7 +11,7 @@ const DIFFICULTIES = [{ value: 'normal', label: 'Bot' }];
 const CONFIG: KitAppConfig = {
   gameId: 'snakes-and-ladders',
   title: 'Snakes & Ladders',
-  meta: '2–6 players · 10–20 min',
+  meta: '2-6 players · 10-20 min',
   localSeats: [2, 3, 4, 5, 6],
   onlineSeats: [2, 3, 4, 5, 6],
   defaultSeats: 4,
@@ -20,6 +21,7 @@ const CONFIG: KitAppConfig = {
 export function SnakesAndLaddersApp({ onBackToHub }: { onBackToHub: () => void }) {
   return (
     <KitApp
+      rules={SNAKES_AND_LADDERS_RULES}
       config={CONFIG}
       onBackToHub={onBackToHub}
       renderLocal={(setup, onExit) => (

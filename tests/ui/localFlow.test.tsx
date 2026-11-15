@@ -12,7 +12,7 @@ afterEach(() => {
 function openLocalSetup() {
   render(<App />);
   fireEvent.click(screen.getByRole('button', { name: /play ticket to ride/i }));
-  fireEvent.click(screen.getByRole('button', { name: /play on this device/i }));
+  fireEvent.click(screen.getByRole('button', { name: /start local game/i }));
 }
 
 test('local setup shows a Back to games link that returns to the hub', () => {
@@ -24,7 +24,7 @@ test('local setup shows a Back to games link that returns to the hub', () => {
 test('local setup "play with anyone" opens the online start/join page, not the hub', () => {
   openLocalSetup();
   fireEvent.click(screen.getByRole('button', { name: /play with anyone/i }));
-  expect(screen.getByRole('heading', { name: /join a game/i })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: /play online/i })).toBeTruthy();
   expect(screen.queryByRole('heading', { name: /your game night/i })).toBeNull();
 });
 

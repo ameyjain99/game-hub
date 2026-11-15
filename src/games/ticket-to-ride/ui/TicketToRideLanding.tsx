@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { BackIcon } from '../../../shared/icons';
+import { GameLanding } from '../../../shared/ui/GameLanding';
+import { RulesContext } from '../../../shared/rules';
+import { TTR_RULES } from '../rules';
 
 interface Props {
   onStart: () => void;
@@ -9,55 +10,20 @@ interface Props {
   onBackToHub?: () => void;
 }
 
+/** Ticket to Ride's front door: the hub's shared landing. The board, mode and
+ *  players are picked on the next page, online or on this device. */
 export function TicketToRideLanding({ onStart, onJoin, onLocal, onBackToHub }: Props) {
-  const [code, setCode] = useState('');
-
-  const canJoin = code.length === 4;
-
   return (
-    <div className="setup-screen landing-screen">
-      {onBackToHub && (
-        <button type="button" className="back-link" onClick={onBackToHub}>
-          <BackIcon size={16} />Back to games
-        </button>
-      )}
-      <h1>Ticket to Ride</h1>
-      <p className="tagline">2-5 players · Play online</p>
-
-      <div className="landing-stack">
-        <section className="landing-panel">
-          <h2>Join a game</h2>
-          <p className="landing-sub">Got a code from a friend? Hop in.</p>
-          <label className="landing-field">
-            <span>Room code</span>
-            <input
-              className="name-input code-input"
-              aria-label="Room code"
-              placeholder="ABCD"
-              value={code}
-              maxLength={4}
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-            />
-          </label>
-          <button type="button" className="primary" disabled={!canJoin} onClick={() => onJoin(code)}>
-            Join game
-          </button>
-          {!canJoin && <p className="landing-hint">Enter the 4-letter room code your friend shared.</p>}
-        </section>
-
-        <div className="landing-or"><span>or</span></div>
-
-        <section className="landing-start">
-          <button type="button" className="primary" onClick={() => onStart()}>
-            Start game
-          </button>
-          <p className="landing-hint">Create a room and invite friends – you'll pick the board, players and mode next.</p>
-        </section>
-      </div>
-
-      <button type="button" className="landing-local" onClick={onLocal}>
-        or play on this device
-      </button>
-    </div>
+    <RulesContext.Provider value={{ rules: TTR_RULES }}>
+      <GameLanding
+        title="Ticket to Ride"
+        meta="2-5 players · 30-60 min"
+        onBack={onBackToHub ?? (() => window.history.back())}
+        onJoin={(code) => onJoin(code)}
+        onStart={() => onStart()}
+        onLocal={() => onLocal()}
+        localOptions={<p className="g-hint">You pick the board, the mode, the players and the bots next.</p>}
+      />
+    </RulesContext.Provider>
   );
 }

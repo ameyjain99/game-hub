@@ -5,6 +5,8 @@ import { extname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Server as IOServer, type Socket } from 'socket.io';
 import { RoomStore } from './rooms';
+import { contributorsSource } from './contributors';
+import type { Contributor } from '../src/shared/project';
 import {
   EVT,
   type CreateRoom,
@@ -51,10 +53,17 @@ const MIME: Record<string, string> = {
  * client with SPA fallback. In dev, Vite serves the client and proxies the API
  * and socket.io here.
  */
-function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore): void {
+function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, contributors: () => Promise<Contributor[]>): void {
   httpServer.on('request', async (req, res) => {
     if (req.url?.startsWith('/socket.io')) return; // handled by socket.io
     const url = new URL(req.url ?? '/', 'http://localhost');
+
+    // The people who built GameHub, for the home page's Open source section.
+    if (url.pathname === '/api/contributors') {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(await contributors()));
+      return;
+    }
 
     // Whether a room code exists, so a join link can be validated before asking
     // for a name (and a "no such room" message shown otherwise), and which game
@@ -83,7 +92,7 @@ function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore): vo
   });
 }
 
-export function createServer(opts: { port?: number } = {}): {
+export function createServer(opts: { port?: number; contributors?: () => Promise<Contributor[]> } = {}): {
   io: IOServer;
   httpServer: HttpServer;
   store: RoomStore;
@@ -91,7 +100,7 @@ export function createServer(opts: { port?: number } = {}): {
 } {
   const httpServer = createHttpServer();
   const store = new RoomStore();
-  attachHttp(httpServer, process.env.NODE_ENV === 'production', store);
+  attachHttp(httpServer, process.env.NODE_ENV === 'production', store, opts.contributors ?? contributorsSource());
   const io = new IOServer(httpServer, { cors: { origin: '*' } });
 
   const fail = (socket: Socket, message: string) => socket.emit(EVT.errorMsg, { message });
@@ -208,7 +217,7 @@ export function createServer(opts: { port?: number } = {}): {
 
     socket.on(EVT.extendTime, (p: ExtendTime) => {
       const res = store.extendTime(p.code, data.token ?? '', 20_000);
-      if ('error' in res) return; // a stale/forbidden grant is harmless – ignore
+      if ('error' in res) return; // a stale/forbidden grant is harmless - ignore
       broadcast(p.code);
     });
 
@@ -274,7 +283,7 @@ export function createServer(opts: { port?: number } = {}): {
 }
 
 // Start the server when this file is run directly (dev via tsx, or the built
-// bundle in production) – but not when imported, e.g. by tests that spin up
+// bundle in production) - but not when imported, e.g. by tests that spin up
 // their own instance. Static file serving stays gated on NODE_ENV=production
 // inside createServer, since in dev Vite serves the client.
 const runDirectly = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

@@ -1,5 +1,5 @@
 import type { GameAdapter } from './gameAdapter';
-import { BOT_DELAY_MS, IllegalMove, type GameKit } from '../src/games/kit/engine';
+import { BOT_DELAY_MS, DEALER_ID, IllegalMove, type GameKit } from '../src/games/kit/engine';
 
 /**
  * The server adapter for any kit game. Bots here act one move at a time
@@ -70,11 +70,15 @@ export function kitAdapter<S, A extends { type: string }>(kit: GameKit<S, A>): G
 
     botDelay(game) {
       const s = game as S;
+      const auto = kit.auto?.(s);
+      if (auto) return auto.delay;
       return botToAct(s) ? kit.botDelay?.(s) ?? BOT_DELAY_MS : null;
     },
 
     stepBot(game) {
       const s = game as S;
+      const auto = kit.auto?.(s);
+      if (auto) return kit.apply(s, auto.action, DEALER_ID);
       const id = botToAct(s);
       return id ? kit.apply(s, kit.bot(s), id) : s;
     },

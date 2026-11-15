@@ -59,4 +59,11 @@ export {
   Megaphone,
   Shuffle,
   Undo2,
+  // Hub: About, Open source, FAQ
+  Bot,
+  Link2,
+  EyeOff,
+  CodeXml,
+  Bug,
+  GitPullRequest,
 } from 'lucide-react';

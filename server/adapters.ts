@@ -6,11 +6,6 @@ import { IllegalActionError, type Action } from '../src/games/ticket-to-ride/eng
 import { redactStateFor } from '../src/games/ticket-to-ride/engine/redact';
 import { advanceAi } from '../src/games/ticket-to-ride/ai/driver';
 import type { GameState, Difficulty } from '../src/games/ticket-to-ride/engine/types';
-import { playerIdForSeat } from '../src/net/protocol';
-import { createCluedoGame, type CluedoState, type CluedoDifficulty } from '../src/games/cluedo/engine/state';
-import { reduce, type CluedoAction } from '../src/games/cluedo/engine/reducer';
-import { chooseCluedoAction, cluedoTimeoutAction } from '../src/games/cluedo/engine/bot';
-import { redactFor as redactCluedoFor } from '../src/games/cluedo/engine/redact';
 import {
   createMonopolyGame,
   type MonopolyState,
@@ -35,6 +30,10 @@ import { ludoKit } from '../src/games/ludo/engine';
 import { lineupKit } from '../src/games/lineup/engine';
 import { blockyardKit } from '../src/games/blockyard/engine';
 import { lastCardKit } from '../src/games/last-card/engine';
+import { pokerKit } from '../src/games/poker/engine';
+import { cluedoKit } from '../src/games/cluedo/engine';
+import { imposterKit } from '../src/games/imposter/engine';
+import { hexKit } from '../src/games/hexstead/engine';
 import { wordgridKit } from '../src/games/wordgrid/engine';
 import { ensureDictionary } from './wordlist';
 
@@ -56,7 +55,7 @@ const ticketToRideAdapter: GameAdapter = {
     const o = (options ?? {}) as TtrOptions;
     const map = getMap(o.mapId ?? DEFAULT_MAP_ID); // throws on unknown map
     if (seatCount < map.minPlayers || seatCount > map.maxPlayers) {
-      return `${map.name} supports ${map.minPlayers}–${map.maxPlayers} players`;
+      return `${map.name} supports ${map.minPlayers}-${map.maxPlayers} players`;
     }
     return null;
   },
@@ -114,90 +113,6 @@ const ticketToRideAdapter: GameAdapter = {
   },
 };
 
-/** The seat whose action is expected next: the disprover mid-suggestion, else
- * the current player. */
-function cluedoActor(state: CluedoState): string | undefined {
-  return state.phase === 'disprove' ? state.pendingDisprover ?? undefined : state.players[state.current]?.id;
-}
-
-/** Play out bot turns until a human must act (or the game ends). */
-function advanceCluedoAi(state: CluedoState): CluedoState {
-  let s = state;
-  for (let guard = 0; s.phase !== 'over' && guard < 10000; guard++) {
-    const actor = s.players.find((p) => p.id === cluedoActor(s));
-    if (!actor || !actor.isAI) break;
-    s = reduce(s, chooseCluedoAction(s));
-  }
-  return s;
-}
-
-const cluedoAdapter: GameAdapter = {
-  turnMs: 60_000,
-  refreshClockOnAction: true,
-
-  validateSeatCount(seatCount) {
-    if (seatCount < 3 || seatCount > 6) return 'Cluedo supports 3–6 players';
-    return null;
-  },
-
-  createGame(configs, seed) {
-    const ids = configs.map((_, i) => playerIdForSeat(i));
-    const game = createCluedoGame(ids, {
-      seed,
-      ai: configs.map((c) => c.isAI),
-      difficulty: configs.map((c) => (c.difficulty ?? 'normal') as CluedoDifficulty),
-    });
-    return advanceCluedoAi(game);
-  },
-
-  applyAction(game, action, ctx) {
-    const state = game as CluedoState;
-    if (cluedoActor(state) !== ctx.actorId) return { error: 'not your turn' };
-    if ((action as { type?: string }).type === 'SKIP_TURN') {
-      // The clock ran out: play the idle player's part cautiously until the floor
-      // passes to someone else.
-      let s = state;
-      for (let guard = 0; guard < 20 && s.phase !== 'over' && cluedoActor(s) === ctx.actorId; guard++) {
-        s = reduce(s, cluedoTimeoutAction(s));
-      }
-      return { game: advanceCluedoAi(s) };
-    }
-    return { game: advanceCluedoAi(reduce(state, action as CluedoAction)) };
-  },
-
-  replaceWithAi(game, seatIndex, difficulty) {
-    const state = game as CluedoState;
-    const players = state.players.map((p, i) =>
-      i === seatIndex ? { ...p, isAI: true, difficulty: (difficulty ?? 'normal') as CluedoDifficulty } : p,
-    );
-    return advanceCluedoAi({ ...state, players });
-  },
-
-  // Full seat removal is only modelled for Ticket to Ride; Cluedo keeps the game
-  // going by handing the seat to a bot instead.
-  removeSeat(game, seatIndex) {
-    return cluedoAdapter.replaceWithAi(game, seatIndex, undefined);
-  },
-
-  // The room is abandoned: close the case unsolved.
-  endGame(game) {
-    const state = game as CluedoState;
-    return { ...state, phase: 'over', winner: null } satisfies CluedoState;
-  },
-
-  turnActorId(game) {
-    const s = game as CluedoState;
-    if (s.phase === 'over') return null;
-    const id = cluedoActor(s);
-    const p = s.players.find((pl) => pl.id === id);
-    return p && !p.isAI ? id ?? null : null;
-  },
-
-  redactFor(game, playerId) {
-    return redactCluedoFor(game as CluedoState, playerId);
-  },
-};
-
 function toMonopolyConfigs(configs: SeatConfig[]) {
   return configs.map((c) => ({
     name: c.name,
@@ -213,7 +128,7 @@ const monopolyAdapter: GameAdapter = {
   refreshClockOnAction: true,
 
   validateSeatCount(seatCount) {
-    if (seatCount < 2 || seatCount > 6) return 'Monopoly supports 2–6 players';
+    if (seatCount < 2 || seatCount > 6) return 'Monopoly supports 2-6 players';
     return null;
   },
 
@@ -284,7 +199,7 @@ const wordgridAdapter: GameAdapter = {
 
 const ADAPTERS: Record<string, GameAdapter> = {
   'ticket-to-ride': ticketToRideAdapter,
-  cluedo: cluedoAdapter,
+  cluedo: kitAdapter(cluedoKit),
   monopoly: monopolyAdapter,
   'tic-tac-toe': kitAdapter(ticTacToeKit),
   checkers: kitAdapter(checkersKit),
@@ -294,6 +209,9 @@ const ADAPTERS: Record<string, GameAdapter> = {
   lineup: kitAdapter(lineupKit),
   blockyard: kitAdapter(blockyardKit),
   'last-card': kitAdapter(lastCardKit),
+  poker: kitAdapter(pokerKit),
+  imposter: kitAdapter(imposterKit),
+  hexstead: kitAdapter(hexKit),
   wordgrid: wordgridAdapter,
 };
 

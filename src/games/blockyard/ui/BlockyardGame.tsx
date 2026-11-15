@@ -356,7 +356,7 @@ export function BlockyardGame({
                   Play
                 </button>
                 <p className="by-keys">
-                  <b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Left click</b> break · <b>Right click</b> place · <b>1–9</b> / wheel pick ·{' '}
+                  <b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Left click</b> break · <b>Right click</b> place · <b>1-9</b> / wheel pick ·{' '}
                   <b>E</b> blocks · <b>F</b> or double Space fly · <b>Esc</b> pause
                 </p>
               </>

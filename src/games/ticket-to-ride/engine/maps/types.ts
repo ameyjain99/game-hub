@@ -7,7 +7,7 @@ export type BonusId = 'longest-path' | 'globetrotter';
 /**
  * A way to play a map. Every map has at least one mode (the first, "Default");
  * some add more (e.g. USA 1910, Mega). A mode sets the destination-ticket deck,
- * how tickets are dealt and drawn, which bonus cards score, and its rulebook.
+ * how tickets are dealt and drawn, and which bonus cards score.
  */
 export interface GameMode {
   id: string;
@@ -27,8 +27,6 @@ export interface GameMode {
   /** Tickets drawn on a draw-tickets turn (the player keeps at least 1). */
   ticketDraw: number;
   bonuses: BonusId[];
-  /** URL of the rulebook PDF (see `rulebookUrl`), opened in a new tab. */
-  rulebook?: string;
 }
 
 /** A complete board/game definition: data + rules parameters for one map. */

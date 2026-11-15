@@ -2,19 +2,19 @@
  * Ludo on the classic 15×15 cross board, played the way it's commonly played in
  * India (Ludo King style):
  *
- * - 2–4 players; two players sit at opposite corners. Play runs clockwise:
+ * - 2-4 players; two players sit at opposite corners. Play runs clockwise:
  *   red, green, yellow, blue.
  * - A 6 brings a token out of the yard onto its start square.
  * - A 6 rolls again; a third 6 in a row ends the turn with no move.
  * - Landing on an opponent's token sends it back to its yard and earns a bonus
- *   roll – except on the safe squares (each start square and the four stars).
+ *   roll - except on the safe squares (each start square and the four stars).
  * - Tokens of one colour may share a square (there are no blockades).
  * - After a lap of the 52-square track a token turns up its own home column;
  *   it needs the exact roll to reach home, which earns a bonus roll too.
  * - The first to bring all four tokens home wins.
  *
- * A token's progress runs from -1 (in the yard) through 0–50 (the track, from
- * its start square) and 51–55 (its home column) to 56 (home).
+ * A token's progress runs from -1 (in the yard) through 0-50 (the track, from
+ * its start square) and 51-55 (its home column) to 56 (home).
  */
 import { IllegalMove, nextRandom, rollDie, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
 
@@ -305,7 +305,7 @@ export function eventMs(e: LudoEvent | null): number {
 }
 
 export const ludoKit: GameKit<LudoState, LudoAction> = {
-  seatError: (count) => (count >= 2 && count <= 4 ? null : 'Ludo is for 2–4 players'),
+  seatError: (count) => (count >= 2 && count <= 4 ? null : 'Ludo is for 2-4 players'),
   create: (seats, seed) => createLudo(seats, seed),
   apply: applyLudo,
   actor: (s) => (s.over ? null : s.players[s.turn].id),
