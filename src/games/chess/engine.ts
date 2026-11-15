@@ -1,7 +1,7 @@
 /**
- * Chess. The rules – legal moves, check, castling, en passant, promotion,
+ * Chess. The rules - legal moves, check, castling, en passant, promotion,
  * checkmate, stalemate, threefold repetition, the fifty-move rule and
- * insufficient material – come from chess.js. The state keeps the move list
+ * insufficient material - come from chess.js. The state keeps the move list
  * and rebuilds the position from it, so repetition is always judged on the
  * whole game.
  *

@@ -52,7 +52,7 @@ export interface Ticket {
   a: string;
   b: string;
   points: number;
-  /** A long-route ticket, dealt from its own deck at setup (see `GameMode.setupLong`). */
+  /** A long-route ticket, dealt from its own deck at setup - see `GameMode.setupLong`. */
   long?: boolean;
 }
 

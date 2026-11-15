@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { GameScreen } from '../../src/games/ticket-to-ride/ui/GameScreen';
 import { createGame } from '../../src/games/ticket-to-ride/engine/setup';
-import { rulebookUrl } from '../../src/games/ticket-to-ride/engine/maps/rulebook';
 import type { GameState } from '../../src/games/ticket-to-ride/engine/types';
 import { ticket } from '../ai/helpers';
 
@@ -19,9 +18,12 @@ test('the Mega Game asks to keep at least 3 of the 5 starting tickets', () => {
   expect(screen.getByText(/Keep at least 3\./)).toBeTruthy();
 });
 
-test('the Rules link opens the rulebook of the mode being played', () => {
+test('Rules opens the rules of the mode being played', () => {
   render(<GameScreen state={createGame(twoHumans, 1, 'usa', '1910')} lastError={null} dispatch={vi.fn()} />);
-  expect(screen.getByTitle('Rules').getAttribute('href')).toBe(rulebookUrl('usa_expansion.pdf'));
+  fireEvent.click(screen.getByTitle('Rules'));
+  const sheet = screen.getByRole('dialog', { name: 'Ticket to Ride' });
+  expect(within(sheet).getByRole('tab', { selected: true }).textContent).toBe('USA · 1910');
+  expect(within(sheet).getAllByText(/1910/).length).toBeGreaterThan(0);
 });
 
 /** Game over: Bob has the longest path and completed the only ticket. */

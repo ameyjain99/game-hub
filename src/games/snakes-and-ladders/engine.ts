@@ -117,7 +117,7 @@ export function moveMs(m: SnlMove | null): number {
 }
 
 export const snlKit: GameKit<SnlState, SnlAction> = {
-  seatError: (count) => (count >= 2 && count <= 6 ? null : 'Snakes & Ladders is for 2–6 players'),
+  seatError: (count) => (count >= 2 && count <= 6 ? null : 'Snakes & Ladders is for 2-6 players'),
   create: (seats, seed) => createSnl(seats, seed),
   apply: applySnl,
   actor: (s) => (s.over ? null : s.players[s.turn].id),

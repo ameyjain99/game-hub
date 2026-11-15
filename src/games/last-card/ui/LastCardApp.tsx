@@ -4,6 +4,7 @@ import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
 import { createLastCard, lastCardKit, type Variant } from '../engine';
 import { LastCardGame, lcSeatColor } from './LastCardGame';
+import { LAST_CARD_RULES } from '../rules';
 
 const DIFFICULTIES = [
   { value: 'easy', label: 'Easy' },
@@ -14,7 +15,7 @@ const DIFFICULTIES = [
 const CONFIG: KitAppConfig = {
   gameId: 'last-card',
   title: 'Last Card',
-  meta: '2–10 players · 15–30 min',
+  meta: '2-10 players · 15-30 min',
   localSeats: [2, 3, 4, 5, 6],
   onlineSeats: [2, 3, 4, 5, 6, 7, 8, 9, 10],
   defaultSeats: 4,
@@ -25,6 +26,8 @@ export function LastCardApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [variant, setVariant] = useState<Variant>('classic');
   return (
     <KitApp
+      rules={LAST_CARD_RULES}
+      rulesVariant={variant}
       config={CONFIG}
       onBackToHub={onBackToHub}
       optionValue={{ variant }}
@@ -33,7 +36,7 @@ export function LastCardApp({ onBackToHub }: { onBackToHub: () => void }) {
           <span className="g-field-label">Mode</span>
           <select aria-label="Mode" value={variant} onChange={(e) => setVariant(e.target.value as Variant)}>
             <option value="classic">Classic</option>
-            <option value="flip">Flip – two-sided deck, a light and a dark side</option>
+            <option value="flip">Flip - two-sided deck, a light and a dark side</option>
           </select>
         </label>
       }

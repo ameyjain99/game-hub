@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { BackIcon, Volume2, VolumeX } from '../../../shared/icons';
 import { useMuted } from '../../../shared/sound';
+import { RulesButton } from '../../../shared/ui/Rules';
 
 interface Props {
   title: string;
@@ -20,13 +21,15 @@ interface Props {
   side: ReactNode;
   /** A game-specific class on the screen root, for its palette and layout. */
   className?: string;
+  /** Which version's rules the Rules sheet opens on (Poker's variant, Last Card's mode). */
+  rulesVariant?: string;
 }
 
 /**
  * The screen every kit game shares, laid out like Monopoly: a header (back,
  * title, status, clock, mute), the board filling the stage, and a sidebar.
  */
-export function GameShell({ title, exitLabel, onExit, status, headerExtra, banner, board, overlay, side, className }: Props) {
+export function GameShell({ title, exitLabel, onExit, status, headerExtra, banner, board, overlay, side, className, rulesVariant }: Props) {
   const [muted, setMuted] = useMuted();
   return (
     <div className={`kit-game${className ? ` ${className}` : ''}`}>
@@ -43,6 +46,7 @@ export function GameShell({ title, exitLabel, onExit, status, headerExtra, banne
         )}
         <div className="kit-head-extra">
           {headerExtra}
+          <RulesButton variant={rulesVariant} />
           <button
             type="button"
             className="g-icon-btn"

@@ -5,11 +5,12 @@ import { KitOnline } from '../../kit/ui/KitOnline';
 import { chessKit, createChess, fallbackMove, type ChessAction, type ChessState } from '../engine';
 import { ChessGame, COLOR_ACCENT } from './ChessGame';
 import { ENGINE_LEVELS, engineLevel, parseUci, stockfish } from './stockfish';
+import { CHESS_RULES } from '../rules';
 
 const CONFIG: KitAppConfig = {
   gameId: 'chess',
   title: 'Chess',
-  meta: '2 players · 10–60 min',
+  meta: '2 players · 10-60 min',
   localSeats: [2],
   onlineSeats: [2],
   defaultSeats: 2,
@@ -38,6 +39,7 @@ export function ChessApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [playAs, setPlayAs] = useState<PlayAs>('white');
   return (
     <KitApp
+      rules={CHESS_RULES}
       config={CONFIG}
       onBackToHub={onBackToHub}
       localExtra={

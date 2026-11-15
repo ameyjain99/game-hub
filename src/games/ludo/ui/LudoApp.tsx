@@ -3,6 +3,7 @@ import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
 import { colorsFor, createLudo, ludoKit } from '../engine';
 import { LUDO_COLOR, LudoGame } from './LudoGame';
+import { LUDO_RULES } from '../rules';
 
 const DIFFICULTIES = [
   { value: 'easy', label: 'Easy' },
@@ -13,7 +14,7 @@ const DIFFICULTIES = [
 const CONFIG: KitAppConfig = {
   gameId: 'ludo',
   title: 'Ludo',
-  meta: '2–4 players · 20–40 min',
+  meta: '2-4 players · 20-40 min',
   localSeats: [2, 3, 4],
   onlineSeats: [2, 3, 4],
   defaultSeats: 4,
@@ -26,6 +27,7 @@ const seatColor = (i: number) => LUDO_COLOR[colorsFor(4)[i % 4]];
 export function LudoApp({ onBackToHub }: { onBackToHub: () => void }) {
   return (
     <KitApp
+      rules={LUDO_RULES}
       config={CONFIG}
       onBackToHub={onBackToHub}
       renderLocal={(setup, onExit) => (

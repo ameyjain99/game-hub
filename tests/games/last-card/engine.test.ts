@@ -125,7 +125,7 @@ describe('playing', () => {
     expect(next.score.p0).toBe(67);
   });
 
-  test('points: numbers at face value, actions 20, wilds 40–60', () => {
+  test('points: numbers at face value, actions 20, wilds 40-60', () => {
     expect(points(num('red', 8))).toBe(8);
     expect(points({ kind: 'skip', color: 'red' })).toBe(20);
     expect(points({ kind: 'wild-draw', color: null, value: 4 })).toBe(50);

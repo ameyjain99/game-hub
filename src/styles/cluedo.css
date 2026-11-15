@@ -1,399 +1,464 @@
-/*
- * Cluedo. The screen is header / (mansion + decision panel) / sidebar (table,
- * your hand, notebook). The mansion is a floor plan: rooms as panels on a faint
- * corridor grid, each holding its occupants, weapons and secret passage.
- */
+/* Cluedo: a mansion floor plan in dim room colours, corridor tiles, gold door
+   marks, the case file in the middle, and suspect tokens in their own colours.
+   Your move lights the squares and rooms in reach; the dock under the board
+   holds the step at hand; the notebook keeps track of who holds what. */
 
-/* ---------------- Screen ---------------- */
-.cl-game {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-areas:
-    'head head'
-    'main side';
-  gap: var(--space-4) var(--space-6);
+.kit-game.cl-game {
+  max-width: calc(100dvh + 300px);
+}
+
+.cl-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  max-width: 1440px;
-  height: 100dvh;
-  margin: 0 auto;
-  padding: var(--space-4) var(--space-6) var(--space-6);
-}
-
-.cl-head {
-  grid-area: head;
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  min-height: 36px;
-}
-
-.cl-head .back-link {
-  margin: 0;
-  padding: 0; /* flush with the board edge below */
-}
-
-.cl-title {
-  margin: 0;
-  padding-left: var(--space-4);
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.2px;
-  border-left: 1px solid var(--line-strong);
-}
-
-.cl-head-extra {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-left: auto;
-}
-
-.cl-main {
-  grid-area: main;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  min-width: 0;
+  height: 100%;
   min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
 }
 
-.cl-main::-webkit-scrollbar,
-.cl-side::-webkit-scrollbar {
-  display: none;
+.kit-board.cl-board {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: auto;
 }
 
-/* ---------------- Mansion ---------------- */
-.cl-board-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.cl-mansion {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  user-select: none;
 }
 
-.cl-board {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: minmax(124px, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-3);
-  background-color: #0f0f13;
-  background-image:
-    linear-gradient(#ffffff06 1px, transparent 1px),
-    linear-gradient(90deg, #ffffff06 1px, transparent 1px);
-  background-size: 24px 24px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
+/* ---- The floor plan ---- */
+.cl-floor {
+  fill: #101217;
+  stroke: #262932;
+  stroke-width: 0.08;
 }
 
-.cl-room {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-  margin: 0;
-  padding: var(--space-3);
-  font: inherit;
-  color: var(--ink);
-  text-align: left;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+.cl-tile {
+  fill: #23262e;
 }
 
-.cl-room-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+.cl-tile.is-start {
+  fill: color-mix(in srgb, var(--tc) 35%, #23262e);
+  stroke: var(--tc);
+  stroke-width: 0.08;
+}
+
+.cl-room rect {
+  stroke: #0a0b0e;
+  stroke-width: 0.14;
 }
 
 .cl-room-name {
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #c9cbd0;
+  font-size: 0.48px;
+  font-weight: 800;
+  letter-spacing: 0.08px;
+  fill: #ffffffcc;
   text-transform: uppercase;
 }
 
-.cl-passage {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  font-size: 11px;
-  color: var(--muted);
-  border: 1px dashed #ffffff26;
-  border-radius: var(--radius-pill);
+.cl-passage text {
+  font-size: 0.36px;
+  font-weight: 600;
+  fill: #ffffff80;
 }
 
-.cl-room-tokens {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  min-height: 28px;
+.cl-weapon rect {
+  fill: #00000066;
+  stroke: #ffffff2e;
+  stroke-width: 0.03;
 }
 
-.cl-room-weapons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: auto;
-}
-
-.cl-weapon {
-  padding: 2px 8px;
-  font-size: 11.5px;
-  color: #c9cbd0;
-  background: #ffffff0d;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-}
-
-/* Where the latest suggestion happened. */
-.cl-room.is-scene {
-  background: #22222b;
-  border-color: #ffffff3d;
-}
-
-.cl-room.is-mine {
-  box-shadow: inset 0 0 0 1px #ffffff1f;
-}
-
-/* Rooms you can move to now: lit and clickable. */
-button.cl-room.is-reachable {
-  cursor: pointer;
-  border-color: #ffffffb3;
-  box-shadow: 0 0 0 3px #ffffff1f;
-  animation: cl-glow 1.8s ease-in-out infinite;
-}
-
-button.cl-room.is-reachable:hover {
-  background: #26262f;
-}
-
-button.cl-room:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-}
-
-.cl-room-cta {
-  position: absolute;
-  right: var(--space-3);
-  bottom: var(--space-3);
-  padding: 3px 10px;
-  font-size: 11.5px;
+.cl-weapon text {
+  font-size: 0.32px;
   font-weight: 700;
-  color: #0b0b0f;
-  background: var(--ink);
-  border-radius: var(--radius-pill);
+  text-anchor: middle;
+  fill: #ffffffd9;
 }
 
-@keyframes cl-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 3px #ffffff1a;
-  }
-  50% {
-    box-shadow: 0 0 0 5px #ffffff2e;
-  }
+.cl-door {
+  stroke: #d8b26e;
+  stroke-width: 0.16;
+  stroke-linecap: round;
 }
 
-.cl-token {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  font-size: 12px;
+.cl-case rect {
+  fill: #15171d;
+  stroke: #d8b26e66;
+  stroke-width: 0.08;
+  stroke-dasharray: 0.3 0.2;
+}
+
+.cl-envelope {
+  fill: #f1e7cf;
+  stroke: #8a6a35;
+  stroke-width: 0.08;
+  stroke-linejoin: round;
+}
+
+.cl-case-title {
+  font-size: 0.5px;
   font-weight: 800;
-  background: var(--tc);
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--panel-2), 0 2px 6px #0007;
+  letter-spacing: 0.06px;
+  text-anchor: middle;
+  fill: #d8b26e;
+  text-transform: uppercase;
 }
 
-.cl-token.is-me {
-  box-shadow: 0 0 0 2px var(--panel-2), 0 0 0 4px #fff;
+.cl-case-line {
+  font-size: 0.5px;
+  font-weight: 700;
+  text-anchor: middle;
+  fill: #fff;
+}
+
+/* ---- Where you can go ---- */
+.cl-step {
+  cursor: pointer;
+}
+
+.cl-step rect {
+  fill: transparent;
+}
+
+.cl-step circle {
+  fill: #ffd166;
+  opacity: 0.75;
+  transition: r 0.12s, opacity 0.12s;
+}
+
+.cl-step:hover circle,
+.cl-step:focus-visible circle {
+  r: 0.32px;
+  opacity: 1;
+}
+
+.cl-step:focus-visible {
+  outline: none;
+}
+
+.cl-room-pick {
+  fill: #ffd16614;
+  stroke: #ffd166;
+  stroke-width: 0.14;
+  cursor: pointer;
+  animation: cl-breathe 1.3s ease-in-out infinite;
+}
+
+.cl-room-pick:hover,
+.cl-room-pick:focus-visible {
+  fill: #ffd16630;
+  outline: none;
+  animation: none;
+}
+
+/* ---- Tokens ---- */
+.cl-token {
+  transition: transform 0.45s cubic-bezier(0.3, 0.7, 0.3, 1);
+  pointer-events: none;
+}
+
+.cl-token circle:not(.cl-token-ring) {
+  stroke: #0a0b0e;
+  stroke-width: 0.08;
+}
+
+.cl-token text {
+  font-size: 0.38px;
+  font-weight: 800;
+  text-anchor: middle;
+}
+
+.cl-token-ring {
+  fill: none;
+  stroke: var(--tc);
+  stroke-width: 0.07;
+  opacity: 0;
+}
+
+.cl-token.is-turn .cl-token-ring {
+  opacity: 1;
+  animation: cl-ring 1.4s ease-out infinite;
+}
+
+.cl-token.is-spot .cl-token-ring {
+  opacity: 1;
+  stroke: #fff;
+}
+
+.cl-token.is-extra {
+  opacity: 0.55;
 }
 
 .cl-token.is-out {
   opacity: 0.4;
 }
 
-.cl-token.is-static {
-  width: 32px;
-  height: 32px;
-  font-size: 13px;
-  box-shadow: 0 0 0 2px var(--panel);
-}
-
-.cl-hallway {
+/* ---- The dock ---- */
+.cl-dock {
+  position: relative;
   display: flex;
+  flex: none;
   align-items: center;
-  gap: var(--space-3);
-  min-height: 48px;
-  padding: var(--space-2) var(--space-3);
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-md);
-}
-
-.cl-hallway-label {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-
-/* ---------------- Decision panel ---------------- */
-.cl-panel {
-  padding: var(--space-5);
+  gap: var(--space-4);
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 16px;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-lg);
 }
 
-.cl-act {
+.cl-dice {
   display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.cl-dock-block {
+  display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 10px;
+  min-width: 0;
 }
 
-.cl-kicker {
-  margin: 0 0 calc(-1 * var(--space-2));
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-
-.cl-act-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1.25;
-}
-
-.cl-status {
+.cl-dock-title {
   margin: 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 800;
 }
 
-.cl-muted {
+.cl-dock-line {
+  flex: 1;
   margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 14.5px;
+}
+
+.cl-dock-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
   color: var(--muted);
 }
 
-.cl-latest {
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  font-size: 14px;
-  line-height: 1.5;
-  color: #c9cbd0;
-  background: var(--panel-2);
-  border-radius: var(--radius-md);
-}
-
-.cl-latest strong {
-  color: var(--ink);
-}
-
-.cl-act-row {
+.cl-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.cl-act-row .primary {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: var(--control-h);
-  padding: 0 var(--space-5);
-  box-shadow: none;
+.cl-actions .is-danger,
+.cl-modal .is-danger {
+  color: var(--danger);
+  border-color: #e2483b66;
 }
 
-.cl-chip-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.cl-modal .primary.is-danger {
+  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
 }
 
-.cl-chips {
+.cl-chooser {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: 6px;
 }
 
 .cl-chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  height: 36px;
-  padding: 0 14px;
-  font-size: 13.5px;
-  font-weight: 600;
+  gap: 6px;
+  height: 32px;
+  padding: 0 11px;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--ink);
-  background: transparent;
+  background: #ffffff0d;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-pill);
-  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .cl-chip:hover {
-  background: #ffffff0a;
-  border-color: #ffffff47;
+  border-color: #ffffff59;
 }
 
 .cl-chip.is-on {
   color: #0b0b0f;
-  background: var(--ink);
-  border-color: var(--ink);
-}
-
-.cl-chip:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
+  background: #fff;
+  border-color: #fff;
 }
 
 .cl-chip-dot {
   width: 10px;
   height: 10px;
+  background: var(--tc);
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px #0004;
+  box-shadow: 0 0 0 1px #0007;
 }
 
-.modal-card.cl-accuse {
+.cl-show {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cl-show .cl-card {
+  width: 120px;
+}
+
+.cl-dots::after {
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  vertical-align: bottom;
+  content: '...';
+  animation: cl-dots 1.2s steps(4) infinite;
+}
+
+/* ---- Accusation ---- */
+.cl-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 6;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  width: calc(100% - 2 * var(--space-4));
-  max-width: 580px;
+  gap: 12px;
+  width: min(560px, 94%);
+  max-height: calc(100% - 24px);
+  padding: 18px;
+  overflow-y: auto;
+  background: #15161bf7;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  box-shadow: 0 24px 70px #000d;
+  transform: translate(-50%, -50%);
+  animation: cl-rise 0.2s ease-out;
 }
 
-.modal-card.cl-accuse h2,
-.modal-card.cl-accuse p {
+.cl-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cl-modal h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.cl-modal p {
   margin: 0;
 }
 
-.cl-accuse-summary {
-  padding: var(--space-3) var(--space-4);
-  font-size: 14px;
-  color: var(--ink) !important;
-  background: var(--panel-2);
-  border-radius: var(--radius-md);
+.cl-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
 
-/* ---------------- Cards ---------------- */
+/* ---- Notebook ---- */
+.cl-notebook {
+  width: 100%;
+  font-size: 12.5px;
+  border-collapse: collapse;
+}
+
+.cl-notebook th[scope='row'] {
+  padding: 0 6px 0 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-notebook tr.is-ruled th[scope='row'] {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.cl-notebook td {
+  width: 26px;
+  padding: 1px;
+  text-align: center;
+}
+
+.cl-nb-section th {
+  padding: 10px 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.cl-nb-section span {
+  margin-left: 4px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.cl-nb-token {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 50%;
+}
+
+.cl-nb-cell {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  background: #ffffff08;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.cl-nb-cell:hover:not(:disabled) {
+  border-color: #ffffff40;
+}
+
+.cl-nb-cell:disabled {
+  cursor: default;
+}
+
+.cl-nb-cell.is-yes {
+  color: var(--ok);
+}
+
+.cl-nb-cell.is-no {
+  color: var(--danger);
+}
+
+.cl-nb-cell.is-maybe {
+  color: var(--warn);
+}
+
+.cl-nb-cell.is-auto {
+  background: #ffffff14;
+}
+
+/* ---- Cards ---- */
 .cl-hand {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -463,283 +528,66 @@ button.cl-card.is-action:focus-visible {
   transform: translateY(-2px);
 }
 
-/* ---------------- Sidebar ---------------- */
-.cl-side {
-  grid-area: side;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
+/* ---- Motion ---- */
+@keyframes cl-breathe {
+  50% {
+    fill: #ffd16630;
+  }
 }
 
-.cl-side-section,
-.cl-notebook {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+@keyframes cl-ring {
+  0% {
+    stroke-width: 0.12;
+    opacity: 1;
+  }
+  100% {
+    stroke-width: 0.02;
+    opacity: 0.4;
+  }
 }
 
-.cl-side-title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-  text-transform: uppercase;
+@keyframes cl-dots {
+  to {
+    width: 1.2em;
+  }
 }
 
-.cl-players {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+@keyframes cl-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%);
+  }
 }
 
-.cl-player {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  min-height: 52px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.cl-player.is-turn {
-  border-color: var(--tc);
-  box-shadow: inset 0 0 0 1px var(--tc);
-}
-
-.cl-player.is-out {
-  opacity: 0.5;
-}
-
-.cl-player-text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.cl-player-name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.cl-player-meta {
-  overflow: hidden;
-  font-size: 12.5px;
-  color: var(--muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cl-player-cards {
-  font-size: 15px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.cl-player-cards span {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-}
-
-/* Notebook grid. */
-.cl-grid {
-  width: 100%;
-  overflow: hidden;
-  font-size: 13px;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-}
-
-.cl-grid th,
-.cl-grid td {
-  padding: 6px 4px;
-  text-align: center;
-  border-bottom: 1px solid var(--line);
-}
-
-.cl-grid tbody:last-of-type tr:last-child th,
-.cl-grid tbody:last-of-type tr:last-child td {
-  border-bottom: 0;
-}
-
-.cl-grid thead th {
-  padding: 8px 4px;
-  background: var(--panel-2);
-}
-
-.cl-grid-who {
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  font-size: 11px;
-  font-weight: 800;
-  background: var(--tc);
-  border-radius: 50%;
-}
-
-.cl-grid .cl-grid-card {
-  padding-left: var(--space-3);
-  font-weight: 600;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.cl-grid-group th {
-  padding: 10px var(--space-3) 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  text-align: left;
-  text-transform: uppercase;
-  background: var(--panel);
-}
-
-.cl-grid-group th span {
-  margin-left: var(--space-2);
-  letter-spacing: 0;
-  text-transform: none;
-  opacity: 0.75;
-}
-
-.cl-grid td svg {
-  color: var(--ink);
-}
-
-.cl-grid tr.is-out .cl-grid-card {
-  color: #6b6e76;
-  text-decoration: line-through;
-  text-decoration-color: #ffffff40;
-}
-
-.cl-grid tr.is-solved th,
-.cl-grid tr.is-solved td {
-  color: var(--ok);
-  background: #39d98a14;
-}
-
-.cl-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-.cl-log summary {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.cl-log ol {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: var(--space-3) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.cl-log li {
-  padding: var(--space-2) var(--space-3);
-  font-size: 13px;
-  line-height: 1.45;
-  color: #c9cbd0;
-  background: var(--panel);
-  border-radius: 8px;
-}
-
-.cl-log li span {
-  color: var(--muted);
-}
-
-/* ---------------- Narrower screens ---------------- */
 @media (max-width: 1100px) {
-  .cl-game {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    grid-template-areas:
-      'head'
-      'main'
-      'side';
-    align-content: start;
+  .cl-stage {
     height: auto;
-    min-height: 100dvh;
   }
 
-  .cl-main,
-  .cl-side {
-    overflow: visible;
+  .kit-board.cl-board {
+    flex: none;
+    height: min(94vw, 72dvh);
   }
 }
 
 @media (max-width: 720px) {
-  .cl-game {
-    gap: var(--space-3);
-    padding: var(--space-3);
+  .cl-dock {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .cl-board {
-    grid-auto-rows: minmax(104px, auto);
-    gap: var(--space-2);
-    padding: var(--space-2);
-    border-radius: var(--radius-lg);
-  }
-
-  .cl-room {
-    padding: var(--space-2);
-  }
-
-  .cl-room-name {
-    font-size: 11px;
-    letter-spacing: 0.06em;
-  }
-
-  .cl-passage {
-    display: none;
-  }
-
-  .cl-token {
-    width: 22px;
-    height: 22px;
-    font-size: 11px;
-  }
-
-  .cl-weapon {
-    font-size: 10.5px;
-    padding: 1px 6px;
-  }
-
-  .cl-room-cta {
-    right: var(--space-2);
-    bottom: var(--space-2);
+  .cl-dice {
+    align-self: center;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  button.cl-room.is-reachable {
+  .cl-token,
+  .cl-token.is-turn .cl-token-ring,
+  .cl-room-pick,
+  .cl-modal,
+  .cl-dots::after {
+    transition: none;
     animation: none;
   }
 }

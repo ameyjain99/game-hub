@@ -40,7 +40,7 @@ test('opening Ticket to Ride while in a Monopoly room shows the TtR landing, not
   monopolySession();
   window.history.pushState({}, '', '/ticket-to-ride');
   render(<App />);
-  expect(screen.getByRole('button', { name: /play on this device/i })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /start local game/i })).toBeTruthy();
   // And leaving Ticket to Ride keeps the Monopoly seat.
   fireEvent.click(screen.getByRole('button', { name: /back to games/i }));
   expect(loadSession()?.code).toBe('MN23');

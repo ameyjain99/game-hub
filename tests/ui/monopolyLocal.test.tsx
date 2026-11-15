@@ -5,8 +5,8 @@ import { MonopolyLocalGame } from '../../src/games/monopoly/ui/MonopolyLocalGame
 
 afterEach(cleanup);
 
-// Seed 5's first roll for p0 is a non-doubles total of 8 – landing on Seville (8),
-// an unowned property – so the flow is deterministic.
+// Seed 5's first roll for p0 is a non-doubles total of 8 - landing on Seville (8),
+// an unowned property - so the flow is deterministic.
 function renderLocal() {
   return render(<MonopolyLocalGame playerCount={2} difficulty="normal" seed={5} onBackToHub={() => {}} />);
 }

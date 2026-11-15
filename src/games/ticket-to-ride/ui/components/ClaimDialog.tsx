@@ -32,7 +32,7 @@ function PayChip({ card, count, loco }: { card?: TrainCard; count: number; loco?
   );
 }
 
-/** The cards a combo spends, as mini chips instead of a text label. */
+/** The cards a combo spends, as mini chips. */
 function ComboChips({ combo }: { combo: CardCombo }) {
   return (
     <span className="combo-chips">

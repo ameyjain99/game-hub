@@ -1,5 +1,5 @@
 /**
- * Lineup – play a card, place a chip, and line up five in a row.
+ * Lineup - play a card, place a chip, and line up five in a row.
  *
  * The board shows every card of two decks except the Jacks, each twice, with a
  * free corner in each corner. GameHub's own arrangement: one deck fills the top
@@ -10,7 +10,7 @@
  * On your turn you play a card from your hand and put a chip on one of its two
  * spaces; then you draw. Jacks are wild:
  *  - a two-eyed Jack (♦ ♣) places a chip on any open space;
- *  - a one-eyed Jack (♥ ♠) removes an opponent's chip – never one that's part of
+ *  - a one-eyed Jack (♥ ♠) removes an opponent's chip - never one that's part of
  *    a completed line.
  * A card whose spaces are both covered is dead: once per turn you may discard it
  * and draw a replacement before playing.

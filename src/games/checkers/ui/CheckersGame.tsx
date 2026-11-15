@@ -14,7 +14,7 @@ import { CHECKERS_SOUNDS, checkersCues } from './sound';
 export const SIDE_COLOR: Record<Side, string> = { black: '#8d97ab', white: '#efe8da' };
 const SIDE_NAME: Record<Side, string> = { black: 'Black', white: 'White' };
 
-function Disc({ piece }: { piece: Piece }) {
+export function Disc({ piece }: { piece: Piece }) {
   const side = sideOf(piece)!;
   return (
     <span className={`ck-piece is-${side}${Math.abs(piece) === 2 ? ' is-king' : ''}`}>
@@ -128,7 +128,7 @@ export function CheckersGame({ view, meId, nameFor, onAction, onExit, exitLabel,
     >
       <p>{REASON[view.reason ?? ''] ?? ''}</p>
       <p>
-        Score: {who(meId)} {view.score[meId] ?? 0} – {view.score[view.players.find((p) => p.id !== meId)?.id ?? ''] ?? 0}{' '}
+        Score: {who(meId)} {view.score[meId] ?? 0} - {view.score[view.players.find((p) => p.id !== meId)?.id ?? ''] ?? 0}{' '}
         {nameFor(view.players.find((p) => p.id !== meId)?.id ?? '')}
       </p>
     </ResultCard>
@@ -170,7 +170,7 @@ export function CheckersGame({ view, meId, nameFor, onAction, onExit, exitLabel,
       {!view.over && view.players.some((p) => p.id === meId) && (
         <div className="kit-panel">
           <p className="kit-muted">
-            Captures are compulsory – pieces that must jump glow. A man reaching the far row is crowned and can then move backwards.
+            Captures are compulsory - pieces that must jump glow. A man reaching the far row is crowned and can then move backwards.
           </p>
           <button type="button" className="g-btn g-btn-ghost" onClick={() => onAction({ type: 'RESIGN' })}>
             Resign

@@ -106,6 +106,10 @@
   gap: var(--space-3);
 }
 
+.g-field-row:empty {
+  display: none;
+}
+
 .g-input,
 .g-screen select,
 .g-field select {

@@ -18,6 +18,8 @@ import { TicketCard } from './components/TicketCard';
 import { FinalScores, ResultDetail, rankPlayers, winners } from './components/FinalResults';
 import { LongestPathOutline, TicketRings } from './components/ResultOverlays';
 import { areConnected, longestPathThrough } from '../engine/graph';
+import { RulesSheet } from '../../../shared/ui/Rules';
+import { TTR_RULES } from '../rules';
 import { playerColor } from './colors';
 import { cleanName } from './displayName';
 
@@ -31,7 +33,7 @@ interface Props {
   onExit?: () => void;
   /** Online play: render from this player's fixed perspective. Omit for local hotseat/AI. */
   viewerId?: string;
-  /** Online A/V mesh – drives the per-player video frames in the right pane. */
+  /** Online A/V mesh - drives the per-player video frames in the right pane. */
   media?: MediaChat;
   /** Epoch ms the current player's turn must end by (online turn clock), or null. */
   turnDeadline?: number | null;
@@ -69,7 +71,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
   const turnTimerRef = useRef<number | null>(null);
   const prevActingRef = useRef(false);
 
-  // Any action the player takes hides the "it's your turn" cue – and the
+  // Any action the player takes hides the "it's your turn" cue - and the
   // last-round banner, which clears the moment they play their final turn.
   const dispatch = (action: Action) => {
     setYourTurnFlash(false);
@@ -141,6 +143,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
 
   const gameMap = getMap(state.mapId);
   const mode = modeFor(state.mapId, state.modeId);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const gameOver = state.phase === 'game-over';
   const current = state.players[state.current];
   const currentIsHuman = !gameOver && state.phase !== 'setup-tickets' && !current.isAI;
@@ -170,7 +173,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
   const showExtendPopup =
     remainingSec != null && remainingSec <= 10 && current.id !== viewerId && !current.isAI;
 
-  // A gentle alarm on my own clock at ≤5s – once per deadline value.
+  // A gentle alarm on my own clock at ≤5s - once per deadline value.
   const warnedDeadlineRef = useRef<number | null>(null);
   useEffect(() => {
     if (myClock && remainingSec != null && remainingSec <= 5) {
@@ -346,7 +349,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
   if (gameOver) {
     const names = winners(ranked).map((r) => r.player.name);
     const verb = names.length > 1 ? 'tie' : names[0] === 'You' ? 'win' : 'wins';
-    status = `Game over – ${names.join(' & ')} ${verb}!`;
+    status = `Game over - ${names.join(' & ')} ${verb}!`;
   } else if (state.phase === 'setup-tickets') {
     status = 'Choose your destination tickets...';
   } else if (state.phase === 'tunnel-decision') {
@@ -416,7 +419,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
       {showExtendPopup && onExtendTime && (
         <div className="disconnect-overlay" role="alert">
           <span>
-            {cleanName(current.name)} is low on time – {remainingSec}s left.
+            {cleanName(current.name)} is low on time - {remainingSec}s left.
           </span>
           <button type="button" className="primary" onClick={onExtendTime}>
             Give +20s
@@ -427,11 +430,10 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
         <div className="top-content">{sidePane}</div>
         <div className="game-tools">
           {/* Mic/cam now live on each player's video frame in the right pane. */}
-          {mode.rulebook && (
-            <a className="tool-btn" href={mode.rulebook} target="_blank" rel="noopener noreferrer" title="Rules">
-              <BookOpen size={16} />Rules
-            </a>
-          )}
+          <button type="button" className="tool-btn" title="Rules" onClick={() => setRulesOpen(true)}>
+            <BookOpen size={16} />Rules
+          </button>
+          {rulesOpen && <RulesSheet rules={TTR_RULES} variant={`${state.mapId}:${mode.id}`} onClose={() => setRulesOpen(false)} />}
           <div className="tools-row">
             <button
               type="button"
@@ -591,7 +593,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
           role="alert"
           onClick={() => setShowLastRound(false)}
         >
-          Last round – everyone gets one final turn.
+          Last round - everyone gets one final turn.
           <CloseIcon size={15} className="last-round-dismiss" />
         </div>
       )}

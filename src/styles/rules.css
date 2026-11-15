@@ -1,0 +1,442 @@
+/* The Rules sheet: slides in from the right over any screen. Versions as tabs,
+   a contents row, then numbered sections with numbered steps (3.2), lettered
+   sub-steps, notes, definitions and tables. Full screen on phones. */
+
+.rules-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  justify-content: flex-end;
+  background: #0000009e;
+  backdrop-filter: blur(2px);
+  animation: rules-fade 0.2s ease-out;
+}
+
+.rules-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 100vw);
+  height: 100dvh;
+  background: var(--panel);
+  border-left: 1px solid var(--line-strong);
+  box-shadow: -24px 0 64px #000000b3;
+  animation: rules-slide 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.rules-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 26px 14px;
+}
+
+.rules-kicker {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.rules-head h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.rules-tabs {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  padding: 0 26px 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.rules-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.rules-tab {
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+}
+
+.rules-tab:hover {
+  color: var(--ink);
+}
+
+.rules-tab[aria-selected='true'] {
+  color: #0b0b0f;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.rules-body {
+  flex: 1;
+  padding: 20px 26px 56px;
+  overflow-y: auto;
+}
+
+.rules-summary {
+  max-width: 62ch;
+  margin: 0 0 18px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.rules-toc ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.rules-toc button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #c9ccd1;
+  background: #ffffff0d;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.rules-toc button:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.rules-toc button span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rules-section {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 8px;
+}
+
+.rules-section h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.rules-section h3 span {
+  min-width: 1.4em;
+  font-size: 14px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rules-section strong {
+  color: var(--ink);
+}
+
+.rules-p {
+  max-width: 64ch;
+  margin: 0 0 12px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #d4d6db;
+}
+
+.rules-steps,
+.rules-list,
+.rules-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.rules-steps > li,
+.rules-sub > li {
+  display: grid;
+  grid-template-columns: 2.8em minmax(0, 1fr);
+  gap: 4px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #d4d6db;
+}
+
+.rules-sub {
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.rules-sub > li {
+  grid-template-columns: 1.6em minmax(0, 1fr);
+}
+
+.rules-num {
+  padding-top: 1px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rules-list > li {
+  position: relative;
+  padding-left: 1.3em;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #d4d6db;
+}
+
+.rules-list > li::before {
+  content: '';
+  position: absolute;
+  top: 0.68em;
+  left: 0.3em;
+  width: 5px;
+  height: 5px;
+  background: var(--muted);
+  border-radius: 50%;
+}
+
+.rules-note {
+  max-width: 64ch;
+  margin: 2px 0 14px;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #f0e2bb;
+  background: #ffd16612;
+  border: 1px solid #ffd16630;
+  border-radius: 10px;
+}
+
+/* A picture made of the game's own pieces, on a quiet panel. */
+.rules-figure {
+  margin: 4px 0 18px;
+  padding: 0;
+}
+
+.rules-figure-art {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  overflow-x: auto;
+  background: #ffffff08;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.rules-figure figcaption {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Figures lay out labelled rows and chips with these. */
+.rf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.rf-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.rf-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.rf-grid {
+  display: grid;
+  gap: 10px 14px;
+  width: 100%;
+}
+
+.rf-rank {
+  display: grid;
+  grid-template-columns: 22px 150px auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.rf-rank b {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--muted);
+  text-align: right;
+}
+
+.rf-rank span {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.rules-terms {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.rules-terms div {
+  display: grid;
+  grid-template-columns: minmax(110px, 30%) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.rules-terms dt {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rules-terms dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d4d6db;
+}
+
+.rules-table-wrap {
+  margin: 0 0 14px;
+  overflow-x: auto;
+}
+
+.rules-table {
+  width: 100%;
+  font-size: 13.5px;
+  border-collapse: collapse;
+}
+
+.rules-table th,
+.rules-table td {
+  padding: 7px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+
+.rules-table th {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.rules-table td {
+  color: #d4d6db;
+}
+
+/* "How to play" on a landing page. */
+.rules-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c9ccd1;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+}
+
+.rules-link:hover {
+  color: var(--ink);
+}
+
+@media (max-width: 720px) {
+  .rules-head {
+    padding: 16px 16px 12px;
+  }
+
+  .rules-tabs {
+    padding: 0 16px 12px;
+  }
+
+  .rules-body {
+    padding: 16px 16px 48px;
+  }
+
+  .rules-terms div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+@keyframes rules-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rules-slide {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rules-backdrop,
+  .rules-sheet {
+    animation: none;
+  }
+}
+
+/* Hexstead's pieces drawn small in a rule book. */
+.rf-hx {
+  flex: none;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Wordgrid tiles at a fixed size in a rule book (on the board they scale with it). */
+.rf-wg .wg-tile b {
+  font-size: 20px;
+}
+
+.rf-wg .wg-tile i {
+  font-size: 9px;
+}

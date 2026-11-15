@@ -1,19 +1,19 @@
 /**
- * Last Card – a colour-matching shedding game, in two modes.
+ * Last Card - a colour-matching shedding game, in two modes.
  *
  * Play a card that matches the colour or the symbol of the top of the discard
  * pile, or a wild; otherwise draw one (and you may play it at once if it fits).
  * Action cards skip, reverse or make the next player draw; wilds set the colour.
- * Down to one card, you call "Last card" – a player caught without calling draws
+ * Down to one card, you call "Last card" - a player caught without calling draws
  * two. Empty your hand to win the hand and score the cards left in everyone
  * else's.
  *
- * Classic: 108 cards – per colour one 0, two each of 1–9, Skip, Reverse and
+ * Classic: 108 cards - per colour one 0, two each of 1-9, Skip, Reverse and
  * Draw 2; plus four Wilds and four Wild Draw 4s (a Wild Draw 4 only when you
  * have nothing of the colour in play).
  *
  * Flip: every card has a light face and a dark face. A Flip card turns the whole
- * table over – hands, draw pile and discard – and play continues on the other
+ * table over - hands, draw pile and discard - and play continues on the other
  * side, where the actions are harsher: Draw 5, Skip Everyone, and a Wild that
  * makes the next player draw until they find the chosen colour. You can always
  * see the other face of everyone else's cards.
@@ -75,7 +75,7 @@ export interface LcState {
   color: Color | null;
   /** A card just drawn that fits: its owner may play it or keep it. */
   drawn: number | null;
-  /** A player down to one card who hasn't called "Last card" – catchable until the next player moves. */
+  /** A player down to one card who hasn't called "Last card" - catchable until the next player moves. */
   exposed: string | null;
   last: LcEvent | null;
   history: LcEvent[];
@@ -430,7 +430,7 @@ export function lcBotAction(s: LcState, rand: () => number = Math.random): LcAct
 }
 
 export const lastCardKit: GameKit<LcState, LcAction> = {
-  seatError: (count) => (count >= 2 && count <= 10 ? null : 'Last Card is for 2–10 players'),
+  seatError: (count) => (count >= 2 && count <= 10 ? null : 'Last Card is for 2-10 players'),
   create: (seats, seed, options) => createLastCard(seats, seed, (options ?? {}) as { variant?: Variant }),
   apply: applyLastCard,
   actor: (s) => (s.over ? null : s.players[s.turn].id),

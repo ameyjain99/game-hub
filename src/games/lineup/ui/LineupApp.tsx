@@ -3,6 +3,7 @@ import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
 import { PLAYER_COUNTS, createLineup, lineupKit, teamsFor } from '../engine';
 import { LineupGame, TEAM_COLOR } from './LineupGame';
+import { LINEUP_RULES } from '../rules';
 
 const DIFFICULTIES = [
   { value: 'easy', label: 'Easy' },
@@ -13,7 +14,7 @@ const DIFFICULTIES = [
 const CONFIG: KitAppConfig = {
   gameId: 'lineup',
   title: 'Lineup',
-  meta: '2–12 players · 20–30 min',
+  meta: '2-12 players · 20-30 min',
   localSeats: [2, 3, 4],
   onlineSeats: PLAYER_COUNTS,
   defaultSeats: 2,
@@ -24,6 +25,7 @@ const CONFIG: KitAppConfig = {
 export function LineupApp({ onBackToHub }: { onBackToHub: () => void }) {
   return (
     <KitApp
+      rules={LINEUP_RULES}
       config={CONFIG}
       onBackToHub={onBackToHub}
       renderLocal={(setup, onExit) => (

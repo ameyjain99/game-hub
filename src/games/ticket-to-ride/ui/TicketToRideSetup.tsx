@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { BackIcon, ExternalLinkIcon, CloseIcon, AddIcon, BookOpen } from '../../../shared/icons';
+import { BackIcon, CloseIcon, AddIcon } from '../../../shared/icons';
+import { RulesButton } from '../../../shared/ui/Rules';
+import { TTR_RULES } from '../rules';
 import type { Difficulty, MapId } from '../engine/types';
 import type { PlayerConfig } from '../engine/setup';
 import { DEFAULT_MAP_ID, getMap, MAP_LIST } from '../engine/maps';
@@ -79,11 +81,7 @@ export function TicketToRideSetup({ onStart, onBackToHub, onPlayOnline }: Props)
             ))}
           </select>
         )}
-        {mode.rulebook && (
-          <a className="rulebook-link" href={mode.rulebook} target="_blank" rel="noopener noreferrer">
-            <BookOpen size={14} />Rules <ExternalLinkIcon size={12} />
-          </a>
-        )}
+        <RulesButton as="link" rules={TTR_RULES} variant={`${mapId}:${mode.id}`} />
       </label>
 
       <div className="setup-rows">

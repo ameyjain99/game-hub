@@ -5,6 +5,7 @@ import type { OnlineIntent } from '../../../online/useOnlineSession';
 import type { DifficultyOption } from '../../../online/ui/OnlineLobby';
 import { GameLanding } from '../../../shared/ui/GameLanding';
 import { GameForm } from '../../../shared/ui/GameForm';
+import { RulesContext, type GameRules } from '../../../shared/rules';
 
 export interface LocalSetup {
   /** Seats including yours (the rest are bots). */
@@ -15,7 +16,7 @@ export interface LocalSetup {
 export interface KitAppConfig {
   gameId: string;
   title: string;
-  /** e.g. "2–6 players · 10–20 min" */
+  /** e.g. "2-6 players · 10-20 min" */
   meta: string;
   /** Seat counts for a local game (you + bots). */
   localSeats: number[];
@@ -43,13 +44,28 @@ interface Props {
   optionFields?: ReactNode;
   /** The options' current value, sent with a new room. */
   optionValue?: unknown;
+  /** The game's rules, offered on every screen; `rulesVariant` picks the version shown first. */
+  rules?: GameRules;
+  rulesVariant?: string;
 }
 
 const defaultSeatLabel = (n: number) => (n === 2 ? 'You + 1 bot' : `You + ${n - 1} bots`);
 
-/** A kit game's flow below the hub – landing, create, join, an online room and a
- *  local game – each on its own URL (`/<game>`, `/create`, `/join?room=`, `/<code>`, `/play`). */
-export function KitApp({ config, onBackToHub, renderLocal, renderOnline, localExtra, optionFields, optionValue }: Props) {
+/** `want` if it's one of `allowed`, else the largest allowed count below it (or the smallest). */
+const fitSeats = (allowed: number[], want: number) =>
+  allowed.includes(want) ? want : [...allowed].reverse().find((n) => n < want) ?? allowed[0];
+
+/** A kit game's flow below the hub - landing, create, join, an online room and a
+ *  local game - each on its own URL (`/<game>`, `/create`, `/join?room=`, `/<code>`, `/play`). */
+export function KitApp({ rules, rulesVariant, ...props }: Props) {
+  return (
+    <RulesContext.Provider value={{ rules, variant: rulesVariant }}>
+      <KitScreens {...props} />
+    </RulesContext.Provider>
+  );
+}
+
+function KitScreens({ config, onBackToHub, renderLocal, renderOnline, localExtra, optionFields, optionValue }: Omit<Props, 'rules' | 'rulesVariant'>) {
   const { gameId, title } = config;
   const { step, navigate, syncCode, exit } = useGameRoute(gameId, onBackToHub);
   const [setup, setSetup] = useState<LocalSetup>({
@@ -59,10 +75,12 @@ export function KitApp({ config, onBackToHub, renderLocal, renderOnline, localEx
   });
   const toLanding = () => navigate({ kind: 'landing' });
   const seatLabel = config.seatLabel ?? defaultSeatLabel;
+  // An option can shrink the table (Poker's Short Deck seats six): keep the count in range.
+  const seats = fitSeats(config.localSeats, setup.seats);
 
   switch (step.kind) {
     case 'local':
-      return <>{renderLocal(setup, exit)}</>;
+      return <>{renderLocal({ ...setup, seats }, exit)}</>;
     case 'online':
       return <>{renderOnline(step.intent, exit, syncCode)}</>;
     case 'create':
@@ -101,7 +119,7 @@ export function KitApp({ config, onBackToHub, renderLocal, renderOnline, localEx
               {config.localSeats.length > 1 && (
                 <label className="g-field">
                   <span className="g-field-label">Players</span>
-                  <select aria-label="Players" value={setup.seats} onChange={(e) => setSetup((s) => ({ ...s, seats: Number(e.target.value) }))}>
+                  <select aria-label="Players" value={seats} onChange={(e) => setSetup((s) => ({ ...s, seats: Number(e.target.value) }))}>
                     {config.localSeats.map((n) => (
                       <option key={n} value={n}>
                         {seatLabel(n)}
@@ -141,7 +159,7 @@ export function KitApp({ config, onBackToHub, renderLocal, renderOnline, localEx
   }
 }
 
-/** Your name, plus – when hosting – how many seats the room has. */
+/** Your name, plus - when hosting - how many seats the room has. */
 function KitProfile({
   config,
   code,
@@ -158,9 +176,10 @@ function KitProfile({
 }) {
   const hosting = code === undefined;
   const [name, setName] = useState('');
-  const [seatCount, setSeatCount] = useState(
+  const [wanted, setSeatCount] = useState(
     config.onlineSeats.includes(config.defaultSeats) ? config.defaultSeats : config.onlineSeats[0],
   );
+  const seatCount = fitSeats(config.onlineSeats, wanted);
   return (
     <GameForm
       eyebrow={hosting ? `${config.title} · New room` : `${config.title} · Room ${code}`}

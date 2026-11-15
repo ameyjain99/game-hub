@@ -6,6 +6,7 @@ import { Loader } from '../../../shared/Loader';
 import { getDictionary, loadDictionary } from '../dictionary';
 import { createWordgrid, wordgridKit } from '../engine';
 import { WordgridGame, wgSeatColor } from './WordgridGame';
+import { WORDGRID_RULES } from '../rules';
 
 const DIFFICULTIES = [
   { value: 'easy', label: 'Easy' },
@@ -16,7 +17,7 @@ const DIFFICULTIES = [
 const CONFIG: KitAppConfig = {
   gameId: 'wordgrid',
   title: 'Wordgrid',
-  meta: '2–4 players · 45–90 min',
+  meta: '2-4 players · 45-90 min',
   localSeats: [2, 3, 4],
   onlineSeats: [2, 3, 4],
   defaultSeats: 2,
@@ -42,6 +43,7 @@ function WithDictionary({ children }: { children: ReactNode }) {
 export function WordgridApp({ onBackToHub }: { onBackToHub: () => void }) {
   return (
     <KitApp
+      rules={WORDGRID_RULES}
       config={CONFIG}
       onBackToHub={onBackToHub}
       renderLocal={(setup, onExit) => (

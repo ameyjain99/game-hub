@@ -6,11 +6,11 @@ const ROUTE = new Map(ROUTES.map((r) => [r.id, r]));
 const totalLength = (ids: string[]) => ids.reduce((sum, id) => sum + ROUTE.get(id)!.length, 0);
 
 // Real route ids from data/usa/routes.ts:
-//   'boston-new-york'          Boston–New York, len 2
-//   'montreal-boston'          Montreal–Boston, len 2
-//   'montreal-new-york'        Montreal–New York, len 3
-//   'new-york-washington'      New York–Washington, len 2
-//   'pittsburgh-washington'    Pittsburgh–Washington, len 2
+//   'boston-new-york'          Boston-New York, len 2
+//   'montreal-boston'          Montreal-Boston, len 2
+//   'montreal-new-york'        Montreal-New York, len 3
+//   'new-york-washington'      New York-Washington, len 2
+//   'pittsburgh-washington'    Pittsburgh-Washington, len 2
 
 describe('areConnected', () => {
   it('true when a chain of claimed routes links the two cities', () => {

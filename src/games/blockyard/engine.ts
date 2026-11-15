@@ -1,5 +1,5 @@
 /**
- * Blockyard: a shared building world. There are no turns and no winner – the
+ * Blockyard: a shared building world. There are no turns and no winner - the
  * state is just the world's seed and the blocks people have changed. Anyone at
  * the table may set a block at any time; positions and looks travel separately
  * (see the presence relay), since they change many times a second.
@@ -28,8 +28,9 @@ export type BlockyardAction = { type: 'SET'; i: number; b: number };
 export const MAX_EDITS = 60_000;
 export const BUILDER_COLORS = ['#E0393E', '#2F6FDB', '#25A35A', '#F2B90F', '#7C4DBA', '#00897B', '#E8701A', '#C4467F'];
 
-export function createBlockyard(seats: KitSeat[], seed: number, options: { edits?: Record<number, number> } = {}): BlockyardState {
-  const players = seats.map((s, i) => ({ id: `p${i}`, name: s.name, isAI: false, color: BUILDER_COLORS[i % BUILDER_COLORS.length], placed: 0, broken: 0 }));
+/** `tally`: a saved world's first builder picks up the blocks they placed and broke before. */
+export function createBlockyard(seats: KitSeat[], seed: number, options: { edits?: Record<number, number>; tally?: { placed: number; broken: number } } = {}): BlockyardState {
+  const players = seats.map((s, i) => ({ id: `p${i}`, name: s.name, isAI: false, color: BUILDER_COLORS[i % BUILDER_COLORS.length], placed: 0, broken: 0, ...(i === 0 ? options.tally : {}) }));
   const edits = options.edits ?? {};
   return { players, seed, edits, editCount: Object.keys(edits).length, closed: false };
 }
@@ -49,7 +50,7 @@ export function applyBlockyard(s: BlockyardState, action: BlockyardAction | KitC
 }
 
 export const blockyardKit: GameKit<BlockyardState, BlockyardAction> = {
-  seatError: (count) => (count >= 1 && count <= 8 ? null : 'Blockyard is for 1–8 builders'),
+  seatError: (count) => (count >= 1 && count <= 8 ? null : 'Blockyard is for 1-8 builders'),
   create: (seats, seed, options) => createBlockyard(seats, seed, (options ?? {}) as { edits?: Record<number, number> }),
   apply: applyBlockyard,
   // Nobody waits on anybody: there are no turns.

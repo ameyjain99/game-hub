@@ -47,10 +47,13 @@ describe('Cluedo turn clock', () => {
 
   test('an expired turn moves the game on', () => {
     const { store, code } = startedRoom('cluedo', 3);
-    expect(store.stateForViewer(code, 'p0').players[0].room).toBeNull();
+    const before = store.stateForViewer(code, 'p0') as { pos: Record<string, unknown> };
+    // The idle human is rolled for, then moved.
     store.expireTurns(FAR_FUTURE());
-    // The idle human was rolled and moved into a room; bots then played on.
-    expect(store.stateForViewer(code, 'p0').players[0].room).not.toBeNull();
+    store.expireTurns(FAR_FUTURE());
+    const after = store.stateForViewer(code, 'p0') as { pos: Record<string, unknown>; log: { kind: string; player?: string }[] };
+    expect(after.log.some((e) => e.kind === 'roll' && e.player === 'p0')).toBe(true);
+    expect(after.pos['Miss Scarlett']).not.toEqual(before.pos['Miss Scarlett']);
   });
 
   test('a room nobody human is connected to ends instead of stalling', () => {

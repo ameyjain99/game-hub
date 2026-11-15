@@ -1,9 +1,11 @@
 import { useCallback, useRef, useState, type MouseEvent } from 'react';
 import { CATEGORIES, GAMES, filterGames, gameColor, type CategoryId } from '../games/registry';
-import { Search } from '../shared/icons';
+import { ExternalLinkIcon, Search } from '../shared/icons';
+import { REPO_LINKS, REPO_URL } from '../shared/project';
 import { GameHubLogo } from './GameHubLogo';
 import { GameIcon } from './GameIcon';
 import { HubGridBackdrop } from './HubGridBackdrop';
+import { HubAbout, HubFaq, HubOpenSource } from './HubSections';
 import { JoinRoomDialog } from './JoinRoomDialog';
 
 interface Props {
@@ -13,7 +15,7 @@ interface Props {
   onJoin: (gameId: string, code: string) => void;
 }
 
-/** The GameHub home page: hero, the game library, how-it-works, and a CTA. */
+/** The GameHub home page: hero, the game library, how it works, about, open source, FAQ, and a CTA. */
 export function HubScreen({ onSelect, onJoin }: Props) {
   // "Join a room" opens a small dialog; closing it hands focus back to the button.
   const [joining, setJoining] = useState(false);
@@ -26,7 +28,8 @@ export function HubScreen({ onSelect, onJoin }: Props) {
     setJoining(false);
     joinFrom.current?.focus();
   }, []);
-  // Library filters: playable games only unless "Show all" is ticked, one
+  // Library filters: playable games only unless "Show all" is ticked (offered
+  // only while some game is still to come), one
   // category at a time (null = all), and a name search.
   const [showAll, setShowAll] = useState(false);
   const [category, setCategory] = useState<CategoryId | null>(null);
@@ -47,6 +50,8 @@ export function HubScreen({ onSelect, onJoin }: Props) {
         <nav className="hub-nav">
           <a href="#library">Games</a>
           <a href="#how">How it works</a>
+          <a href="#about">About</a>
+          <a href="#faq">FAQ</a>
           <button type="button" className="hub-pill" onClick={openJoin}>
             Join a room
           </button>
@@ -115,19 +120,21 @@ export function HubScreen({ onSelect, onJoin }: Props) {
               {c.label} <span className="hub-filter-count">{countIn(c.id)}</span>
             </button>
           ))}
-          <label className="hub-showall">
-            <input
-              type="checkbox"
-              className="g-check"
-              checked={showAll}
-              onChange={(e) => {
-                setShowAll(e.target.checked);
-                // Hiding upcoming games can empty the picked category: fall back to All.
-                if (!e.target.checked && category && !GAMES.some((g) => g.category === category && g.status === 'live')) setCategory(null);
-              }}
-            />
-            Show all
-          </label>
+          {GAMES.some((g) => g.status === 'soon') && (
+            <label className="hub-showall">
+              <input
+                type="checkbox"
+                className="g-check"
+                checked={showAll}
+                onChange={(e) => {
+                  setShowAll(e.target.checked);
+                  // Hiding upcoming games can empty the picked category: fall back to All.
+                  if (!e.target.checked && category && !GAMES.some((g) => g.category === category && g.status === 'live')) setCategory(null);
+                }}
+              />
+              Show all
+            </label>
+          )}
         </div>
         {shown.length > 0 ? (
           <ul className="hub-games" aria-label="Games">
@@ -194,6 +201,10 @@ export function HubScreen({ onSelect, onJoin }: Props) {
         </ol>
       </section>
 
+      <HubAbout />
+      <HubOpenSource />
+      <HubFaq />
+
       <section className="hub-cta">
         <div>
           <h2>Gather your table.</h2>
@@ -207,11 +218,23 @@ export function HubScreen({ onSelect, onJoin }: Props) {
       <footer className="hub-footer">
         <div className="hub-brand">
           <GameHubLogo size={22} />
-          <span>© {new Date().getFullYear()} GameHub</span>
+          <span>
+            © {new Date().getFullYear()} GameHub ·{' '}
+            <a href={REPO_LINKS.license} target="_blank" rel="noreferrer">
+              MIT licence
+            </a>
+          </span>
         </div>
         <nav className="hub-nav">
           <a href="#library">Games</a>
           <a href="#how">How it works</a>
+          <a href="#about">About</a>
+          <a href="#open-source">Open source</a>
+          <a href="#faq">FAQ</a>
+          <a href={REPO_URL} target="_blank" rel="noreferrer">
+            GitHub
+            <ExternalLinkIcon size={12} aria-hidden="true" />
+          </a>
         </nav>
       </footer>
     </div>

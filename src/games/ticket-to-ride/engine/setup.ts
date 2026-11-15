@@ -7,7 +7,6 @@ export interface PlayerConfig {
   name: string;
   isAI: boolean;
   difficulty?: Difficulty;
-  /** Chosen avatar (emoji); optional. */
   avatar?: string;
 }
 

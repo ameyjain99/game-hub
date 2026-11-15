@@ -18,7 +18,7 @@ const seats = [
   { name: 'Bot', isAI: false },
 ];
 
-/** The board index of a checkers square number (1–32). */
+/** The board index of a checkers square number (1-32). */
 const sq = (n: number) => {
   for (let i = 0; i < 64; i++) if ((Math.floor(i / 8) + (i % 8)) % 2 === 1 && squareNumber(i) === n) return i;
   throw new Error(`no square ${n}`);
@@ -41,7 +41,7 @@ const move = (s: CheckersState, from: number, to: number, actor = s.turn === 'bl
   applyCheckers(s, { type: 'MOVE', from: sq(from), to: sq(to) }, actor);
 
 describe('setup', () => {
-  test('twelve men each, Black on 1–12 to move first with seven moves', () => {
+  test('twelve men each, Black on 1-12 to move first with seven moves', () => {
     const s = createCheckers(seats, 1);
     expect(s.board.filter((p) => p === 1)).toHaveLength(12);
     expect(s.board.filter((p) => p === -1)).toHaveLength(12);

@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { TicketToRideProfile } from '../../src/games/ticket-to-ride/ui/TicketToRideProfile';
-import { rulebookUrl } from '../../src/games/ticket-to-ride/engine/maps/rulebook';
 import { AVATARS } from '../../src/games/ticket-to-ride/ui/avatars';
 
 afterEach(cleanup);
@@ -22,11 +21,14 @@ test('the Board dropdown is on the create page and picking a single-mode board h
   render(<TicketToRideProfile action="start" onBack={vi.fn()} onSubmit={vi.fn()} />);
   fireEvent.change(screen.getByLabelText('Board'), { target: { value: 'europe' } });
   expect(screen.queryByLabelText('Mode')).toBeNull();
-  const link = screen.getByRole('link', { name: /rules/i }) as HTMLAnchorElement;
-  expect(link.getAttribute('href')).toBe(rulebookUrl('europe.pdf'));
+  // "How to play" opens the board's own rules, with no outside rulebook link.
+  fireEvent.click(screen.getByRole('button', { name: /how to play/i }));
+  const sheet = screen.getByRole('dialog', { name: 'Ticket to Ride' });
+  expect(within(sheet).getByRole('tab', { selected: true }).textContent).toBe('Europe');
+  expect(within(sheet).queryByRole('link', { name: /rulebook/i })).toBeNull();
 });
 
-test('joining only collects name and avatar – no mode or player count', () => {
+test('joining only collects name and avatar - no mode or player count', () => {
   const onSubmit = vi.fn();
   render(<TicketToRideProfile action="join" onBack={vi.fn()} onSubmit={onSubmit} />);
   expect(screen.queryByLabelText('Mode')).toBeNull();

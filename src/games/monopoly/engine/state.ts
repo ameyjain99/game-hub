@@ -46,13 +46,13 @@ export interface MonopolyPlayer {
   cash: number;
   position: number;
   inJail: boolean;
-  /** Failed roll-for-doubles attempts while jailed (0–3). */
+  /** Failed roll-for-doubles attempts while jailed (0-3). */
   jailRolls: number;
   getOutCards: number;
   bankrupt: boolean;
 }
 
-/** Per-space ownership. `houses` 0–4; 5 means a hotel. */
+/** Per-space ownership. `houses` 0-4; 5 means a hotel. */
 export interface Ownership {
   owner: string | null;
   houses: number;
@@ -128,7 +128,7 @@ export interface MonopolyState {
   housesLeft: number;
   hotelsLeft: number;
   freeParkingPot: number;
-  /** Count of individual turns taken – a safety net to end pathological games. */
+  /** Count of individual turns taken - a safety net to end pathological games. */
   turns: number;
   /** Trade offers made this turn (bots propose at most one, so they can't loop). */
   tradesThisTurn: number;
@@ -142,7 +142,7 @@ export interface MonopolyState {
   rngState: number;
 }
 
-/** Fisher–Yates shuffle of [0..n) using the seeded RNG. */
+/** Fisher-Yates shuffle of [0..n) using the seeded RNG. */
 function shuffled(n: number, rng: Rng): number[] {
   const a = Array.from({ length: n }, (_, i) => i);
   for (let i = n - 1; i > 0; i--) {

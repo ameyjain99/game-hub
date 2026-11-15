@@ -9,7 +9,7 @@ const WARN_SECS = 5;
  * A compact countdown for the player on the clock. Turns urgent in the last ten
  * seconds; then, if `onGift` is given (the viewer isn't the one on the clock),
  * offers to give that player 20 more seconds. `onUrgent` fires once per turn
- * in the last five seconds. Renders nothing with no clock.
+ * in the last five seconds. Renders nothing with there's no clock.
  */
 export function TurnClock({
   deadline,

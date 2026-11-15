@@ -134,7 +134,7 @@ export function botCell(s: TttState, rand: () => number = Math.random): number {
     return pick(open, rand);
   }
   if (level === 'normal' && rand() < 0.25) {
-    // An occasional slip – but it still takes a win and blocks a loss.
+    // An occasional slip - but it still takes a win and blocks a loss.
     const urgent = [...winningCells(s.board, mark), ...winningCells(s.board, flip(mark))];
     return pick(urgent.length ? urgent : open, rand);
   }

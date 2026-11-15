@@ -26,7 +26,7 @@ export function DisconnectBanner({
   return (
     <div className="g-banner" role="alert">
       <span className="g-banner-text">
-        <strong>{seatName(lobby, seat)}</strong> disconnected{waiting ? ' – the game is waiting on them.' : '.'}
+        <strong>{seatName(lobby, seat)}</strong> disconnected{waiting ? ' - the game is waiting on them.' : '.'}
       </span>
       <span className="g-banner-actions">
         {onReplace && (

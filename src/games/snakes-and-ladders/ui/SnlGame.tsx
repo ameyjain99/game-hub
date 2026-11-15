@@ -69,8 +69,8 @@ function useTokenWalk(view: SnlState) {
 
 function describe(m: SnlMove, name: string): string {
   let text = `${name} rolled ${m.roll}`;
-  if (m.via?.kind === 'ladder') text += ` – climbed a ladder ${m.via.from} → ${m.via.to}`;
-  else if (m.via?.kind === 'snake') text += ` – bitten on ${m.via.from}, slid to ${m.via.to}`;
+  if (m.via?.kind === 'ladder') text += ` - climbed a ladder ${m.via.from} → ${m.via.to}`;
+  else if (m.via?.kind === 'snake') text += ` - bitten on ${m.via.from}, slid to ${m.via.to}`;
   else text += ` → ${m.to}`;
   if (m.to === FINISH) text += ' and reached 100!';
   else if (m.again) text += ' · rolls again';
@@ -132,7 +132,7 @@ export function SnlGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
     if (r) parts.push(`Roll ${r.roll}`);
     if (LADDERS[n]) parts.push(`ladder up to ${LADDERS[n]}`);
     if (SNAKES[n]) parts.push(`snake down to ${SNAKES[n]}`);
-    return parts.length ? `${n}: ${parts.join(' – ')}` : String(n);
+    return parts.length ? `${n}: ${parts.join(' - ')}` : String(n);
   };
 
   // Tokens sharing a square fan out a little.
@@ -287,7 +287,7 @@ export function SnlGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
       />
       <SideSection title="Recent rolls">
         {view.history.length === 0 ? (
-          <p className="kit-muted">A 6 rolls again. Land on 100 exactly – too high and you bounce back.</p>
+          <p className="kit-muted">A 6 rolls again. Land on 100 exactly - too high and you bounce back.</p>
         ) : (
           <ul className="kit-log">
             {view.history.slice(0, 12).map((m) => (

@@ -1,5 +1,4 @@
 import type { GameMap } from './types';
-import { rulebookUrl } from './rulebook';
 import { EUROPE_CITIES, EUROPE_LAYOUT } from '../data/europe/cities';
 import { EUROPE_ROUTES } from '../data/europe/routes';
 import { EUROPE_TICKETS } from '../data/europe/tickets';
@@ -24,7 +23,6 @@ export const EUROPE_MAP: GameMap = {
       setupDiscards: 'box',
       ticketDraw: 3,
       bonuses: ['longest-path'],
-      rulebook: rulebookUrl('europe.pdf'),
     },
   ],
   deck: DECK_COMPOSITION,

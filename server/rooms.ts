@@ -59,7 +59,7 @@ function takenAvatars(room: Room, exceptIndex = -1): Set<string> {
   );
 }
 
-/** The preferred avatar if still free, else the first unused one – never a clash. */
+/** The preferred avatar if still free, else the first unused one - never a clash. */
 function freeAvatar(room: Room, preferred?: string): string {
   const taken = takenAvatars(room);
   if (preferred && !taken.has(preferred)) return preferred;
@@ -234,7 +234,7 @@ export class RoomStore {
           this.armTurnTimer(room);
         }
       } else {
-        room.turnDeadline = null; // couldn't skip – clear so we don't spin
+        room.turnDeadline = null; // couldn't skip - clear so we don't spin
       }
       expired.push(code);
     }
@@ -274,7 +274,7 @@ export class RoomStore {
   replaceWithAi(code: string, callerToken: string, index: number, difficulty?: Difficulty): Ok | Err {
     const room = this.rooms.get(code);
     if (!room || !room.game) return { error: 'no active game' };
-    // Any member of the room may replace a seat that has DROPPED – not just the
+    // Any member of the room may replace a seat that has DROPPED - not just the
     // host. Restricting to the host means a dropped host can never be replaced and
     // the game stalls. You can still only replace someone who's already gone.
     if (!room.seats.some((s) => s.token === callerToken)) return { error: 'not in this room' };
@@ -326,7 +326,7 @@ export class RoomStore {
       return { code, deleted: false };
     }
 
-    // Mid-game: leave gracefully – the seat pauses and the host can replace it.
+    // Mid-game: leave gracefully - the seat pauses and the host can replace it.
     seat.socketId = null;
     seat.connected = false;
     return { code, deleted: false };

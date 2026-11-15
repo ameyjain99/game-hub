@@ -3,9 +3,6 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createMonopolyGame, type MonopolyState } from '../../src/games/monopoly/engine/state';
 import { MonopolyCenter } from '../../src/games/monopoly/ui/MonopolyCenter';
-import { createCluedoGame, type CluedoState } from '../../src/games/cluedo/engine/state';
-import { redactFor } from '../../src/games/cluedo/engine/redact';
-import { CluedoActions } from '../../src/games/cluedo/ui/CluedoActions';
 
 afterEach(cleanup);
 
@@ -75,51 +72,3 @@ test('Monopoly: while another player moves, there is no stray action button', ()
   expect(screen.getByText(/bot 1's turn/i)).toBeTruthy();
   expect(screen.queryByRole('button')).toBeNull();
 });
-
-const clNames = (id: string) => ({ a: 'Amey', b: 'Bot 1', c: 'Bot 2' })[id] ?? id;
-
-function cluedoAt(over: Partial<CluedoState>): CluedoState {
-  return { ...createCluedoGame(['a', 'b', 'c'], { seed: 3 }), ...over };
-}
-
-test('Cluedo: the disprover picks from only their matching cards', () => {
-  const base = cluedoAt({});
-  const matching = base.players[0].hand[0];
-  const s: CluedoState = {
-    ...base,
-    current: 1,
-    phase: 'disprove',
-    pendingDisprover: 'a',
-    pendingSuggestion: { suspect: 'Mr Green', weapon: 'Rope', room: 'Hall', [typeOfCard(matching)]: matching } as CluedoState['pendingSuggestion'],
-  };
-  const onAction = vi.fn();
-  render(<CluedoActions view={redactFor(s, 'a')} meId="a" nameFor={clNames} onAction={onAction} onExit={() => {}} />);
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(matching) }));
-  expect(onAction).toHaveBeenCalledWith({ type: 'disprove', card: matching });
-});
-
-test('Cluedo: the answer is shown to everyone when the case closes', () => {
-  const s = cluedoAt({ phase: 'over', winner: 'b' });
-  render(<CluedoActions view={redactFor(s, 'a')} meId="a" nameFor={clNames} onAction={() => {}} onExit={() => {}} />);
-  expect(screen.getByText(/bot 1 solved it/i)).toBeTruthy();
-  expect(screen.getByText(new RegExp(`It was ${s.solution.suspect}`))).toBeTruthy();
-});
-
-test('Cluedo: accusing asks for confirmation before eliminating anyone', () => {
-  const base = cluedoAt({});
-  const s: CluedoState = { ...base, phase: 'decide', players: base.players.map((p, i) => (i === 0 ? { ...p, room: 'Kitchen' } : p)) };
-  const onAction = vi.fn();
-  render(<CluedoActions view={redactFor(s, 'a')} meId="a" nameFor={clNames} onAction={onAction} onExit={() => {}} />);
-  fireEvent.click(screen.getByRole('button', { name: /make an accusation/i }));
-  expect(screen.getByRole('dialog', { name: /make an accusation/i })).toBeTruthy();
-  expect(onAction).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: /^accuse$/i }));
-  expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: 'accuse' }));
-});
-
-/** Which slot of a suggestion a card fills. */
-function typeOfCard(card: string): 'suspect' | 'weapon' | 'room' {
-  const suspects = ['Miss Scarlett', 'Colonel Mustard', 'Mrs White', 'Mr Green', 'Mrs Peacock', 'Professor Plum'];
-  const weapons = ['Candlestick', 'Dagger', 'Lead Pipe', 'Revolver', 'Rope', 'Spanner'];
-  return suspects.includes(card) ? 'suspect' : weapons.includes(card) ? 'weapon' : 'room';
-}

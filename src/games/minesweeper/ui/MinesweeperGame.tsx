@@ -26,7 +26,7 @@ function saveBest(best: Partial<Record<Level, number>>) {
 }
 
 /** The flag: the same swallowtail as the game's icon. */
-function FlagGlyph({ wrong }: { wrong?: boolean }) {
+export function FlagGlyph({ wrong }: { wrong?: boolean }) {
   return (
     <svg className={`ms-flag${wrong ? ' is-wrong' : ''}`} viewBox="0 0 64 64" aria-hidden="true">
       <path className="ms-flag-pole" d="M20 56V10" />
@@ -36,7 +36,7 @@ function FlagGlyph({ wrong }: { wrong?: boolean }) {
   );
 }
 
-function MineGlyph() {
+export function MineGlyph() {
   return (
     <svg className="ms-mine" viewBox="0 0 64 64" aria-hidden="true">
       <path d="M32 8V56M8 32H56M15 15L49 49M49 15L15 49" />
@@ -265,7 +265,7 @@ export function MinesweeperGame({ level: startLevel, onExit }: { level: Level; o
         </div>
         <div>
           <span>Best</span>
-          <b>{best[state.level] !== undefined ? clock(best[state.level]!) : '–'}</b>
+          <b>{best[state.level] !== undefined ? clock(best[state.level]!) : '-'}</b>
         </div>
       </div>
       <SideSection title="Level">

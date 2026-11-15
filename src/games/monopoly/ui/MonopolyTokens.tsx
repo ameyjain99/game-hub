@@ -60,8 +60,7 @@ function useShownSquares(players: MonopolyPlayer[], instant: boolean): Record<st
 /**
  * Player tokens, drawn over the board on their own layer so they can travel:
  * a roll walks the token through every square it passes, a trip to jail or a
- * long card jump glides straight there. Several tokens on a square fan out
- * along its edge.
+ * long card jump glides straight there. 
  */
 export function MonopolyTokens({
   view,

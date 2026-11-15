@@ -358,8 +358,8 @@ export function SolitaireGame({ draw, onExit }: { draw: DrawMode; onExit: () => 
       <SideSection title="Foundations" meta={`${home} / 52`}>
         <div className="sol-progress" aria-hidden="true">
           {state.foundations.map((p, f) => (
-            <span key={f} className={p.length && 'HD'.includes(p[0][1]) ? 'is-red' : ''}>
-              {p.length ? SUIT_SYMBOL[p[0][1]] : '·'} {p.length}
+            <span key={f} className={p.length ? ('HD'.includes(p[0][1]) ? 'is-red' : '') : 'is-empty'}>
+              {p.length ? `${SUIT_SYMBOL[p[0][1]]} ${p.length}` : 'Empty'}
             </span>
           ))}
         </div>

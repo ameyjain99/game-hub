@@ -1,5 +1,5 @@
 /**
- * Wordgrid – a crossword tile game on GameHub's own board.
+ * Wordgrid - a crossword tile game on GameHub's own board.
  *
  * 15×15 squares with premium squares in GameHub's own pattern (double/triple
  * letter, double/triple word; the centre star doubles the first word). 100
@@ -12,8 +12,8 @@
  * more. Instead of playing you may swap tiles (while the bag holds at least
  * seven) or pass.
  *
- * The game ends when someone plays their last tile with the bag empty – they
- * gain the value of everyone else's racks, which those players lose – or after
+ * The game ends when someone plays their last tile with the bag empty - they
+ * gain the value of everyone else's racks, which those players lose - or after
  * six scoreless turns in a row, when everyone loses what's left on their rack.
  */
 import { IllegalMove, nextRandom, shuffle, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
@@ -69,7 +69,7 @@ export const valueOf = (letter: string) => LETTERS[letter]?.[1] ?? 0;
 
 export interface Tile {
   id: number;
-  /** A–Z, or '?' for a blank. */
+  /** A-Z, or '?' for a blank. */
   letter: string;
 }
 
@@ -500,7 +500,7 @@ export function wgBotAction(s: WgState, rand: () => number = Math.random): WgAct
 }
 
 export const wordgridKit: GameKit<WgState, WgAction> = {
-  seatError: (count) => (count >= 2 && count <= 4 ? null : 'Wordgrid is for 2–4 players'),
+  seatError: (count) => (count >= 2 && count <= 4 ? null : 'Wordgrid is for 2-4 players'),
   create: (seats, seed) => createWordgrid(seats, seed),
   apply: applyWordgrid,
   actor: (s) => (s.over ? null : s.players[s.turn].id),

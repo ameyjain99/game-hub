@@ -7,10 +7,10 @@ maintainer's approval before it can merge into `main`.
 
 A branch must be named with one of these prefixes:
 
-- `feat/...` – a new feature
-- `fix/...` – a bug fix
-- `test/...` – tests only
-- `chore/...` – tooling, deps, docs, housekeeping
+- `feat/...` - a new feature
+- `fix/...` - a bug fix
+- `test/...` - tests only
+- `chore/...` - tooling, deps, docs, housekeeping
 
 Every commit message (and your PR title) must start the same way, with `:`
 instead of `/`, then a space and a short summary. An optional `(scope)` is
@@ -25,10 +25,10 @@ chore: bump vite to 8.4
 
 These are enforced two ways:
 
-1. **Locally** – `npm install` points git at `.githooks/`, which rejects a bad
+1. **Locally** - `npm install` points git at `.githooks/`, which rejects a bad
    commit message or a bad branch name before they leave your machine. (To
    enable by hand: `git config core.hooksPath .githooks`.)
-2. **In CI** – the **PR conventions** check validates the branch name, the PR
+2. **In CI** - the **PR conventions** check validates the branch name, the PR
    title and every commit in the PR. It must pass before a PR can merge.
 
 ## Before you open a PR
@@ -39,5 +39,10 @@ npm run build      # also typechecks
 ```
 
 Keep a PR to one concern. For a bug, add a failing test first, then the fix.
+
+Any change to a game (a new game, a variant, a screen, a rule) is held to
+[GAME_STANDARDS.md](GAME_STANDARDS.md): what every game ships with,
+how it should look and feel, how closely it follows the real rules, how rule
+books are written, and how to check the work before calling it done.
 
 See the README for architecture, code structure and how to add a new game.

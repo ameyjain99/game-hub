@@ -8,7 +8,7 @@ afterEach(cleanup);
 test('Start opens the create page (board/mode/players are picked there)', () => {
   const onStart = vi.fn();
   render(<TicketToRideLanding onStart={onStart} onJoin={vi.fn()} onLocal={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: /start game/i }));
+  fireEvent.click(screen.getByRole('button', { name: /start a game/i }));
   expect(onStart).toHaveBeenCalledWith();
 });
 
@@ -30,9 +30,11 @@ test('Join is disabled until a 4-letter code is entered, then calls onJoin', () 
   expect(onJoin).toHaveBeenCalledWith('AB23');
 });
 
-test('Play on this device calls onLocal', () => {
+test('Start local game calls onLocal, and How to play opens the rules', () => {
   const onLocal = vi.fn();
   render(<TicketToRideLanding onStart={vi.fn()} onJoin={vi.fn()} onLocal={onLocal} />);
-  fireEvent.click(screen.getByRole('button', { name: /play on this device/i }));
+  fireEvent.click(screen.getByRole('button', { name: /start local game/i }));
   expect(onLocal).toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: /how to play/i }));
+  expect(screen.getByRole('dialog', { name: 'Ticket to Ride' })).toBeTruthy();
 });

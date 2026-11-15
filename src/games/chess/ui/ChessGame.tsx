@@ -28,7 +28,7 @@ export function PieceImg({ code }: { code: string }) {
 
 const RESULT_TEXT: Record<string, string> = {
   checkmate: 'Checkmate.',
-  stalemate: 'Stalemate – no legal move, and no check.',
+  stalemate: 'Stalemate - no legal move, and no check.',
   threefold: 'The same position came up three times.',
   insufficient: 'Neither side has enough material to mate.',
   'fifty-moves': 'Fifty moves each with no capture or pawn move.',
@@ -196,7 +196,7 @@ export function ChessGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
       <p>{RESULT_TEXT[view.result ?? ''] ?? ''}</p>
       {view.game > 1 && (
         <p>
-          Score: {who(meId)} {view.score[meId] ?? 0} – {view.score[opponentId] ?? 0} {nameFor(opponentId)}
+          Score: {who(meId)} {view.score[meId] ?? 0} - {view.score[opponentId] ?? 0} {nameFor(opponentId)}
         </p>
       )}
     </ResultCard>

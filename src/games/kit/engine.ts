@@ -61,7 +61,14 @@ export interface GameKit<S, A extends { type: string }> {
   turnMs?: number;
   /** Whether the room's turn clock runs at all (Chess plays untimed). */
   untimed?: boolean;
+  /** A step the game takes by itself (Poker's dealer dealing the next street or
+   *  hand) and the pause before it; null while a player is to move. It is
+   *  applied as `DEALER_ID`. */
+  auto?(state: S): { action: A; delay: number } | null;
 }
+
+/** The actor a game's own steps (`auto`) are applied as. */
+export const DEALER_ID = 'dealer';
 
 /** The default pause before a bot acts. */
 export const BOT_DELAY_MS = 700;
@@ -87,7 +94,7 @@ export function rollDie(seed: number): [number, number] {
   return [1 + Math.floor(r * 6), next];
 }
 
-/** A seeded Fisher–Yates shuffle: [shuffled copy, next seed]. */
+/** A seeded Fisher-Yates shuffle: [shuffled copy, next seed]. */
 export function shuffle<T>(items: readonly T[], seed: number): [T[], number] {
   const out = items.slice();
   let s = seed;

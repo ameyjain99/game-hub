@@ -12,8 +12,7 @@ export interface SeatMediaState {
 
 /**
  * A seat's media state. A peer's camera counts as on only once they announce
- * it: before that their stream may carry an empty video track, which would
- * render as a black frame.
+ * it: before that their stream may carry an empty video track (black frame).
  */
 export function seatMediaState(media: MediaChat, id: string, meId: string): SeatMediaState {
   const isMe = id === meId;

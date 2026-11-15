@@ -1,8 +1,7 @@
 import type { CSSProperties } from 'react';
 import { logParts } from './logText';
 
-/** One log line, each player named with a dot in their token colour (readable on
- *  both the light board centre and the dark sidebar). */
+/** One log line, each player named with a dot in their token colour */
 export function LogLine({
   line,
   nameFor,

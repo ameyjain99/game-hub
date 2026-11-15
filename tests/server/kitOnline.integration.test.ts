@@ -145,3 +145,121 @@ test("online Last Card (Flip): each player sees the face in play of their own ca
   guest.close();
   await srv.close();
 });
+
+test('online Poker (Omaha): hole cards stay hidden, and the dealer deals the flop by itself', async () => {
+  const { srv, url } = await serve();
+  const { host, guest, code, hostState } = await pair(url, 'poker', { variant: 'omaha' });
+  expect(hostState.variant).toBe('omaha');
+  expect(hostState.players[0].hole.every((c: string | null) => c !== null)).toBe(true);
+  expect(hostState.players[1].hole.every((c: string | null) => c === null)).toBe(true);
+  // Heads-up: the button (small blind) calls, the big blind checks; no one acts again until the flop.
+  const states: { board: string[]; toAct: number | null; players: { id: string }[] }[] = [];
+  host.on(EVT.state, (s) => states.push(s));
+  let s = hostState;
+  for (const step of ['CALL', 'CHECK']) {
+    const actor = s.players[s.toAct].id === 'p0' ? host : guest;
+    const next = waitFor<typeof hostState>(host, EVT.state);
+    actor.emit(EVT.action, { code, action: { type: step } });
+    s = await next;
+  }
+  const deadline = Date.now() + 3000;
+  while (Date.now() < deadline && !states.some((x) => x.board.length === 3)) await new Promise((r) => setTimeout(r, 50));
+  expect(states.some((x) => x.board.length === 3)).toBe(true);
+  host.close();
+  guest.close();
+  await srv.close();
+}, 10_000);
+
+test('online Hexstead: the bots take their setup placements on the server, one at a time', async () => {
+  const { srv, url } = await serve();
+  const { legalHomesteadSpots, legalRoadSpots } = await import('../../src/games/hexstead/engine');
+  const host = connect(url);
+  await connected(host);
+  host.emit(EVT.createRoom, { seatCount: 3, name: 'Ann', avatar: '', gameId: 'hexstead' });
+  const { code } = await waitFor<Joined>(host, EVT.joined);
+  for (const index of [1, 2]) {
+    host.emit(EVT.setSeatAi, { code, index, isAI: true, difficulty: 'normal' });
+    await waitFor(host, EVT.lobby);
+  }
+  let latest: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  host.on(EVT.state, (s) => (latest = s));
+  host.emit(EVT.startGame, { code });
+  while (!latest) await new Promise((r) => setTimeout(r, 20));
+  host.emit(EVT.action, { code, action: { type: 'BUILD_HOMESTEAD', vertex: legalHomesteadSpots(latest, 'p0')[0] } });
+  await new Promise((r) => setTimeout(r, 100));
+  host.emit(EVT.action, { code, action: { type: 'BUILD_ROAD', edge: legalRoadSpots(latest, 'p0')[0] } });
+  // Both bots place twice (snake order), then it's the host's second placement.
+  const deadline = Date.now() + 9000;
+  while (Date.now() < deadline && latest.setup?.step !== 5) await new Promise((r) => setTimeout(r, 50));
+  expect(latest.setup.step).toBe(5);
+  expect(latest.buildings.filter((b: { player: string } | null) => b && b.player !== 'p0')).toHaveLength(4);
+  host.close();
+  await srv.close();
+}, 12_000);
+
+test('online Imposter: the word reaches only the crew, and the bots give their clues on the server', async () => {
+  const { srv, url } = await serve();
+  const host = connect(url);
+  await connected(host);
+  host.emit(EVT.createRoom, { seatCount: 3, name: 'Ann', avatar: '', gameId: 'imposter', options: { mode: 'classic', clues: 1 } });
+  const { code } = await waitFor<Joined>(host, EVT.joined);
+  for (const index of [1, 2]) {
+    host.emit(EVT.setSeatAi, { code, index, isAI: true, difficulty: 'normal' });
+    await waitFor(host, EVT.lobby);
+  }
+  let latest: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  host.on(EVT.state, (s) => (latest = s));
+  host.emit(EVT.startGame, { code });
+  while (!latest) await new Promise((r) => setTimeout(r, 20));
+  // The state the host receives names no word but their own, and no seed.
+  expect(latest.round.word).toBe('');
+  expect(latest.seed).toBe(0);
+  if (latest.round.imposter === 'p0') expect(latest.round.yours).toBeNull();
+  else expect(typeof latest.round.yours).toBe('string');
+  // One clue each: the host clues on their turn; the bots clue by themselves.
+  let gave = false;
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline && latest.phase === 'clues') {
+    const r = latest.round;
+    if (!gave && r.order[r.turn % r.order.length] === 'p0') {
+      gave = true;
+      host.emit(EVT.action, { code, action: { type: 'CLUE', text: 'qzzq' } });
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  expect(latest.phase).toBe('discuss');
+  expect(latest.round.clues.map((c: { player: string }) => c.player).sort()).toEqual(['p0', 'p1', 'p2']);
+  host.close();
+  await srv.close();
+}, 14_000);
+
+test('online Cluedo: the envelope and the other hands stay hidden, and bots take their turns on the server', async () => {
+  const { srv, url } = await serve();
+  const host = connect(url);
+  await connected(host);
+  host.emit(EVT.createRoom, { seatCount: 3, name: 'Ann', avatar: '', gameId: 'cluedo' });
+  const { code } = await waitFor<Joined>(host, EVT.joined);
+  for (const index of [1, 2]) {
+    host.emit(EVT.setSeatAi, { code, index, isAI: true, difficulty: 'normal' });
+    await waitFor(host, EVT.lobby);
+  }
+  let latest: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  host.on(EVT.state, (s) => (latest = s));
+  host.emit(EVT.startGame, { code });
+  while (!latest) await new Promise((r) => setTimeout(r, 20));
+  expect(latest.solution.suspect).toBe('');
+  expect(latest.players[0].hand).toHaveLength(6);
+  expect(latest.players[1].hand).toEqual([]);
+  expect(latest.players[1].cards).toBe(6);
+  // The host rolls and stops on the first square in reach; then the bots play.
+  host.emit(EVT.action, { code, action: { type: 'ROLL' } });
+  while (latest.phase !== 'move') await new Promise((r) => setTimeout(r, 20));
+  host.emit(EVT.action, { code, action: { type: 'MOVE', to: Number(Object.keys(latest.reach.squares)[0]) } });
+  const rolled = (id: string) => latest.log.some((e: { kind: string; player?: string }) => e.kind === 'roll' && e.player === id);
+  const deadline = Date.now() + 8000;
+  while (Date.now() < deadline && !rolled('p1')) await new Promise((r) => setTimeout(r, 50));
+  expect(rolled('p1')).toBe(true);
+  expect(latest.current).toBe(1);
+  host.close();
+  await srv.close();
+}, 12_000);

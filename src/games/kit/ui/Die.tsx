@@ -16,8 +16,8 @@ const FACE_MS = 70;
 const randomFace = () => 1 + Math.floor(Math.random() * 6);
 
 /**
- * One die showing `value` (blank before the first roll). A new roll – a change
- * of `rollKey` – tumbles through random faces before settling; the accessible
+ * One die showing `value` (blank before the first roll). A new roll - a change
+ * of `rollKey` - tumbles through random faces before settling; the accessible
  * label always states the real result.
  */
 export function Die({ value, rollKey, size = 52, label }: { value: number | null; rollKey: number; size?: number; label?: string }) {

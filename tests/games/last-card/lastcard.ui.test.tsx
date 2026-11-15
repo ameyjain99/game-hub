@@ -22,3 +22,20 @@ test('your playable cards are live; a wild asks for a colour', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Green' }));
   expect(screen.getByText(/You played Wild → Green/)).toBeTruthy();
 });
+
+const onTop = (color: LcState['color']) => (): LcState => {
+  const s = createLastCard([{ name: 'You', isAI: false }, { name: 'Bot', isAI: true }], 4);
+  const wild = { id: 9003, light: { kind: 'wild' as const, color: null }, dark: null };
+  return { ...s, discard: [wild], color };
+};
+
+test('an opening Wild tells you to play any card', () => {
+  render(<KitLocal kit={lastCardKit} init={onTop(null)} onExit={() => {}} render={(p) => <LastCardGame {...p} />} />);
+  expect(screen.getByText(/play any card/i)).toBeTruthy();
+  expect(screen.queryByText(/on Wild$/)).toBeNull();
+});
+
+test('a Wild with a chosen colour names that colour in the status', () => {
+  render(<KitLocal kit={lastCardKit} init={onTop('green')} onExit={() => {}} render={(p) => <LastCardGame {...p} />} />);
+  expect(screen.getByText(/on Wild · Green/)).toBeTruthy();
+});

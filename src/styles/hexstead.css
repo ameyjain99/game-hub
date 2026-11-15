@@ -1,0 +1,962 @@
+/* Hexstead: a hex island in a deep sea. Flat terrain colours with a white mark
+   each, cream number tokens (6 and 8 in red), dock markers for harbours, and
+   pieces outlined in near-black so they read on every terrain. Your cards,
+   dice and actions dock under the island; prompts float over it. */
+
+.kit-game.hx-game {
+  max-width: calc(112dvh + 340px);
+}
+
+.hx-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.kit-board.hx-board {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
+.hx-island {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  user-select: none;
+}
+
+/* ---- Sea and harbours ---- */
+.hx-waves ellipse {
+  stroke: #ffffff14;
+  stroke-width: 2;
+  stroke-dasharray: 10 16;
+}
+
+.hx-harbor line {
+  stroke: #e3d3ad;
+  stroke-width: 4;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+}
+
+.hx-dock {
+  fill: #f3ead3;
+  stroke: #0b2a44;
+  stroke-width: 2.5;
+}
+
+.hx-dock:not(.is-any) {
+  fill: var(--dock);
+}
+
+.hx-dock-label {
+  font-size: 15px;
+  font-weight: 800;
+  text-anchor: middle;
+  fill: #10131a;
+}
+
+.hx-dock:not(.is-any) + .hx-dock-label {
+  fill: #fff;
+}
+
+/* ---- Tiles ---- */
+.hx-hex {
+  stroke: #0b2a44;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  transition: filter 0.2s;
+}
+
+.hx-glyph {
+  fill: #ffffff1f;
+  stroke: #ffffff66;
+  stroke-width: 0.045;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.hx-token circle:first-child {
+  fill: #f7f1e1;
+  stroke: #0000004d;
+  stroke-width: 1.5;
+}
+
+.hx-token text {
+  font-size: 19px;
+  font-weight: 800;
+  text-anchor: middle;
+  fill: #1c1d22;
+}
+
+.hx-pip {
+  fill: #1c1d22;
+}
+
+.hx-token.is-hot text,
+.hx-token.is-hot .hx-pip {
+  fill: #c8343a;
+}
+
+.hx-tile.is-producing .hx-hex {
+  animation: hx-glow 1.6s ease-out;
+}
+
+.hx-tile.is-pick {
+  cursor: pointer;
+}
+
+.hx-tile.is-pick .hx-hex {
+  stroke: #ffd166;
+  stroke-width: 4;
+}
+
+.hx-tile.is-pick:hover .hx-hex {
+  filter: brightness(1.22);
+}
+
+/* The Inventor's first token, waiting for its partner. */
+.hx-tile.is-marked .hx-hex {
+  stroke: #fff;
+  stroke-width: 5;
+}
+
+.hx-tile.is-marked .hx-token circle:first-child {
+  stroke: #ffd166;
+  stroke-width: 4;
+}
+
+/* The merchant: a pawn in its holder's colour beside the tile's token. */
+.hx-merchant {
+  pointer-events: none;
+  transition: opacity 0.2s;
+  animation: hx-pop 0.3s ease-out;
+}
+
+.hx-merchant.is-dim {
+  opacity: 0.35;
+}
+
+/* ---- Pieces ---- */
+.hx-road-edge {
+  stroke: #10131a;
+  stroke-width: 13;
+  stroke-linecap: round;
+}
+
+.hx-road-fill {
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.hx-road,
+.hx-house {
+  transition: opacity 0.2s;
+  animation: hx-pop 0.3s ease-out;
+}
+
+.hx-road.is-dim,
+.hx-house.is-dim {
+  opacity: 0.35;
+}
+
+.hx-raider {
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1);
+  pointer-events: none;
+}
+
+.hx-raider path {
+  fill: #1a1c22;
+  stroke: #ffffffd9;
+  stroke-width: 2.5;
+}
+
+.hx-raider-shadow {
+  fill: #00000066;
+}
+
+/* ---- Where you can place ---- */
+.hx-pick-edge {
+  stroke: #ffd166;
+  stroke-width: 11;
+  stroke-linecap: round;
+  opacity: 0.5;
+  cursor: pointer;
+  animation: hx-breathe 1.3s ease-in-out infinite;
+}
+
+.hx-pick-edge:hover {
+  opacity: 1;
+  animation: none;
+}
+
+.hx-pick-vertex {
+  fill: #ffd166;
+  stroke: #10131a;
+  stroke-width: 2.5;
+  opacity: 0.7;
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.12s, opacity 0.12s;
+}
+
+.hx-pick-vertex:hover {
+  fill: #fff;
+  opacity: 1;
+  transform: scale(1.6);
+}
+
+/* ---- Prompts over the island ---- */
+.hx-panel {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(460px, 94%);
+  max-height: calc(100% - 24px);
+  padding: 16px;
+  overflow-y: auto;
+  background: #15161bf5;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px #000c;
+  transform: translateX(-50%);
+  animation: hx-rise 0.25s ease-out;
+}
+
+.hx-panel.is-small {
+  width: min(380px, 94%);
+}
+
+.hx-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hx-panel-head h3,
+.hx-panel h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.hx-panel h4 {
+  margin-bottom: 6px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.hx-panel p {
+  margin: 0;
+}
+
+.hx-panel-close {
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+}
+
+.hx-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hx-choice.is-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+}
+
+.hx-res-btn {
+  height: 40px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--rc);
+  border: 0;
+  border-radius: 10px;
+}
+
+.hx-res-btn:disabled {
+  opacity: 0.35;
+}
+
+/* The Alchemist's dice: a row of faces for each die. */
+.hx-dice-set {
+  display: grid;
+  grid-template-columns: 1fr repeat(6, 30px);
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.hx-dice-set button {
+  height: 30px;
+  font-weight: 800;
+  color: var(--dc-ink, #1c1d22);
+  background: var(--dc, #fff);
+  border: 0;
+  border-radius: 8px;
+  opacity: 0.5;
+}
+
+.hx-dice-set.is-red {
+  --dc: #c8343a;
+  --dc-ink: #fff;
+}
+
+.hx-dice-set.is-yellow {
+  --dc: #f2c94c;
+}
+
+.hx-dice-set button.is-on {
+  opacity: 1;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.hx-warn {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  color: #ffd166;
+}
+
+/* Wardens: the red die (it also decides edict draws) and the yellow one. */
+.hx-game.is-wardens .hx-dice .kit-die:nth-child(1) {
+  background: #c8343a;
+}
+
+.hx-game.is-wardens .hx-dice .kit-die:nth-child(1) > .is-pip {
+  background: #fff;
+}
+
+.hx-game.is-wardens .hx-dice .kit-die:nth-child(2) {
+  background: #f2c94c;
+}
+
+.hx-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hx-pick-row {
+  display: grid;
+  grid-template-columns: 1fr 30px 28px 30px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  border-left: 4px solid var(--rc);
+  border-radius: 6px;
+  background: #ffffff08;
+}
+
+.hx-pick-row button {
+  height: 28px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #ffffff14;
+  border: 0;
+  border-radius: 7px;
+}
+
+.hx-pick-row button:disabled {
+  opacity: 0.3;
+}
+
+.hx-pick-row b {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.hx-pick-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hx-trade-bank,
+.hx-trade-offer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hx-bank-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+
+.hx-bank-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.hx-offer-sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* The trade panel holds two pickers (eight rows each in Wardens): tighter rows, and the offer button stays in view. */
+.hx-trade .hx-picker {
+  gap: 3px;
+}
+
+.hx-trade .hx-pick-row {
+  padding-block: 2px;
+}
+
+.hx-trade .hx-pick-row button {
+  height: 24px;
+}
+
+.hx-trade .hx-trade-offer > .primary {
+  position: sticky;
+  bottom: 0;
+  margin-top: 10px;
+  box-shadow: 0 -10px 16px #15161b;
+}
+
+.hx-side-label {
+  margin-bottom: 4px !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.hx-offer-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.hx-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hx-answers li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* ---- Resource chips ---- */
+.hx-cards {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.hx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--rc);
+  border-radius: 6px;
+  text-shadow: 0 1px 1px #0005;
+}
+
+.hx-cards.is-sm .hx-chip-name {
+  display: none;
+}
+
+/* Commodities are woven goods, not raw resources: a fine weave marks their cards and chips
+   (so silver never reads as stone). */
+.hx-chip.is-good,
+.hx-card.is-good {
+  background-image: repeating-linear-gradient(135deg, #ffffff2e 0 2px, transparent 2px 6px);
+}
+
+/* ---- The dock ---- */
+.hx-dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  width: 100%;
+}
+
+.hx-dice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hx-roll {
+  padding: 10px 18px;
+}
+
+.hx-hand {
+  display: flex;
+  gap: 6px;
+}
+
+.hx-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 64px;
+  color: #fff;
+  background: var(--rc);
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 2px #ffffff33, 0 4px 10px #0007;
+  text-shadow: 0 1px 2px #0006;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.hx-card b {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.hx-card span {
+  margin-top: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hx-card.is-empty {
+  opacity: 0.32;
+}
+
+/* Wardens commodities: inline with the resources on wide screens, their own row on phones. */
+.hx-goods {
+  display: contents;
+}
+
+.hx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.hx-setup-hint {
+  max-width: 460px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  text-align: center;
+}
+
+.hx-build {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink);
+  background: #ffffff10;
+  border: 1px solid #ffffff26;
+  border-radius: 10px;
+}
+
+.hx-build:hover:not(:disabled) {
+  background: #ffffff1c;
+}
+
+.hx-build.is-on {
+  color: #0b0b0f;
+  background: #fff;
+}
+
+.hx-build:disabled {
+  opacity: 0.38;
+}
+
+/* ---- Sidebar ---- */
+.hx-charters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hx-charters li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hx-charters li > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.hx-dice-stats {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  align-items: end;
+  gap: 4px;
+  height: 92px;
+}
+
+.hx-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  height: 100%;
+}
+
+.hx-stat-bar {
+  width: 100%;
+  min-height: 2px;
+  background: #ffffff2e;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.3s;
+}
+
+.hx-stat.is-last .hx-stat-bar {
+  background: #ffd166;
+}
+
+.hx-stat-n {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Motion ---- */
+@keyframes hx-glow {
+  0% {
+    filter: brightness(1.7) saturate(1.2);
+  }
+}
+
+@keyframes hx-pop {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes hx-breathe {
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes hx-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+}
+
+/* A panel's main button stays in view while its rows scroll. */
+.hx-panel > .primary.g-block:last-child {
+  position: sticky;
+  bottom: 0;
+  flex: none;
+  box-shadow: 0 -10px 16px #15161b;
+}
+
+@keyframes hx-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (max-width: 1100px) {
+  .hx-stage {
+    height: auto;
+  }
+
+  .kit-board.hx-board {
+    flex: none;
+    height: min(88vw, 66dvh);
+  }
+}
+
+@media (max-width: 720px) {
+  .hx-card {
+    width: 42px;
+    height: 54px;
+  }
+
+  .hx-hand:has(.hx-goods) {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hx-goods {
+    display: flex;
+    flex-basis: 100%;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .hx-goods .hx-card {
+    width: 58px;
+  }
+
+  .hx-offer-sides {
+    grid-template-columns: 1fr;
+  }
+
+  /* On a phone the board is short: prompts become a sheet along the bottom of the screen. */
+  .hx-panel,
+  .hx-panel.is-small {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    max-height: 78dvh;
+    border-radius: 18px 18px 0 0;
+    transform: none;
+    animation-name: hx-sheet;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hx-raider,
+  .hx-pick-edge,
+  .hx-pick-vertex,
+  .hx-tile.is-producing .hx-hex,
+  .hx-panel {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ---- Open Sea ---- */
+.hx-tile.is-sea .hx-hex {
+  stroke: #0e3654;
+  stroke-width: 1.5;
+}
+
+.hx-tile.is-sea .hx-glyph {
+  stroke: #ffffff2e;
+}
+
+.hx-ship path {
+  stroke: #10131a;
+  stroke-width: 0.025;
+  stroke-linejoin: round;
+}
+
+.hx-ship {
+  transition: opacity 0.2s;
+  animation: hx-pop 0.3s ease-out;
+}
+
+.hx-ship.is-dim {
+  opacity: 0.35;
+}
+
+.hx-pirate {
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1);
+  pointer-events: none;
+}
+
+.hx-pick-edge.is-sea {
+  stroke: #7fd3ff;
+}
+
+.hx-pick-vertex.is-ship {
+  fill: #7fd3ff;
+}
+
+.hx-free-pick {
+  display: flex;
+  gap: 6px;
+  padding-right: 8px;
+  border-right: 1px solid var(--line-strong);
+}
+
+/* ---- Wardens ---- */
+.hx-warden path {
+  stroke-width: 0.05;
+  stroke-linejoin: round;
+}
+
+.hx-warden.is-active path {
+  stroke: #10131a;
+  filter: drop-shadow(0 0 4px #ffd16699);
+}
+
+.hx-warden-pip {
+  fill: #fff;
+}
+
+.hx-warden:not(.is-active) .hx-warden-pip {
+  fill: #ffffffb3;
+}
+
+.hx-warden.is-dim {
+  opacity: 0.35;
+}
+
+.hx-wall {
+  fill: none;
+  stroke-width: 5;
+  stroke-dasharray: 6 4;
+  opacity: 0.9;
+}
+
+.hx-capital {
+  fill: #ffd166;
+  stroke: #10131a;
+  stroke-width: 0.025;
+}
+
+.hx-card.is-good {
+  border: 0;
+}
+
+.hx-fleet {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hx-fleet li {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  background: #1a557b55;
+  border-radius: 6px;
+}
+
+.hx-fleet li.is-shore {
+  background: #c8343a33;
+  box-shadow: inset 0 0 0 1px #c8343a99;
+}
+
+.hx-fleet li svg {
+  width: 28px;
+  height: 22px;
+}
+
+.hx-fleet-odds {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.hx-fleet-odds b {
+  color: var(--ink);
+}
+
+.hx-guilds {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hx-guilds li {
+  padding-left: 10px;
+  border-left: 3px solid var(--gc);
+}
+
+.hx-guilds p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+}
+
+.hx-guild-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.hx-guild-pips {
+  display: flex;
+  gap: 3px;
+}
+
+.hx-guild-pips i {
+  width: 10px;
+  height: 10px;
+  background: #ffffff1f;
+  border-radius: 50%;
+}
+
+.hx-guild-pips i.is-on {
+  background: var(--gc);
+}
+
+.hx-guild-pips i.is-capital {
+  box-shadow: 0 0 0 1.5px #ffd166;
+}
+
+.hx-guild-head .g-btn {
+  margin-left: auto;
+}
+
+.hx-omen {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  padding: 0 6px;
+  height: 40px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  background: var(--oc, #1a557b);
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 2px #ffffff33;
+}
+
+.hx-card.is-good span {
+  font-size: 8px;
+  letter-spacing: 0;
+}

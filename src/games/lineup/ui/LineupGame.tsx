@@ -19,7 +19,7 @@ function describe(p: SeqPlay, name: string): string {
   if (p.kind === 'discard') return `${name} had no play and discarded ${short(p.card)}`;
   if (p.kind === 'remove') return `${name} used ${short(p.card)} to remove a ${TEAM_NAME[p.removedTeam!].toLowerCase()} chip`;
   const text = `${name} played ${short(p.card)}${isTwoEyed(p.card) ? ' (wild)' : ''}`;
-  return p.made ? `${text} – made a line of five!` : text;
+  return p.made ? `${text} - made a line of five!` : text;
 }
 
 /** The Lineup screen, shared by local and online games. */
@@ -151,7 +151,7 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
           {!myTurn
             ? `${nameFor(actor ?? '')} is playing.`
             : noPlays
-              ? 'No card can be played – pick one to discard.'
+              ? 'No card can be played - pick one to discard.'
               : selected !== null
                 ? isOneEyed(hand[selected])
                   ? "Pick an opponent's chip to remove."

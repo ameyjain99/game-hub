@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { BackIcon, ExternalLinkIcon, BookOpen } from '../../../shared/icons';
+import { BackIcon } from '../../../shared/icons';
+import { RulesButton } from '../../../shared/ui/Rules';
+import { TTR_RULES } from '../rules';
 import type { MapId } from '../engine/types';
 import { getMap, DEFAULT_MAP_ID, MAP_LIST } from '../engine/maps';
 import { AVATARS, DEFAULT_AVATAR } from './avatars';
@@ -90,11 +92,7 @@ export function TicketToRideProfile({ action, onBack, onSubmit }: Props) {
               </select>
             </label>
           )}
-          {mode?.rulebook && (
-            <a className="rulebook-link" href={mode.rulebook} target="_blank" rel="noopener noreferrer">
-              <BookOpen size={14} />New here? Skim the rules <ExternalLinkIcon size={12} />
-            </a>
-          )}
+          {creating && <RulesButton as="link" rules={TTR_RULES} variant={`${mapId}:${mode?.id ?? 'default'}`} />}
           <label className="landing-field">
             <span>Players</span>
             <select

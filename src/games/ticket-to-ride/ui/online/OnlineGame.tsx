@@ -32,7 +32,7 @@ export function OnlineGame({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
-  // A/V mesh among the human players – rendered as each seat's video frame in
+  // A/V mesh among the human players - rendered as each seat's video frame in
   // the right pane (replaces the old single header mic button).
   const media = useMediaChat({
     socket,
@@ -76,7 +76,7 @@ export function OnlineGame({
     );
   }
 
-  // No disconnect banner once the game is over – leaving is fine at that point.
+  // No disconnect banner once the game is over - leaving is fine at that point.
   const currentId = state.phase === 'game-over' ? '' : (state.players[state.current]?.id ?? '');
   return (
     <>

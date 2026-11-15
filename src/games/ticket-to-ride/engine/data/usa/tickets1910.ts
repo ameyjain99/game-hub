@@ -3,7 +3,7 @@ import type { Ticket } from '../../types';
 type Def = [a: string, b: string, points: number];
 
 /**
- * The 35 new destination tickets of the USA 1910 expansion (1910 logo).
+ * The 35 new destination tickets of the USA 1910 expansion with 1910 logo.
  * Values match the Board Game Arena implementation and an independent engine
  * (fernandomsilva/Ticket-to-Ride-Engine), which agree on every card.
  */

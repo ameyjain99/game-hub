@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { BackIcon } from '../icons';
+import { RulesButton } from './Rules';
 
 interface Props {
   title: string;
-  /** e.g. "2–6 players · 60–120 min" */
+  /** e.g. "2-6 players · 60-120 min" */
   meta: string;
   onBack: () => void;
   /** Online actions (omit both for a one-player game). */
@@ -20,7 +21,7 @@ interface Props {
 
 /**
  * A game's front door, shared by Monopoly and Cluedo: play online (join with a
- * code, or start a room) and play on this device against bots – the same
+ * code, or start a room) and play on this device against bots - the same
  * join-first structure as Ticket to Ride's landing.
  */
 export function GameLanding({ title, meta, onBack, onJoin, onStart, onLocal, localOptions, localMore, online = true }: Props) {
@@ -33,6 +34,7 @@ export function GameLanding({ title, meta, onBack, onJoin, onStart, onLocal, loc
       <header className="g-head">
         <h1>{title}</h1>
         <p className="tagline">{meta}</p>
+        <RulesButton as="link" />
       </header>
 
       {online && onJoin && onStart && <OnlinePanel onJoin={onJoin} onStart={onStart} />}

@@ -15,7 +15,7 @@ function newGame(n = 3) {
 }
 
 describe('monopolyAdapter', () => {
-  test('validates the 2–6 seat range', () => {
+  test('validates the 2-6 seat range', () => {
     expect(adapter.validateSeatCount(1, {})).not.toBeNull();
     expect(adapter.validateSeatCount(2, {})).toBeNull();
     expect(adapter.validateSeatCount(6, {})).toBeNull();
