@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { rulesFromSpec } from '../../../online/ui/LobbyRules';
 import { KitApp, type KitAppConfig } from '../../kit/ui/KitApp';
 import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
@@ -13,6 +14,28 @@ const DIFFICULTIES = [
 ];
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+const LOBBY_RULES = rulesFromSpec([
+  { key: 'mode', label: 'Mode', choices: (Object.keys(MODES) as Mode[]).map((m) => ({ value: m, label: MODES[m].name })) },
+  {
+    key: 'rounds',
+    label: 'Rounds',
+    choices: [
+      { value: 5, label: '5 rounds' },
+      { value: 3, label: '3 rounds' },
+      { value: 'each', label: 'One per player' },
+    ],
+  },
+  {
+    key: 'clues',
+    label: 'Clues each round',
+    choices: [
+      { value: 2, label: '2 per player' },
+      { value: 1, label: '1 per player (quick)' },
+      { value: 3, label: '3 per player (long)' },
+    ],
+  },
+]);
 
 export function ImposterApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [mode, setMode] = useState<Mode>('classic');
@@ -79,6 +102,7 @@ export function ImposterApp({ onBackToHub }: { onBackToHub: () => void }) {
           onCode={onCode}
           difficulties={DIFFICULTIES}
           colorFor={imSeatColor}
+          rulesFor={LOBBY_RULES}
           render={(p) => <ImposterGame {...p} />}
         />
       )}

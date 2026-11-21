@@ -20,6 +20,9 @@ import {
   type ExtendTime,
   type LeaveRoom,
   type SetAvatar,
+  type SetPaused,
+  type SetOptions,
+  type SetSeatCount,
   type VoiceSignal,
   type Presence,
 } from '../src/net/protocol';
@@ -67,11 +70,12 @@ function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, con
 
     // Whether a room code exists, so a join link can be validated before asking
     // for a name (and a "no such room" message shown otherwise), and which game
-    // it's playing, so the hub can send a code straight to the right game.
+    // it's playing, so the hub can send a code straight to the right game. For
+    // a game already under way it lists the seats a dropped player can take back.
     if (url.pathname === '/api/room-exists') {
       res.setHeader('Content-Type', 'application/json');
-      const gameId = store.gameOf(url.searchParams.get('code') ?? '');
-      res.end(JSON.stringify(gameId ? { exists: true, gameId } : { exists: false }));
+      const info = store.roomInfo(url.searchParams.get('code') ?? '');
+      res.end(JSON.stringify(info ? { exists: true, ...info } : { exists: false }));
       return;
     }
 
@@ -92,7 +96,10 @@ function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, con
   });
 }
 
-export function createServer(opts: { port?: number; contributors?: () => Promise<Contributor[]> } = {}): {
+/** How long a dropped player has to reconnect before their call is hung up. */
+const BYE_GRACE_MS = 15_000;
+
+export function createServer(opts: { port?: number; contributors?: () => Promise<Contributor[]>; byeGraceMs?: number } = {}): {
   io: IOServer;
   httpServer: HttpServer;
   store: RoomStore;
@@ -101,7 +108,9 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
   const httpServer = createHttpServer();
   const store = new RoomStore();
   attachHttp(httpServer, process.env.NODE_ENV === 'production', store, opts.contributors ?? contributorsSource());
-  const io = new IOServer(httpServer, { cors: { origin: '*' } });
+  // A dead connection is noticed within ~20s (the default is ~45s), so a dropped
+  // player's seat shows as open, and can be taken back, soon after they drop.
+  const io = new IOServer(httpServer, { cors: { origin: '*' }, pingInterval: 10_000, pingTimeout: 10_000 });
 
   const fail = (socket: Socket, message: string) => socket.emit(EVT.errorMsg, { message });
 
@@ -162,7 +171,7 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
     });
 
     socket.on(EVT.joinRoom, (p: JoinRoom) => {
-      const res = store.join(p.code, p.name, p.avatar);
+      const res = store.join(p.code, p.name, p.avatar, p.seat);
       if ('error' in res) return fail(socket, res.error);
       data.code = p.code;
       data.playerId = res.playerId;
@@ -227,6 +236,24 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
       broadcast(p.code);
     });
 
+    socket.on(EVT.setPaused, (p: SetPaused) => {
+      const res = store.setPaused(p.code, data.token ?? '', !!p.paused);
+      if ('error' in res) return fail(socket, res.error);
+      broadcast(p.code);
+    });
+
+    socket.on(EVT.setOptions, (p: SetOptions) => {
+      const res = store.setOptions(p.code, data.token ?? '', p.options);
+      if ('error' in res) return fail(socket, res.error);
+      broadcast(p.code);
+    });
+
+    socket.on(EVT.setSeatCount, (p: SetSeatCount) => {
+      const res = store.setSeatCount(p.code, data.token ?? '', p.seatCount);
+      if ('error' in res) return fail(socket, res.error);
+      broadcast(p.code);
+    });
+
     socket.on(EVT.leaveRoom, (p: LeaveRoom) => {
       const res = store.leaveRoom(p.code, data.token ?? '');
       socket.leave(p.code);
@@ -245,17 +272,19 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
     });
 
     socket.on('disconnect', () => {
-      // Let voice peers tear down their connection to this socket's player.
-      if (data.code && data.playerId) {
-        socket.to(data.code).emit(EVT.voice, {
-          code: data.code,
-          from: data.playerId,
-          to: null,
-          kind: 'bye',
-        } satisfies VoiceSignal);
-      }
       const res = store.markDisconnected(socket.id);
       if (res) broadcast(res.code);
+      // Voice and video run browser to browser and usually outlive a blip on
+      // this socket. So peers are told to hang up only if the player is still
+      // gone after a grace period; a quick reconnect leaves the call untouched.
+      const { code, playerId } = data;
+      if (code && playerId) {
+        const timer = setTimeout(() => {
+          if (store.isConnected(code, playerId)) return;
+          io.to(code).emit(EVT.voice, { code, from: playerId, to: null, kind: 'bye' } satisfies VoiceSignal);
+        }, opts.byeGraceMs ?? BYE_GRACE_MS);
+        timer.unref?.();
+      }
     });
   });
 

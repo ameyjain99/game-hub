@@ -89,6 +89,149 @@ export const BOARD: Space[] = [
   { id: 39, name: 'Tokyo', kind: 'property', group: 'darkblue', price: 400, houseCost: 200, rent: [50, 200, 600, 1400, 1700, 2000] },
 ];
 
+/** The boards a game can be played on. Every board has the same 40 squares,
+ *  prices and rents; only the places differ. The Neo board uses the base BOARD
+ *  names (Jakarta, Marrakesh, …) so it needs no PLACES entry. */
+export type BoardId = 'hasbro' | 'classic' | 'neo' | 'world' | 'nations' | 'india';
+
+export const BOARDS: { id: BoardId; name: string; blurb: string }[] = [
+  { id: 'hasbro',  name: 'Hasbro',  blurb: 'The official World Edition: 22 cities voted by fans' },
+  { id: 'classic', name: 'Classic', blurb: 'Brazil to the USA, country by country' },
+  { id: 'neo',     name: 'Neo',     blurb: 'From Jakarta to Tokyo, by way of Europe' },
+  { id: 'world',   name: 'World',   blurb: 'Great cities, Nairobi to London and New York' },
+  { id: 'nations', name: 'Nations', blurb: 'Every colour set is a country, with its flag and airports' },
+  { id: 'india',   name: 'India',   blurb: 'Guwahati to New Delhi and Mumbai' },
+];
+
+/** Places of every non-Neo board, keyed by square id. Squares not listed keep
+ *  their base names (Go, taxes, utilities, …). */
+const PLACES: Record<Exclude<BoardId, 'neo'>, Record<number, string>> = {
+  // Hasbro Here and Now: The World Edition (2008) - 22 cities chosen by global vote.
+  hasbro: {
+    1: 'Gdynia',    3: 'Taipei',
+    5: 'World Rail',
+    6: 'Tokyo',     8: 'Barcelona', 9: 'Athens',
+    11: 'Istanbul', 13: 'Kyiv',     14: 'Toronto',
+    15: 'World Air',
+    16: 'Rome',     18: 'Shanghai', 19: 'Vancouver',
+    21: 'Sydney',   23: 'New York', 24: 'London',
+    25: 'World Cruise',
+    26: 'Beijing',  27: 'Hong Kong', 29: 'Jerusalem',
+    31: 'Paris',    32: 'Belgrade',  34: 'Cape Town',
+    35: 'World Space',
+    37: 'Riga',     39: 'Montreal',
+  },
+  // Classic: each colour set is one country (Brazil, Israel, Italy, Germany, China, France, UK, USA).
+  classic: {
+    1: 'Salvador',      3: 'Rio de Janeiro',
+    5: 'GRU Airport',
+    6: 'Haifa',         8: 'Tel Aviv',    9: 'Jerusalem',
+    11: 'Naples',       13: 'Venice',     14: 'Rome',
+    15: 'FCO Airport',
+    16: 'Hamburg',      18: 'Munich',     19: 'Berlin',
+    21: 'Chengdu',      23: 'Shanghai',   24: 'Beijing',
+    25: 'PEK Airport',
+    26: 'Nice',         27: 'Lyon',       29: 'Paris',
+    31: 'Edinburgh',    32: 'Manchester', 34: 'London',
+    35: 'LHR Airport',
+    37: 'Chicago',      39: 'New York',
+  },
+  world: {
+    1: 'Nairobi', 3: 'Lima',
+    5: 'Grand Central',
+    6: 'Cairo', 8: 'Istanbul', 9: 'Bangkok',
+    11: 'Mexico City', 13: 'Buenos Aires', 14: 'Rio de Janeiro',
+    15: 'St Pancras',
+    16: 'Mumbai', 18: 'Beijing', 19: 'Seoul',
+    21: 'Berlin', 23: 'Rome', 24: 'Madrid',
+    25: 'Gare du Nord',
+    26: 'Sydney', 27: 'Singapore', 29: 'Dubai',
+    31: 'Shanghai', 32: 'Hong Kong', 34: 'Paris',
+    35: 'Tokyo Station',
+    37: 'London', 39: 'New York',
+  },
+  // Each colour set is one country; the stations are its great airports.
+  nations: {
+    1: 'Luxor', 3: 'Cairo',
+    5: 'DEL Airport',
+    6: 'Jaipur', 8: 'Delhi', 9: 'Mumbai',
+    11: 'Seville', 13: 'Barcelona', 14: 'Madrid',
+    15: 'HND Airport',
+    16: 'Osaka', 18: 'Kyoto', 19: 'Tokyo',
+    21: 'Perth', 23: 'Melbourne', 24: 'Sydney',
+    25: 'CDG Airport',
+    26: 'Nice', 27: 'Lyon', 29: 'Paris',
+    31: 'Edinburgh', 32: 'Manchester', 34: 'London',
+    35: 'JFK Airport',
+    37: 'Chicago', 39: 'New York',
+  },
+  india: {
+    1: 'Guwahati', 3: 'Patna',
+    5: 'Howrah Junction',
+    6: 'Bhopal', 8: 'Indore', 9: 'Nagpur',
+    11: 'Lucknow', 13: 'Kanpur', 14: 'Varanasi',
+    15: 'Chennai Central',
+    16: 'Jaipur', 18: 'Udaipur', 19: 'Chandigarh',
+    21: 'Kochi', 23: 'Goa', 24: 'Mysuru',
+    25: 'Itarsi Junction',
+    26: 'Ahmedabad', 27: 'Pune', 29: 'Hyderabad',
+    31: 'Kolkata', 32: 'Chennai', 34: 'Bengaluru',
+    35: 'Victoria Terminus',
+    37: 'New Delhi', 39: 'Mumbai',
+  },
+};
+
+/** Nations board: one country per colour set. */
+const NATION_FLAGS: Record<ColorGroup, string> = {
+  brown:     '\u{1F1EA}\u{1F1EC}', // Egypt
+  lightblue: '\u{1F1EE}\u{1F1F3}', // India
+  pink:      '\u{1F1EA}\u{1F1F8}', // Spain
+  orange:    '\u{1F1EF}\u{1F1F5}', // Japan
+  red:       '\u{1F1E6}\u{1F1FA}', // Australia
+  yellow:    '\u{1F1EB}\u{1F1F7}', // France
+  green:     '\u{1F1EC}\u{1F1E7}', // UK
+  darkblue:  '\u{1F1FA}\u{1F1F8}', // USA
+};
+
+/** Classic board: one country per colour set. */
+const CLASSIC_FLAGS: Record<ColorGroup, string> = {
+  brown:     '\u{1F1E7}\u{1F1F7}', // Brazil
+  lightblue: '\u{1F1EE}\u{1F1F1}', // Israel
+  pink:      '\u{1F1EE}\u{1F1F9}', // Italy
+  orange:    '\u{1F1E9}\u{1F1EA}', // Germany
+  red:       '\u{1F1E8}\u{1F1F3}', // China
+  yellow:    '\u{1F1EB}\u{1F1F7}', // France
+  green:     '\u{1F1EC}\u{1F1E7}', // UK
+  darkblue:  '\u{1F1FA}\u{1F1F8}', // USA
+};
+
+/** The flag a lot flies on the Classic or Nations board, else null. */
+export function spaceFlag(id: number, board: BoardId = 'neo'): string | null {
+  const group = BOARD[id].group;
+  if (!group) return null;
+  if (board === 'nations') return NATION_FLAGS[group];
+  if (board === 'classic') return CLASSIC_FLAGS[group];
+  return null;
+}
+
+/** The board an option names, or Neo when it names none we know. */
+export const boardOf = (id: unknown): BoardId => (BOARDS.some((b) => b.id === id) ? (id as BoardId) : 'neo');
+
+/** What a square is called on a board. */
+export function spaceName(id: number, board: BoardId = 'neo'): string {
+  return (board !== 'neo' && PLACES[board][id]) || BOARD[id].name;
+}
+
+/** The square with this name on a board, if any. */
+export function spaceByName(name: string, board: BoardId = 'neo'): Space | undefined {
+  return BOARD.find((sp) => spaceName(sp.id, board) === name);
+}
+
+/** Currency symbol for a board. India uses rupees; everything else uses dollars. */
+export function boardCurrency(board: BoardId = 'neo'): string {
+  return board === 'india' ? '₹' : '$';
+}
+
 /** Space ids that can be owned (property, railroad, utility). */
 export const OWNABLE_IDS: number[] = BOARD.filter(
   (s) => s.kind === 'property' || s.kind === 'railroad' || s.kind === 'utility',

@@ -1,3 +1,4 @@
+import { MAP_LIST } from '../../engine/maps';
 import { useMemo, type ReactNode } from 'react';
 import type { City, Route } from '../../engine/types';
 import { CITIES } from '../../engine/data/usa/cities';
@@ -16,6 +17,8 @@ function RouteLegend({ routes }: { routes: Route[] }) {
   const tunnels = routes.some((r) => r.isTunnel);
   const ferries = routes.some((r) => r.locomotivesRequired > 0);
   if (!tunnels && !ferries) return null;
+  const map = MAP_LIST.find((m) => m.routes[0]?.id === routes[0]?.id);
+  const [left, bottom] = map?.legendAt ?? [172, 692];
   const slot = (x: number, y: number, loco = false) => (
     <g>
       <rect
@@ -53,8 +56,17 @@ function RouteLegend({ routes }: { routes: Route[] }) {
     );
     y += 18;
   }
+  if (map?.rules?.locomotivesOnlySpecial) {
+    rows.push(
+      <g key="locos" transform={`translate(0 ${y})`}>
+        <path d={starPath(9, 0, 6)} fill="#3d2b1a" />
+        <text x={30} {...label}>Locomotives: ferries and tunnels only</text>
+      </g>,
+    );
+    y += 18;
+  }
   return (
-    <g data-testid="board-legend" transform={`translate(172 ${692 - y})`} style={{ pointerEvents: 'none' }}>
+    <g data-testid="board-legend" transform={`translate(${left} ${bottom - y})`} style={{ pointerEvents: 'none' }}>
       {rows}
     </g>
   );
@@ -82,6 +94,8 @@ interface Props {
   onRouteHover?: (routeId: string | null) => void;
   /** City id -> owner color of a train station placed there (Europe). */
   stationColors?: Record<string, string>;
+  /** Cities whose station was only just built (it is played in). */
+  freshStationIds?: Set<string>;
   /** Cities that can receive a station right now (placing mode). */
   placeableCityIds?: Set<string>;
   onCityClick?: (cityId: string) => void;
@@ -108,6 +122,7 @@ export function Board({
   hoverLabel,
   onRouteHover,
   stationColors,
+  freshStationIds,
   placeableCityIds,
   onCityClick,
   cities = CITIES,
@@ -205,6 +220,7 @@ export function Board({
               highlighted={highlightCityIds?.has(c.id)}
               subtle={subtleCityIds?.has(c.id)}
               stationColor={stationColors?.[c.id]}
+              stationFresh={freshStationIds?.has(c.id)}
               placeable={placeable}
               onClick={placeable && onCityClick ? () => onCityClick(c.id) : undefined}
             />

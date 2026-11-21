@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { BOARD, OWNABLE_IDS } from '../engine/board';
+import { useCurrency, useSpaceName } from './boardNames';
 import type { MonopolyPlayer, MonopolyState } from '../engine/state';
 import type { Action } from '../engine/actions';
 import { monopolyActor } from '../engine/bot';
@@ -16,6 +17,8 @@ import {
 import { ArrowLeftRight, House, Hotel, Landmark, Minus, AddIcon } from '../../../shared/icons';
 import { GROUP_COLOR, tokenColor, tokenLabel } from './board-layout';
 import { LogLine } from './LogLine';
+import { useTable } from '../../../online/TableContext';
+import { TokenGlyph } from '../../../shared/pieces';
 
 const swatch = (id: number) => (BOARD[id].group ? GROUP_COLOR[BOARD[id].group!] : '#8a8f98');
 
@@ -33,6 +36,8 @@ interface Props {
   onSpotlight?: (playerId: string | null) => void;
   /** Shown first (the online video table). */
   top?: ReactNode;
+  /** Whether the log folds away here (a wide screen gives it its own column). */
+  showLog?: boolean;
 }
 
 /** How long a change in someone's cash floats beside their balance. */
@@ -84,7 +89,7 @@ function useCashDeltas(players: MonopolyPlayer[]): Record<string, CashDelta[]> {
   return deltas;
 }
 
-const money = (n: number) => `$${n.toLocaleString()}`;
+const money = (n: number, cur: string = '$') => `${cur}${n.toLocaleString()}`;
 
 /** The right column: the video table (online), every player's cash, worth and
  *  holdings, the viewer's own properties with build / sell / mortgage controls,
@@ -99,7 +104,11 @@ export function MonopolySidebar({
   spotlight = null,
   onSpotlight,
   top,
+  showLog = true,
 }: Props) {
+  const nameOf = useSpaceName();
+  const currency = useCurrency();
+  const table = useTable();
   const actor = monopolyActor(view);
   const me = view.players.find((p) => p.id === meId);
   const current = view.players[view.turnOrder[view.current]];
@@ -136,10 +145,16 @@ export function MonopolySidebar({
                 onMouseEnter={onSpotlight ? () => onSpotlight(p.id) : undefined}
                 onMouseLeave={onSpotlight ? () => onSpotlight(null) : undefined}
               >
-                <div className="mono-player-row">
-                  <span className="mono-token is-static">{tokenLabel(nameFor(p.id))}</span>
+                <div className="mono-player-row" data-player-row={p.id}>
+                  <span className="mono-token is-static">{TokenGlyph({ id: p.avatar, size: 13 }) ?? tokenLabel(nameFor(p.id))}</span>
                   <span className="mono-player-name">{nameFor(p.id)}</span>
                   {p.id === meId && nameFor(p.id) !== 'You' && <span className="g-tag">You</span>}
+                  {table?.seatOf(p.id)?.covering && <span className="g-tag g-tag-dim">Bot covering</span>}
+                  {table?.says.get(p.id) && (
+                    <span className="kit-say" role="status">
+                      {table.says.get(p.id)}
+                    </span>
+                  )}
                   {p.inJail && !p.bankrupt && <span className="g-tag g-tag-warn">In jail</span>}
                   {p.getOutCards > 0 && !p.bankrupt && (
                     <span className="g-tag" title="Get Out of Jail Free">
@@ -148,14 +163,14 @@ export function MonopolySidebar({
                   )}
                   <span className="mono-player-money">
                     <span className="mono-player-cash">
-                      {p.bankrupt ? 'Bankrupt' : money(p.cash)}
+                      {p.bankrupt ? 'Bankrupt' : money(p.cash, currency)}
                       {(deltas[p.id] ?? []).map((d) => (
                         <span key={d.key} className={`mono-cash-delta ${d.amount > 0 ? 'is-gain' : 'is-loss'}`} aria-hidden>
-                          {`${d.amount > 0 ? '+' : '-'}${money(Math.abs(d.amount))}`}
+                          {`${d.amount > 0 ? '+' : '-'}${money(Math.abs(d.amount), currency)}`}
                         </span>
                       ))}
                     </span>
-                    {!p.bankrupt && <span className="mono-player-worth">{`Net ${money(netWorth(view, p.id))}`}</span>}
+                    {!p.bankrupt && <span className="mono-player-worth">{`Net ${money(netWorth(view, p.id), currency)}`}</span>}
                   </span>
                   {canTrade && p.id !== meId && !p.bankrupt && (
                     <button
@@ -176,7 +191,7 @@ export function MonopolySidebar({
                         key={id}
                         className={`mono-swatch${view.ownership[id].mortgaged ? ' is-mortgaged' : ''}`}
                         style={{ background: swatch(id) }}
-                        title={BOARD[id].name}
+                        title={nameOf(id)}
                       />
                     ))}
                   </div>
@@ -214,7 +229,7 @@ export function MonopolySidebar({
                   <li key={id} className={`mono-prop${own.mortgaged ? ' is-mortgaged' : ''}`}>
                     <button type="button" className="mono-prop-name" onClick={() => onInspect(id)}>
                       <span className="mono-swatch" style={{ background: swatch(id) }} />
-                      <span>{sp.name}</span>
+                      <span>{nameOf(id)}</span>
                     </button>
                     <span className="mono-prop-build">
                       {own.mortgaged ? (
@@ -240,7 +255,7 @@ export function MonopolySidebar({
                             type="button"
                             className="mono-tool"
                             disabled={!sell}
-                            aria-label={`Sell a building on ${sp.name}`}
+                            aria-label={`Sell a building on ${nameOf(id)}`}
                             title={`Sell a building (+$${Math.floor(sp.houseCost! / 2)})`}
                             onClick={() => onAction({ type: 'SELL_HOUSE', spaceId: id })}
                           >
@@ -250,7 +265,7 @@ export function MonopolySidebar({
                             type="button"
                             className="mono-tool"
                             disabled={!build}
-                            aria-label={`Build on ${sp.name}`}
+                            aria-label={`Build on ${nameOf(id)}`}
                             title={`Build (${own.houses === 4 ? 'hotel' : 'house'}, $${sp.houseCost})`}
                             onClick={() => onAction({ type: 'BUILD', spaceId: id })}
                           >
@@ -263,7 +278,7 @@ export function MonopolySidebar({
                           type="button"
                           className="mono-tool is-wide"
                           disabled={!redeem}
-                          aria-label={`Pay off the mortgage on ${sp.name}`}
+                          aria-label={`Pay off the mortgage on ${nameOf(id)}`}
                           title={`Pay off ($${unmortgageCost(id)})`}
                           onClick={() => onAction({ type: 'UNMORTGAGE', spaceId: id })}
                         >
@@ -274,7 +289,7 @@ export function MonopolySidebar({
                           type="button"
                           className="mono-tool is-wide"
                           disabled={!mort}
-                          aria-label={`Mortgage ${sp.name}`}
+                          aria-label={`Mortgage ${nameOf(id)}`}
                           title={`Mortgage for $${mortgageValue(id)}`}
                           onClick={() => onAction({ type: 'MORTGAGE', spaceId: id })}
                         >
@@ -291,7 +306,7 @@ export function MonopolySidebar({
         </section>
       )}
 
-      {view.log.length > 0 && (
+      {showLog && view.log.length > 0 && (
         <details className="g-disclosure mono-side-log" aria-label="Game log">
           <summary>
             Game log

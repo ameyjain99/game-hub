@@ -3,6 +3,7 @@ import { GameShell, SideSection } from '../../kit/ui/GameShell';
 import { PlayersPanel, tokenLabel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
+import { SeatFace } from '../../../online/ui/SeatFace';
 import { useCues } from '../../kit/ui/useCues';
 import { DISCUSS_MS, MAX_CLUE, MODES, clueError, imposterActor, type ImposterAction, type ImposterState, type Outcome } from '../engine';
 import { categoryById, wordsIn } from '../words';
@@ -24,7 +25,8 @@ function MaskIcon({ size = 18 }: { size?: number }) {
 }
 
 /** Columns for the clue wall: one row up to five players, then two even rows. */
-const wallColumns = (n: number) => (n <= 5 ? n : Math.ceil(n / 2));
+// Two rows from five players up: wide tiles that fit a whole name (and a face) beat one thin row.
+const wallColumns = (n: number) => (n <= 4 ? n : Math.ceil(n / 2));
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -168,15 +170,22 @@ export function ImposterGame({ view: s, meId, nameFor, onAction, onExit, exitLab
   // Votes on each player once the ballot is counted.
   const votesFor = new Map<string, string[]>();
   if (counted) for (const [voter, target] of Object.entries(ballot)) if (target) votesFor.set(target, [...(votesFor.get(target) ?? []), voter]);
+  // The ballot is read out one vote at a time, then the verdict lands.
+  const voteOrder = Object.keys(ballot).filter((v) => ballot[v]);
+  const VOTE_MS = 650;
   const cluesBy = (id: string) => r.clues.filter((c) => c.player === id);
   const playersInRound = r.order.map((id) => s.players.find((p) => p.id === id)!).filter(Boolean);
   const notVoted = playersInRound.filter((p) => !p.out && !(p.id in ballot));
   const waitingReady = playersInRound.filter((p) => !p.out && !p.isAI && !r.ready.includes(p.id));
 
   const wall = (
-    <ol className="im-wall" style={{ '--cols': wallColumns(playersInRound.length) } as CSSProperties}>
-      {playersInRound.map((p) => {
+    <ol className={`im-wall${online && s.phase === 'discuss' ? ' is-talk' : ''}`} style={{ '--cols': wallColumns(playersInRound.length) } as CSSProperties}>
+      {playersInRound.map((p, at) => {
         const mine = cluesBy(p.id);
+        // A last row that is not full sits in the middle (each tile spans two half-columns).
+        const cols = wallColumns(playersInRound.length);
+        const spare = playersInRound.length % cols;
+        const start = spare && at === playersInRound.length - spare ? cols - spare + 1 : undefined;
         const votable = canVote && p.id !== meId && r.candidates.includes(p.id) && !p.out;
         const outOfRunoff = s.phase === 'vote' && r.runoff && !r.candidates.includes(p.id);
         const isImposter = !!r.imposter && r.imposter === p.id && (revealed || s.phase === 'guess');
@@ -198,10 +207,17 @@ export function ImposterGame({ view: s, meId, nameFor, onAction, onExit, exitLab
           <li
             key={p.id}
             className={cls}
-            style={{ '--tc': colorOf(p.id) } as CSSProperties}
+            style={{ '--tc': colorOf(p.id), '--start': start } as CSSProperties}
             onMouseEnter={() => setSpotlight(p.id)}
             onMouseLeave={() => setSpotlight(null)}
           >
+            <SeatFace
+              id={p.id}
+              shape="wide"
+              className="im-face"
+              color={colorOf(p.id)}
+              fallback={online && s.phase === 'discuss' && !p.isAI && !p.out ? <span className="im-face is-off">{tokenLabel(nameFor(p.id))}</span> : null}
+            />
             <div className="im-tile-head">
               <span className="kit-token" aria-hidden="true">
                 {tokenLabel(nameFor(p.id))}
@@ -235,14 +251,18 @@ export function ImposterGame({ view: s, meId, nameFor, onAction, onExit, exitLab
                 {voters.length > 0 && (
                   <div className="im-votes" aria-label={`${plural(voters.length, 'vote')} for ${who(p.id)}`}>
                     {voters.map((v) => (
-                      <span key={v} className="im-vote-dot" style={{ '--tc': colorOf(v) } as CSSProperties} title={`${who(v)} voted for ${who(p.id)}`}>
+                      <span key={v} className="im-vote-dot is-read" style={{ '--tc': colorOf(v), animationDelay: `${voteOrder.indexOf(v) * VOTE_MS}ms` } as CSSProperties} title={`${who(v)} voted for ${who(p.id)}`}>
                         {tokenLabel(nameFor(v))}
                       </span>
                     ))}
-                    <b>{plural(voters.length, 'vote')}</b>
+                    <b className="im-vote-count" style={{ animationDelay: `${voteOrder.length * VOTE_MS}ms` }}>{plural(voters.length, 'vote')}</b>
                   </div>
                 )}
-                {r.votedOut === p.id && <span className="im-stamp">Voted out</span>}
+                {r.votedOut === p.id && (
+                  <span className="im-stamp" style={{ animationDelay: `${voteOrder.length * VOTE_MS + 350}ms` }}>
+                    Voted out
+                  </span>
+                )}
               </div>
             )}
             {votable && (
@@ -418,24 +438,6 @@ export function ImposterGame({ view: s, meId, nameFor, onAction, onExit, exitLab
           out: p.out,
         }))}
       />
-      <SideSection title="Rounds" meta={`${Math.min(r.number, s.totalRounds)} of ${s.totalRounds}`}>
-        {s.history.length === 0 ? (
-          <p className="kit-muted">Each round's word and result land here.</p>
-        ) : (
-          <ul className="kit-log im-history">
-            {[...s.history].reverse().map((h) => (
-              <li key={h.number}>
-                <b>
-                  {h.number}. {categoryById(h.category).name}: {h.word}
-                  {h.decoy ? ` / ${h.decoy}` : ''}
-                </b>
-                <br />
-                {outcomeLine(h, who, meId)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </SideSection>
       <SideSection title="Scoring">
         <ul className="im-scoring">
           <li>
@@ -475,6 +477,26 @@ export function ImposterGame({ view: s, meId, nameFor, onAction, onExit, exitLab
       board={board}
       overlay={overlay}
       side={side}
+      log={
+        <SideSection title="Rounds" meta={`${Math.min(r.number, s.totalRounds)} of ${s.totalRounds}`}>
+          {s.history.length === 0 ? (
+            <p className="kit-muted">Each round's word and result land here.</p>
+          ) : (
+            <ul className="kit-log im-history">
+              {[...s.history].reverse().map((h) => (
+                <li key={h.number}>
+                  <b>
+                    {h.number}. {categoryById(h.category).name}: {h.word}
+                    {h.decoy ? ` / ${h.decoy}` : ''}
+                  </b>
+                  <br />
+                  {outcomeLine(h, who, meId)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </SideSection>
+      }
     />
   );
 }

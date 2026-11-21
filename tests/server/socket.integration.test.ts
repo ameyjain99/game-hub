@@ -50,3 +50,39 @@ test('create → join → start flows redacted state to both clients', async () 
   guest.close();
   await srv.close();
 });
+
+// Voice and video run browser to browser: a blip on the game socket must not
+// hang up the call, only a player who stays gone.
+test('a dropped socket hangs up the call only if the player stays gone', async () => {
+  const srv = createServer({ port: 0, byeGraceMs: 150 });
+  await once(srv.httpServer, 'listening');
+  const url = `http://localhost:${(srv.httpServer.address() as AddressInfo).port}`;
+  const open = () => ioClient(url, { transports: ['websocket'], forceNew: true });
+  const got = <T>(s: Socket, evt: string) => new Promise<T>((r) => s.once(evt, r as (v: T) => void));
+
+  const host = open();
+  host.emit(EVT.createRoom, { seatCount: 2, name: 'Ann', avatar: '', gameId: 'chess' });
+  const { code } = await got<Joined>(host, EVT.joined);
+  let guest = open();
+  guest.emit(EVT.joinRoom, { code, name: 'Bob', avatar: '' });
+  const seat = await got<Joined>(guest, EVT.joined);
+
+  const byes: string[] = [];
+  host.on(EVT.voice, (m: { kind: string; from: string }) => m.kind === 'bye' && byes.push(m.from));
+
+  // A blip: gone and back inside the grace period.
+  guest.close();
+  guest = open();
+  guest.emit(EVT.reconnect, { code, token: seat.token });
+  await got(guest, EVT.joined);
+  await new Promise((r) => setTimeout(r, 300));
+  expect(byes).toEqual([]);
+
+  // Gone for good.
+  guest.close();
+  await new Promise((r) => setTimeout(r, 400));
+  expect(byes).toEqual(['p1']);
+
+  host.close();
+  await srv.close();
+});

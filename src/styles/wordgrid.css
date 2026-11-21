@@ -271,7 +271,7 @@
 
 .wg-controls {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: var(--space-2);
 }
 
@@ -387,5 +387,59 @@
   .wg-tile.is-pending,
   .wg-tile.is-last {
     animation: none;
+  }
+}
+
+/* The score of the word just played rises off its last tile. */
+.wg-score {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 6;
+  padding: 0.2cqw 1cqw;
+  font-size: max(13px, 2.3cqw);
+  font-weight: 900;
+  color: #0b0b0f;
+  white-space: nowrap;
+  pointer-events: none;
+  background: #ffd25a;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 0.5cqw 1.4cqw #0009;
+  translate: -50% -50%;
+  animation: wg-score 2.2s ease-out forwards;
+}
+
+.wg-score.is-bingo {
+  color: #fff;
+  background: #e2483b;
+}
+
+@keyframes wg-score {
+  0% {
+    opacity: 0;
+    scale: 0.4;
+  }
+  12% {
+    opacity: 1;
+    scale: 1.25;
+  }
+  22% {
+    scale: 1;
+  }
+  75% {
+    opacity: 1;
+    translate: -50% -190%;
+  }
+  100% {
+    opacity: 0;
+    translate: -50% -230%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wg-score {
+    animation: none;
+    opacity: 0;
   }
 }

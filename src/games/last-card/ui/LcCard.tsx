@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Ban, FlipVertical2, Repeat2 } from '../../../shared/icons';
+import { Layers } from 'lucide-react';
 import type { Face } from '../engine';
 
 export const COLOR_HEX: Record<string, string> = {
@@ -48,6 +49,10 @@ export function faceName(f: Face): string {
       return `Wild Draw ${f.value}`;
     case 'wild-hunt':
       return 'Wild Hunt';
+    case 'discard-all':
+      return `${c}Discard All`;
+    case 'wild-reverse-draw':
+      return `Wild Reverse Draw ${f.value}`;
   }
 }
 
@@ -76,6 +81,20 @@ function Glyph({ f }: { f: Face }) {
       return <b>+?</b>;
     case 'wild':
       return <b className="lc-w">W</b>;
+    case 'discard-all':
+      return (
+        <span className="lc-stack">
+          <Layers size={size} strokeWidth={2.4} />
+          <i>all</i>
+        </span>
+      );
+    case 'wild-reverse-draw':
+      return (
+        <span className="lc-stack">
+          <Repeat2 size="0.7em" strokeWidth={2.8} />
+          <i>+{f.value}</i>
+        </span>
+      );
   }
 }
 

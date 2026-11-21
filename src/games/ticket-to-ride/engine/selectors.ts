@@ -1,6 +1,6 @@
 import type { CardCombo, GameState, Hand, Route, RouteColor } from './types';
 import { CARD_COLORS } from './types';
-import { getMap, modeFor, routeById } from './maps';
+import { getMap, modeFor, routeById, rulesOf, type MapRules } from './maps';
 import { canAffordTunnel } from './tunnel';
 import type { Action } from './actions';
 
@@ -24,8 +24,8 @@ export function routeIsClaimable(state: GameState, routeId: string, playerId: st
       if (!owner) continue;
       // A player may never own both siblings.
       if (owner === playerId) return false;
-      // In 2-3 player games, only one of a double route may be used at all.
-      if (playerCount <= 3) return false;
+      // Below the map's player count for doubles (4 as a rule), only one track may be used at all.
+      if (playerCount < (rulesOf(state.mapId).doublesFrom ?? 4)) return false;
     }
   }
   return true;
@@ -33,13 +33,14 @@ export function routeIsClaimable(state: GameState, routeId: string, playerId: st
 
 /**
  * All legal ways to pay for a route with the given hand.
- * Locomotives are wild; grey routes accept any single color.
+ * Locomotives are wild; grey routes accept any single color. On a map that
+ * keeps locomotives for ferries and tunnels, a plain route takes none.
  */
-export function canPayFor(hand: Hand, route: Route): CardCombo[] {
+export function canPayFor(hand: Hand, route: Route, rules: MapRules = {}): CardCombo[] {
   const combos: CardCombo[] = [];
   const len = route.length;
   const minLoco = route.locomotivesRequired;
-  const maxLoco = Math.min(len, hand.locomotive);
+  const maxLoco = takesLocomotives(route, rules) ? Math.min(len, hand.locomotive) : 0;
 
   const candidateColors: RouteColor[] = route.color === 'grey' ? CARD_COLORS : [route.color];
 
@@ -66,6 +67,11 @@ export function canPayFor(hand: Hand, route: Route): CardCombo[] {
     }
   }
   return combos;
+}
+
+/** Whether locomotives may be played on this route under the map's rules. */
+export function takesLocomotives(route: Route, rules: MapRules = {}): boolean {
+  return !rules.locomotivesOnlySpecial || route.locomotivesRequired > 0 || !!route.isTunnel || !!route.locomotivesOk;
 }
 
 /** Non-empty subsets of ids with at least `min` elements. */
@@ -118,6 +124,7 @@ export function legalActions(state: GameState, playerId: string): Action[] {
   if (state.phase !== 'turn') return [];
 
   const actions: Action[] = [];
+  const rules = rulesOf(state.mapId);
   const deckHasCards = state.drawPile.length + state.discardPile.length > 0;
   const midDraw = state.drawnThisTurn === 1;
 
@@ -126,7 +133,7 @@ export function legalActions(state: GameState, playerId: string): Action[] {
 
   // Draw a face-up market card.
   state.market.forEach((card, index) => {
-    if (midDraw && card === 'locomotive') return; // can't take a loco as 2nd draw
+    if (midDraw && card === 'locomotive' && !rules.freeLocomotives) return; // can't take a loco as 2nd draw
     actions.push({ type: 'DRAW_TRAIN', source: 'market', index });
   });
 
@@ -135,7 +142,7 @@ export function legalActions(state: GameState, playerId: string): Action[] {
     for (const route of getMap(state.mapId).routes) {
       if (player.trainsLeft < route.length) continue;
       if (!routeIsClaimable(state, route.id, playerId)) continue;
-      for (const combo of canPayFor(player.hand, route)) {
+      for (const combo of canPayFor(player.hand, route, rules)) {
         actions.push({ type: 'CLAIM_ROUTE', routeId: route.id, combo });
       }
     }

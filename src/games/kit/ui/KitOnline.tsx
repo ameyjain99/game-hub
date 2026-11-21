@@ -1,16 +1,21 @@
-import { useEffect, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Socket } from 'socket.io-client';
-import { BackIcon } from '../../../shared/icons';
 import { playTimeWarning } from '../../../shared/sound';
 import { useOnlineSession, type OnlineIntent } from '../../../online/useOnlineSession';
 import { useMediaChat, type MediaChat } from '../../../online/useMediaChat';
 import { nameForPlayer } from '../../../online/seatNames';
-import { OnlineLobby, type DifficultyOption } from '../../../online/ui/OnlineLobby';
-import { DisconnectBanner } from '../../../online/ui/DisconnectBanner';
+import { OnlineLobby, type DifficultyOption, type LobbyPiece } from '../../../online/ui/OnlineLobby';
+import type { RulesFor } from '../../../online/ui/LobbyRules';
+import { ActionToast } from '../../../online/ui/ActionToast';
+import { LeaveConfirm } from '../../../online/ui/LeaveConfirm';
+import { DisconnectBanner, OfflineBanner, ReturnBanner } from '../../../online/ui/DisconnectBanner';
+import { PauseButton } from '../../../online/ui/Pause';
+import { RoomError } from '../../../online/ui/RoomError';
 import { TurnClock } from '../../../online/ui/TurnClock';
 import { VideoTiles, type VideoSeat } from '../../../online/ui/VideoTiles';
 import type { GameKit, KitCommonAction } from '../engine';
 import { SideSection } from './GameShell';
+import { TableProvider, useTableState } from '../../../online/TableContext';
 
 /** What an online game adds to the shared screen. */
 export interface KitOnlineExtras {
@@ -51,11 +56,14 @@ export function KitVideos({
 }) {
   if (!online || seats.length < 2) return null;
   return (
-    <SideSection title="At the table">
+    <SideSection title="At the table" className="kit-videos">
       <VideoTiles seats={seats} meId={meId} nameFor={nameFor} media={online.media} onSeatHover={onSeatHover} />
     </SideSection>
   );
 }
+
+/** The seat counts a game's online room may have (set by KitApp from the game's config), so the host can add or remove a seat in the lobby. */
+export const OnlineSeatsContext = createContext<number[] | undefined>(undefined);
 
 interface Props<S, A extends { type: string }> {
   kit: GameKit<S, A>;
@@ -68,11 +76,15 @@ interface Props<S, A extends { type: string }> {
   difficulties: DifficultyOption[];
   colorFor: (seatIndex: number, seatCount: number) => string;
   render: (props: KitScreenProps<S, A>) => ReactNode;
+  /** How the lobby shows this game's options to guests, and lets the host change them. */
+  rulesFor?: RulesFor;
+  /** The pieces a player can pick in the lobby (a character, a colour, a pawn). */
+  pieces?: LobbyPiece[];
 }
 
 /** An online kit game: the lobby, then the game screen with the clock, the
  *  disconnect banner and the video table wired in. */
-export function KitOnline<S, A extends { type: string }>({ kit, gameId, title, intent, onExit, onCode, difficulties, colorFor, render }: Props<S, A>) {
+export function KitOnline<S, A extends { type: string }>({ kit, gameId, title, intent, onExit, onCode, difficulties, colorFor, render, rulesFor, pieces }: Props<S, A>) {
   const session = useOnlineSession<S, A | KitCommonAction>(intent);
   const { lobby, state, myPlayerId, code, error } = session;
 
@@ -89,59 +101,83 @@ export function KitOnline<S, A extends { type: string }>({ kit, gameId, title, i
   });
 
   const nameFor = (id: string) => nameForPlayer(lobby, id);
+  const paused = !!lobby?.paused;
+  const setPaused = session.setPaused;
+  const togglePause = useCallback(() => setPaused(!paused), [setPaused, paused]);
+  const table = useTableState({ meId: myPlayerId ?? '', nameFor, players: state ? kit.players(state) : [], media, lobby, onPause: state ? togglePause : undefined });
+  const seatCounts = useContext(OnlineSeatsContext);
+  const [leaving, setLeaving] = useState(false);
   const leave = () => {
     session.leave();
     onExit();
   };
+  const isHost = !!lobby && myPlayerId === `p${lobby.hostIndex}`;
+  const others = lobby ? lobby.seats.filter((s) => !s.isAI && s.name !== null).length - 1 : 0;
+  // Leaving a game under way (or closing a room people are waiting in) asks first.
+  const askLeave = () => {
+    const live = state ? !kit.isOver(state) : isHost && others > 0;
+    if (live) setLeaving(true);
+    else leave();
+  };
+  const extras = (
+    <>
+      <ActionToast message={error} onDone={session.clearError} />
+      {leaving && <LeaveConfirm lobby={!state} onLeave={leave} onStay={() => setLeaving(false)} />}
+    </>
+  );
 
-  if (error && !state) {
-    return (
-      <div className="setup-screen g-screen">
-        <button type="button" className="back-link" onClick={leave}>
-          <BackIcon size={16} />
-          Back to games
-        </button>
-        <header className="g-head">
-          <p className="g-eyebrow">{title}</p>
-          <h1>Can't open this room</h1>
-          <p className="tagline">{error}</p>
-        </header>
-      </div>
-    );
-  }
+  // Never got into the room at all: there is nothing behind the message to return to.
+  if (error && !state && !lobby) return <RoomError game={title} gameId={gameId} code={code} error={error} onBack={leave} />;
 
   if (state && myPlayerId) {
     const actor = kit.actor(state);
     const actorIsHuman = kit.players(state).some((p) => p.id === actor && !p.isAI);
-    const clock =
-      !kit.isOver(state) && actor && actorIsHuman ? (
-        <TurnClock
-          deadline={lobby?.turnDeadline}
-          label={actor === myPlayerId ? 'Your turn' : nameFor(actor)}
-          onGift={actor !== myPlayerId ? session.extendTime : undefined}
-          onUrgent={actor === myPlayerId ? playTimeWarning : undefined}
-        />
-      ) : null;
-    const banner = lobby ? (
-      <DisconnectBanner
-        lobby={lobby}
-        waitingOnId={actor}
-        onReplace={difficulties.length > 0 ? (i) => session.replaceWithAi(i, 'normal') : undefined}
-        onRemove={(i) => session.removeSeat(i)}
-      />
-    ) : null;
-    return render({
-      view: state,
-      meId: myPlayerId,
-      nameFor,
-      onAction: session.dispatch,
-      onExit: leave,
-      exitLabel: 'Leave game',
-      online: { clock, banner, media, socket: session.socket, code: session.code },
-    });
+    const live = !kit.isOver(state);
+    const clock = (
+      <>
+        {live && actor && actorIsHuman && !lobby?.clocks && (
+          <TurnClock
+            deadline={lobby?.turnDeadline}
+            label={actor === myPlayerId ? 'Your turn' : nameFor(actor)}
+            onGift={actor !== myPlayerId ? session.extendTime : undefined}
+            onUrgent={actor === myPlayerId ? playTimeWarning : undefined}
+          />
+        )}
+        {live && <PauseButton />}
+      </>
+    );
+    const banner = (
+      <>
+        <OfflineBanner connected={session.connected} />
+        {lobby && session.connected && <ReturnBanner lobby={lobby} />}
+        {lobby && session.connected && (
+          <DisconnectBanner
+            lobby={lobby}
+            waitingOnId={actor}
+            onReplace={difficulties.length > 0 ? (i) => session.replaceWithAi(i, 'normal') : undefined}
+            onRemove={(i) => session.removeSeat(i)}
+          />
+        )}
+      </>
+    );
+    return (
+      <TableProvider value={table}>
+        {render({
+          view: state,
+          meId: myPlayerId,
+          nameFor,
+          onAction: session.dispatch,
+          onExit: askLeave,
+          exitLabel: 'Leave game',
+          online: { clock, banner, media, socket: session.socket, code: session.code },
+        })}
+        {extras}
+      </TableProvider>
+    );
   }
 
   return (
+    <>
     <OnlineLobby
       gameId={gameId}
       title={title}
@@ -152,7 +188,15 @@ export function KitOnline<S, A extends { type: string }>({ kit, gameId, title, i
       colorFor={colorFor}
       onSetSeatAi={session.setSeatAi}
       onStart={session.start}
-      onLeave={leave}
+      onLeave={askLeave}
+      media={media}
+      rules={lobby && rulesFor ? rulesFor(lobby.options, isHost ? session.setOptions : null) : undefined}
+      pieces={pieces}
+      onPickPiece={session.setAvatar}
+      seatCounts={seatCounts}
+      onSeatCount={session.setSeatCount}
     />
+    {extras}
+    </>
   );
 }

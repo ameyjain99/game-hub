@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { TableProvider, useTableState } from '../../../online/TableContext';
 import type { GameState } from '../engine/types';
 import { useGame, aiActor } from './store';
 import { TicketToRideSetup } from './TicketToRideSetup';
@@ -33,6 +34,12 @@ export function LocalGame({
   onPhase?: (inGame: boolean) => void;
 } = {}) {
   const { state, lastError, startGame, dispatch, runAiTurnIfNeeded, reset } = useGame();
+  // The table (so the bots can say a word when something happens to them).
+  const table = useTableState({
+    meId: state?.players.find((p) => !p.isAI)?.id ?? '',
+    nameFor: (id) => state?.players.find((p) => p.id === id)?.name ?? id,
+    players: state?.players ?? [],
+  });
   const [readyForId, setReadyForId] = useState<string | null>(null);
 
   // Let the URL reflect setup (/setup) vs an in-progress local game (/play).
@@ -76,6 +83,7 @@ export function LocalGame({
 
   // At game over the board stays up and the final results fill the side pane.
   return (
+    <TableProvider value={table}>
     <GameScreen
       state={state}
       lastError={lastError}
@@ -94,5 +102,6 @@ export function LocalGame({
           : undefined
       }
     />
+    </TableProvider>
   );
 }

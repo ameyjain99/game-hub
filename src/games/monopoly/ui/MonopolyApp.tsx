@@ -6,7 +6,7 @@ import { DEFAULT_SETTINGS, type MonopolyDifficulty, type Settings } from '../eng
 import { MonopolyLocalGame } from './MonopolyLocalGame';
 import { MonopolyOnlineGame } from './MonopolyOnlineGame';
 import { MonopolyProfile } from './MonopolyProfile';
-import { HOUSE_RULES, HouseRuleSwitches, StartingCashField } from './MonopolyRules';
+import { BoardField, HOUSE_RULES, HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
 import { RulesContext } from '../../../shared/rules';
 import { MONOPOLY_RULES } from '../rules';
 
@@ -45,7 +45,16 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
       );
     case 'join':
       return (
-        <JoinGate code={step.code} onBack={toLanding}>
+        <JoinGate
+          code={step.code}
+          onBack={toLanding}
+          onRejoin={(seat) =>
+            navigate({
+              kind: 'online',
+              intent: { kind: 'join', code: step.code, name: seat.name, avatar: '', gameId: 'monopoly', seat: seat.index },
+            })
+          }
+        >
           <MonopolyProfile
             action="join"
             code={step.code}
@@ -67,6 +76,7 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
           onLocal={() => navigate({ kind: 'local' })}
           localOptions={
             <>
+              <BoardField value={localRules.board} onChange={(board) => setLocalRules((r) => ({ ...r, board }))} />
               <label className="g-field">
                 <span className="g-field-label">Players</span>
                 <select aria-label="Players" value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))}>
@@ -92,11 +102,12 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
               <summary>
                 House rules
                 <span className="g-disclosure-meta">
-                  ${localRules.startingCash.toLocaleString()} · {rulesOn} on
+                  {localRules.board === 'india' ? '₹' : '$'}{localRules.startingCash.toLocaleString()} · {rulesOn} on
                 </span>
               </summary>
               <div className="g-disclosure-body">
                 <StartingCashField value={localRules.startingCash} onChange={(c) => setLocalRules((r) => ({ ...r, startingCash: c }))} />
+                <RoundLimitField value={localRules.roundLimit} onChange={(roundLimit) => setLocalRules((r) => ({ ...r, roundLimit }))} />
                 <HouseRuleSwitches value={localRules} onChange={setLocalRules} />
               </div>
             </details>

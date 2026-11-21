@@ -24,7 +24,7 @@ export interface PlayedMove {
   color: Color;
 }
 
-export type ChessResult = 'checkmate' | 'stalemate' | 'threefold' | 'insufficient' | 'fifty-moves' | 'resigned' | 'agreed' | 'abandoned';
+export type ChessResult = 'checkmate' | 'stalemate' | 'threefold' | 'insufficient' | 'fifty-moves' | 'resigned' | 'agreed' | 'abandoned' | 'time';
 
 export interface ChessState {
   players: KitPlayer[];
@@ -38,6 +38,8 @@ export interface ChessState {
   result: ChessResult | null;
   /** A pending draw offer, by this player. */
   drawOffer: string | null;
+  /** A pending request to take back their last move, by this player. */
+  takeback: string | null;
   game: number;
   score: Record<string, number>;
   seed: number;
@@ -46,7 +48,10 @@ export interface ChessState {
 export type ChessAction =
   | { type: 'MOVE'; from: string; to: string; promotion?: Promotion }
   | { type: 'OFFER_DRAW' }
-  | { type: 'ANSWER_DRAW'; accept: boolean };
+  | { type: 'ANSWER_DRAW'; accept: boolean }
+  /** Ask to take back your last move (a bot always allows it). */
+  | { type: 'TAKEBACK' }
+  | { type: 'ANSWER_TAKEBACK'; accept: boolean };
 
 export const START_FEN = new Chess().fen();
 
@@ -67,12 +72,31 @@ function finish(s: ChessState, winner: string | null, result: ChessResult): Ches
 }
 
 function newGame(s: ChessState, whiteId: string, game: number): ChessState {
-  return { ...s, whiteId, moves: [], fen: START_FEN, over: false, winner: null, result: null, drawOffer: null, game };
+  return { ...s, whiteId, moves: [], fen: START_FEN, over: false, winner: null, result: null, drawOffer: null, takeback: null, game };
+}
+
+/** The position with `id`'s last move taken back (and the reply to it, if there was one). */
+function undo(s: ChessState, id: string): ChessState {
+  const mine = colorOf(s, id);
+  const k = s.moves[s.moves.length - 1]?.color === mine ? 1 : 2;
+  const moves = s.moves.slice(0, Math.max(0, s.moves.length - k));
+  return { ...s, moves, fen: replay(moves).fen(), drawOffer: null, takeback: null };
 }
 
 export interface ChessOptions {
   /** Which seat plays White in the first game (default: seat 0). */
   whiteSeat?: number;
+  /** Minutes on each player's clock for the whole game (none when absent or 0). */
+  clockMin?: number;
+}
+
+/** The clock choices a room offers, in minutes (0 is no clock). */
+export const CLOCK_MINUTES = [0, 3, 5, 10, 15, 30] as const;
+
+/** The time each player gets under these options, or null for no clock. */
+export function bankMs(options: unknown): number | null {
+  const min = Number((options as { clockMin?: unknown } | null)?.clockMin ?? 0);
+  return (CLOCK_MINUTES as readonly number[]).includes(min) && min > 0 ? min * 60_000 : null;
 }
 
 export function createChess(seats: KitSeat[], seed: number, options: ChessOptions = {}): ChessState {
@@ -108,6 +132,15 @@ export function applyChess(s: ChessState, action: ChessAction | KitCommonAction,
     case 'ANSWER_DRAW':
       if (!s.drawOffer || s.drawOffer === actorId) throw new IllegalMove('no draw offer to answer');
       return action.accept ? finish(s, null, 'agreed') : { ...s, drawOffer: null };
+    case 'TAKEBACK': {
+      if (s.takeback) throw new IllegalMove('a take-back is already being asked for');
+      if (!s.moves.some((m) => m.color === colorOf(s, actorId))) throw new IllegalMove('you have no move to take back');
+      const them = s.players.find((p) => p.id !== actorId)!;
+      return them.isAI ? undo(s, actorId) : { ...s, takeback: actorId };
+    }
+    case 'ANSWER_TAKEBACK':
+      if (!s.takeback || s.takeback === actorId) throw new IllegalMove('no take-back to answer');
+      return action.accept ? undo(s, s.takeback) : { ...s, takeback: null };
     case 'MOVE': {
       const chess = replay(s.moves);
       if (idOfColor(s, chess.turn()) !== actorId) throw new IllegalMove('not your turn');
@@ -127,7 +160,8 @@ export function applyChess(s: ChessState, action: ChessAction | KitCommonAction,
       };
       // A move answers (declines) an opponent's draw offer; your own stays open.
       const drawOffer = s.drawOffer === actorId ? s.drawOffer : null;
-      const next: ChessState = { ...s, moves: [...s.moves, played], fen: chess.fen(), drawOffer };
+      // Playing on turns down a take-back that was being asked for.
+      const next: ChessState = { ...s, moves: [...s.moves, played], fen: chess.fen(), drawOffer, takeback: null };
       const end = endOf(chess);
       if (end) return finish(next, end === 'checkmate' ? actorId : null, end);
       return next;
@@ -165,4 +199,6 @@ export const chessKit: GameKit<ChessState, ChessAction> = {
   redact: (s) => s,
   // Chess is played untimed; a player who walks away can be removed by the other.
   untimed: true,
+  bankMs,
+  flag: (s, id) => (s.over ? s : finish(s, opponent(s, id), 'time')),
 };

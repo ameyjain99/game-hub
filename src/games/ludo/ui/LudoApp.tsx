@@ -1,7 +1,9 @@
 import { KitApp, type KitAppConfig } from '../../kit/ui/KitApp';
+import type { CSSProperties } from 'react';
+import type { LobbyPiece } from '../../../online/ui/OnlineLobby';
 import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
-import { colorsFor, createLudo, ludoKit } from '../engine';
+import { COLORS, colorsFor, createLudo, ludoKit } from '../engine';
 import { LUDO_COLOR, LudoGame } from './LudoGame';
 import { LUDO_RULES } from '../rules';
 
@@ -24,6 +26,13 @@ const CONFIG: KitAppConfig = {
 // Lobby seat colours follow a four-seat table (a smaller table re-seats at start).
 const seatColor = (i: number) => LUDO_COLOR[colorsFor(4)[i % 4]];
 
+/** The four colours, to pick yours in the lobby. */
+const COLOUR_PIECES: LobbyPiece[] = COLORS.map((c) => ({
+  id: c,
+  label: c.charAt(0).toUpperCase() + c.slice(1),
+  node: <span className="g-piece-token" style={{ '--tc': LUDO_COLOR[c] } as CSSProperties} />,
+}));
+
 export function LudoApp({ onBackToHub }: { onBackToHub: () => void }) {
   return (
     <KitApp
@@ -43,6 +52,7 @@ export function LudoApp({ onBackToHub }: { onBackToHub: () => void }) {
           onCode={onCode}
           difficulties={DIFFICULTIES}
           colorFor={seatColor}
+          pieces={COLOUR_PIECES}
           render={(p) => <LudoGame {...p} />}
         />
       )}

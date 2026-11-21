@@ -299,3 +299,79 @@ test('anyone but the current player can grant +20s; drawing tickets adds +30s', 
   store.submitAction(code, hostTok, { type: 'DRAW_TICKETS' });
   expect(store.lobbyView(code).turnDeadline!).toBe(afterExtend + 30_000);
 });
+
+/** A started 2-seat Ticket to Ride room in the turn phase. */
+function startedRoom() {
+  const { code, token: hostTok } = store.createRoom(2, 'Ann', '');
+  const guestTok = token(store.join(code, 'Bob', ''));
+  store.start(code, hostTok);
+  finishSetup(code, hostTok, guestTok);
+  return { code, hostTok, guestTok };
+}
+
+test('a dropped player who lost their session takes their seat back by joining again', () => {
+  const { code, guestTok } = startedRoom();
+  store.attachSocket(code, 'p1', 'sock-bob');
+  store.markDisconnected('sock-bob');
+  expect(store.roomInfo(code)).toMatchObject({ started: true, openSeats: [{ index: 1, name: 'Bob' }] });
+
+  const back = store.join(code, 'bob', '', 1);
+  expect(back).toMatchObject({ playerId: 'p1' });
+  expect(store.lobbyView(code).seats[1].connected).toBe(true);
+  expect(store.roomInfo(code)!.openSeats).toEqual([]);
+  // The lost session's token no longer works; the new one does.
+  expect(store.reconnect(code, guestTok)).toEqual({ error: 'unknown token' });
+  expect(store.reconnect(code, token(back))).toEqual({ playerId: 'p1' });
+});
+
+test('a started game still refuses a new player, and never hands over a connected seat', () => {
+  const { code } = startedRoom();
+  expect(store.join(code, 'Cara', '')).toEqual({ error: 'game already started' });
+  expect(store.join(code, 'Bob', '', 1)).toEqual({ error: 'game already started' });
+});
+
+test('a player replaced by a bot gets the seat back when they return', () => {
+  const { code, hostTok, guestTok } = startedRoom();
+  store.attachSocket(code, 'p1', 'sock-bob');
+  store.markDisconnected('sock-bob');
+  store.replaceWithAi(code, hostTok, 1, 'easy');
+  expect(viewer(code, 'p0')!.players[1].isAI).toBe(true);
+
+  expect(store.reconnect(code, guestTok)).toEqual({ playerId: 'p1' });
+  expect(store.lobbyView(code).seats[1]).toMatchObject({ isAI: false, connected: true });
+  expect(viewer(code, 'p0')!.players[1].isAI).toBe(false);
+});
+
+test('a player removed from the game is told so when they come back', () => {
+  const { code, hostTok, guestTok } = startedRoom();
+  store.attachSocket(code, 'p1', 'sock-bob');
+  store.markDisconnected('sock-bob');
+  store.removeSeat(code, hostTok, 1);
+  expect(store.reconnect(code, guestTok)).toEqual({ error: 'removed from game' });
+});
+
+test('no two players at a table share a name, whatever the case or spacing', () => {
+  const { code } = store.createRoom(5, '  Amey  ', '');
+  store.join(code, 'amey', '');
+  store.join(code, 'A M E Y', '');
+  store.join(code, 'Riya', '');
+  expect(store.lobbyView(code).seats.map((s) => s.name)).toEqual(['Amey', 'amey (2)', 'A M E Y (3)', 'Riya', null]);
+});
+
+test('a long name keeps its number inside the 20-character limit', () => {
+  const { code } = store.createRoom(3, 'Bartholomew the Great', '');
+  store.join(code, 'Bartholomew the Great', '');
+  const names = store.lobbyView(code).seats.map((s) => s.name);
+  expect(names[0]).toBe('Bartholomew the Grea');
+  expect(names[1]).toBe('Bartholomew the (2)');
+  expect(names[1]!.length).toBeLessThanOrEqual(20);
+});
+
+test('each bot sits down under its own name, never one a player holds', async () => {
+  const { BOTS, nameKey } = await import('../../src/shared/botNames');
+  const { code, token: hostTok } = store.createRoom(6, BOTS[0].name, '', {}, 'last-card');
+  for (let i = 1; i < 6; i++) store.setSeatAi(code, hostTok, i, true, 'normal');
+  const names = store.lobbyView(code).seats.map((s) => s.name!);
+  expect(new Set(names.map(nameKey)).size).toBe(6);
+  for (const n of names.slice(1)) expect(BOTS.some((b) => b.name === n)).toBe(true);
+});

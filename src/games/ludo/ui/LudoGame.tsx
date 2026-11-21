@@ -19,8 +19,10 @@ import {
 import { GameShell, SideSection } from '../../kit/ui/GameShell';
 import { PlayersPanel, tokenLabel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
-import { Die } from '../../kit/ui/Die';
+import { BoardDie } from '../../kit/ui/BoardDie';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
+import { TableMomentBanner, freshEvents, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
+import { SeatFace } from '../../../online/ui/SeatFace';
 import { useCues } from '../../kit/ui/useCues';
 import { useMediaQuery } from '../../../shared/useMediaQuery';
 import { SafeSquareIcon } from '../../../shared/icons';
@@ -137,6 +139,22 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
   const [spotlight, setSpotlight] = useState<string | null>(null);
   const [hoverToken, setHoverToken] = useState<number | null>(null);
   useCues(view, (a, b) => ludoCues(a, b, meId), LUDO_SOUNDS);
+  // A capture and a token reaching home are the turns a game swings on: said large, as the token lands.
+  const moment = useTableMoments(view, (a, b): TableMoment[] =>
+    freshEvents(a.history, b.history).flatMap((e): TableMoment[] => {
+      const p = b.players.find((pl) => pl.id === e.player);
+      if (!p || e.kind !== 'move') return [];
+      const name = e.player === meId ? 'You' : nameFor(e.player);
+      const afterMs = WALK_DELAY_MS + eventMs(e);
+      const out: TableMoment[] = [];
+      if (e.captured?.length) {
+        const victims = [...new Set(e.captured.map((c) => (c.player === meId ? 'you' : nameFor(c.player))))].join(' and ');
+        out.push({ kicker: name, title: `sent ${victims} home`, detail: `${e.captured.length === 1 ? 'That token goes' : 'Those tokens go'} back to the yard.`, color: LUDO_COLOR[p.color], afterMs, feels: { [e.player]: 'good', ...Object.fromEntries(e.captured.map((c) => [c.player, 'bad' as const])) } });
+      }
+      if (e.to === HOME) out.push({ kicker: name, title: 'brought a token home', color: LUDO_COLOR[p.color], afterMs, feels: { [e.player]: 'good' } });
+      return out;
+    }),
+  );
   const { shown, moving, flying, animating } = useTokenWalk(view);
 
   const actor = ludoKit.actor(view);
@@ -223,13 +241,30 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
         {cells}
         {(Object.keys(YARD_AT) as LudoColor[]).map((col) => {
           const [r, c] = YARD_AT[col];
-          const seated = view.players.some((p) => p.color === col && !p.out);
+          const owner = view.players.find((p) => p.color === col && !p.out);
+          const seated = !!owner;
           return (
-            <div key={col} className={`ludo-yard${seated ? '' : ' is-empty'}`} style={{ gridRow: `${r + 1} / span 6`, gridColumn: `${c + 1} / span 6`, '--lc': LUDO_COLOR[col] } as CSSProperties}>
+            <div key={col} className={`ludo-yard${seated ? '' : ' is-empty'}${owner && owner.id === current.id && !view.over ? ' is-turn' : ''}${r < 6 ? ' is-top' : ' is-bottom'}${c < 6 ? ' is-left' : ' is-right'}`} style={{ gridRow: `${r + 1} / span 6`, gridColumn: `${c + 1} / span 6`, '--lc': LUDO_COLOR[col] } as CSSProperties}>
               <div className="ludo-yard-inner" />
               {YARD_SPOTS.map(([sr, sc], i) => (
                 <span key={i} className="ludo-yard-spot" style={{ top: `${(sr / 6) * 100}%`, left: `${(sc / 6) * 100}%` }} />
               ))}
+              {owner && owner.id === current.id && !view.over && (
+                <BoardDie
+                  value={view.dice ?? view.last?.roll ?? null}
+                  rollKey={view.rollSeq}
+                  canRoll={myTurn && view.phase === 'roll' && !animating}
+                  onRoll={() => onAction({ type: 'ROLL' })}
+                  color={LUDO_COLOR[col]}
+                  className="ludo-die"
+                />
+              )}
+              {owner && (
+                <span className="ludo-yard-who">
+                  <SeatFace id={owner.id} className="ludo-face" color="#fff" />
+                  <span className="ludo-yard-name">{who(owner.id)}</span>
+                </span>
+              )}
             </div>
           );
         })}
@@ -288,7 +323,6 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
   const tray = (
     <div className="kit-panel snl-tray" style={{ '--tc': LUDO_COLOR[current.color] } as CSSProperties}>
       <div className="snl-tray-row">
-        <Die value={view.dice ?? view.last?.roll ?? null} rollKey={view.rollSeq} size={56} />
         <div className="snl-tray-text">
           <span className="snl-tray-kicker">{view.over ? 'Game over' : myTurn ? 'Your turn' : `${nameFor(current.id)}'s turn`}</span>
           <span className="snl-tray-line">
@@ -357,18 +391,6 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
           out: p.out,
         }))}
       />
-      <SideSection title="Recent rolls">
-        {view.history.length === 0 ? (
-          <p className="kit-muted">A 6 brings a token out and rolls again. Stars and start squares are safe. Land exactly on home.</p>
-        ) : (
-          <ul className="kit-log">
-            {view.history.slice(0, 12).map((e) => {
-              const p = view.players.find((pl) => pl.id === e.player)!;
-              return <li key={e.seq}>{describe(e, who(p.id), p.color)}</li>;
-            })}
-          </ul>
-        )}
-      </SideSection>
     </>
   );
 
@@ -392,8 +414,27 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
       headerExtra={online?.clock}
       banner={online?.banner}
       board={board}
-      overlay={overlay}
+      overlay={
+        <>
+          <TableMomentBanner moment={moment} place="top" />
+          {overlay}
+        </>
+      }
       side={side}
+      log={
+        <SideSection title="Recent rolls">
+          {view.history.length === 0 ? (
+            <p className="kit-muted">A 6 brings a token out and rolls again. Stars and start squares are safe. Land exactly on home.</p>
+          ) : (
+            <ul className="kit-log">
+              {view.history.map((e) => {
+                const p = view.players.find((pl) => pl.id === e.player)!;
+                return <li key={e.seq}>{describe(e, who(p.id), p.color)}</li>;
+              })}
+            </ul>
+          )}
+        </SideSection>
+      }
     />
   );
 }

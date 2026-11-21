@@ -4,7 +4,7 @@ import { areConnected } from './graph';
 
 const ROUTE_BY_ID = routeById;
 
-const POINTS: Record<number, number> = { 1: 1, 2: 2, 3: 4, 4: 7, 5: 10, 6: 15, 8: 21 };
+const POINTS: Record<number, number> = { 1: 1, 2: 2, 3: 4, 4: 7, 5: 10, 6: 15, 7: 18, 8: 21, 9: 27 };
 
 export function routePoints(length: number): number {
   return POINTS[length] ?? 0;
@@ -35,6 +35,9 @@ export interface BonusRule {
   label: string;
   points: number;
   award(players: PlayerState[]): Set<string>;
+  /** A bonus worth a different amount to each player (the Grand Tour): what
+   *  this player earns. Without it, everyone `award` names earns `points`. */
+  score?(player: PlayerState): number;
 }
 
 export interface ScoreBreakdown {
@@ -112,13 +115,13 @@ export function finalScores(
   players: PlayerState[],
   bonuses: BonusRule[],
 ): Record<string, ScoreBreakdown> {
-  const awardedByRule = bonuses.map((b) => ({ points: b.points, ids: b.award(players) }));
+  const awardedByRule = bonuses.map((b) => ({ rule: b, points: b.points, ids: b.award(players) }));
   const out: Record<string, ScoreBreakdown> = {};
   for (const p of players) {
     const routes = routeScore(p);
     const { delta: tickets, completed: ticketsCompleted, borrowed } = bestStationTickets(p, players);
     let bonus = 0;
-    for (const a of awardedByRule) if (a.ids.has(p.id)) bonus += a.points;
+    for (const a of awardedByRule) if (a.ids.has(p.id)) bonus += a.rule.score ? a.rule.score(p) : a.points;
     const stations = STATION_POINTS * p.stationsLeft;
     out[p.id] = {
       routes,

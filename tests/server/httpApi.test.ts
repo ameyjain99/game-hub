@@ -26,7 +26,7 @@ test('the room-exists endpoint names the game of an open room', async () => {
   const port = await startOnEphemeralPort();
   const { code } = srv!.store.createRoom(2, 'Ana', '🦊', {}, 'chess');
   const res = await (await fetch(`http://127.0.0.1:${port}/api/room-exists?code=${code.toLowerCase()}`)).json();
-  expect(res).toEqual({ exists: true, gameId: 'chess' });
+  expect(res).toEqual({ exists: true, gameId: 'chess', started: false, openSeats: [] });
 });
 
 test('the contributors endpoint answers with the list for the home page', async () => {

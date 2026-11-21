@@ -4,7 +4,9 @@ import { Loader } from '../../../shared/Loader';
 import { playerColor } from './colors';
 import { AVATARS } from './avatars';
 import { cleanName } from './displayName';
-import type { LobbyView } from '../../../net/protocol';
+import { playerIdForSeat, type LobbyView } from '../../../net/protocol';
+import type { MediaChat } from '../../../online/useMediaChat';
+import { LobbyCall } from '../../../online/ui/LobbyCall';
 import type { Difficulty } from '../engine/types';
 
 interface Props {
@@ -17,11 +19,13 @@ interface Props {
   onStart: () => void;
   /** Host cancels the lobby; anyone else just leaves. */
   onLeave?: () => void;
+  /** The call: people in the lobby can already talk while they wait. */
+  media?: MediaChat | null;
 }
 
 const seatFilled = (s: LobbyView['seats'][number]): boolean => s.isAI || s.name !== null;
 
-export function LobbyScreen({ lobby, isHost, mySeatIndex = -1, onSetSeatAi, onSetAvatar, onStart, onLeave }: Props) {
+export function LobbyScreen({ lobby, isHost, mySeatIndex = -1, onSetSeatAi, onSetAvatar, onStart, onLeave, media }: Props) {
   const [difficulties, setDifficulties] = useState<Record<number, Difficulty>>({});
   const diffOf = (index: number): Difficulty => difficulties[index] ?? 'normal';
   const [copied, setCopied] = useState(false);
@@ -137,6 +141,8 @@ export function LobbyScreen({ lobby, isHost, mySeatIndex = -1, onSetSeatAi, onSe
           </div>
         </div>
       )}
+
+      <LobbyCall lobby={lobby} myPlayerId={mySeatIndex >= 0 ? playerIdForSeat(mySeatIndex) : null} media={media} colorFor={(i) => playerColor(i)} />
 
       {isHost ? (
         <div className="setup-actions">

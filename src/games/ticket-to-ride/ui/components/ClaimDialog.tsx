@@ -1,5 +1,6 @@
 import type { CardCombo, Hand, Route, TrainCard } from '../../engine/types';
-import { canPayFor, getRoute } from '../../engine/selectors';
+import { canPayFor, getRoute, takesLocomotives } from '../../engine/selectors';
+import { rulesForRoute } from '../../engine/maps';
 import { cityById } from '../../engine/maps';
 import { cardHex, cardBorder, cardText, LOCO_GRADIENT } from '../colors';
 
@@ -48,12 +49,14 @@ function routeNotes(route: Route): string {
   const locos = route.locomotivesRequired;
   if (locos > 0) notes.push(`ferry: needs ${locos} locomotive${locos === 1 ? '' : 's'}`);
   if (route.isTunnel) notes.push('tunnel: may cost extra');
+  if (!takesLocomotives(route, rulesForRoute(route.id))) notes.push('no locomotives on this route');
   return notes.map((n) => ` · ${n}`).join('');
 }
 
 export function ClaimDialog({ routeId, hand, onConfirm, onCancel }: Props) {
   const route = getRoute(routeId)!;
-  const combos = canPayFor(hand, route);
+  const rules = rulesForRoute(routeId);
+  const combos = canPayFor(hand, route, rules);
 
   return (
     <div className="popover claim-popover" data-testid="claim-dialog">

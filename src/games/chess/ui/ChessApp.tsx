@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { KitApp, type KitAppConfig } from '../../kit/ui/KitApp';
 import { KitLocal, freshSeed } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
-import { chessKit, createChess, fallbackMove, type ChessAction, type ChessState } from '../engine';
+import { CLOCK_MINUTES, chessKit, createChess, fallbackMove, type ChessAction, type ChessState } from '../engine';
+import { rulesFromSpec, type OptionField } from '../../../online/ui/LobbyRules';
 import { ChessGame, COLOR_ACCENT } from './ChessGame';
 import { ENGINE_LEVELS, engineLevel, parseUci, stockfish } from './stockfish';
 import { CHESS_RULES } from '../rules';
@@ -21,6 +22,13 @@ const CONFIG: KitAppConfig = {
 
 type PlayAs = 'white' | 'black' | 'random';
 
+const CLOCK: OptionField = {
+  key: 'clockMin',
+  label: 'Clock',
+  choices: CLOCK_MINUTES.map((m) => ({ value: m, label: m === 0 ? 'No clock' : `${m} minutes each` })),
+};
+const LOBBY_RULES = rulesFromSpec([CLOCK]);
+
 /** Stockfish's reply for the computer's seat (a simple stand-in if it can't load). */
 async function engineMove(s: ChessState): Promise<ChessAction> {
   const bot = s.players.find((p) => p.isAI);
@@ -37,11 +45,25 @@ async function engineMove(s: ChessState): Promise<ChessAction> {
 
 export function ChessApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [playAs, setPlayAs] = useState<PlayAs>('white');
+  const [clockMin, setClockMin] = useState(0);
   return (
     <KitApp
       rules={CHESS_RULES}
       config={CONFIG}
       onBackToHub={onBackToHub}
+      optionValue={{ clockMin }}
+      hostFields={
+        <label className="g-field">
+          <span className="g-field-label">{CLOCK.label}</span>
+          <select aria-label={CLOCK.label} value={clockMin} onChange={(e) => setClockMin(Number(e.target.value))}>
+            {CLOCK.choices.map((c) => (
+              <option key={String(c.value)} value={Number(c.value)}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      }
       localExtra={
         <label className="g-field">
           <span className="g-field-label">You play</span>
@@ -77,6 +99,7 @@ export function ChessApp({ onBackToHub }: { onBackToHub: () => void }) {
           onExit={onExit}
           onCode={onCode}
           difficulties={[]}
+          rulesFor={LOBBY_RULES}
           colorFor={(i) => (i === 0 ? COLOR_ACCENT.w : COLOR_ACCENT.b)}
           render={(p) => <ChessGame {...p} />}
         />

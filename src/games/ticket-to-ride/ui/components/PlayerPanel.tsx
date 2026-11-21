@@ -4,6 +4,7 @@ import type { MediaChat } from '../../../../online/useMediaChat';
 import { SeatMedia, seatMediaState } from '../../../../online/ui/SeatMedia';
 import { cleanName } from '../displayName';
 import { User, MicOff } from '../../../../shared/icons';
+import { useTable } from '../../../../online/TableContext';
 
 interface Props {
   player: PlayerState;
@@ -22,6 +23,8 @@ interface Props {
  *  score over it, then their trains, cards and tickets. */
 export function PlayerPanel({ player, color, isCurrent, cardCount, onHover, media, viewerId }: Props) {
   const seat = media ? seatMediaState(media, player.id, viewerId ?? '') : null;
+  const table = useTable();
+  const said = table?.says.get(player.id);
   return (
     <div
       className={`player-panel${isCurrent ? ' current' : ''}${seat?.isMe ? ' is-me' : ''}`}
@@ -30,6 +33,11 @@ export function PlayerPanel({ player, color, isCurrent, cardCount, onHover, medi
       onMouseEnter={onHover ? () => onHover(true) : undefined}
       onMouseLeave={onHover ? () => onHover(false) : undefined}
     >
+      {said && (
+        <span className="kit-say" role="status">
+          {said}
+        </span>
+      )}
       <div className="player-media">
         <SeatMedia
           seat={seat}
@@ -47,7 +55,7 @@ export function PlayerPanel({ player, color, isCurrent, cardCount, onHover, medi
           <span className="player-name">
             {seat && !seat.micOn && <MicOff size={12} aria-label="muted" />}
             {cleanName(player.name)}
-            {player.isAI ? ` (${player.difficulty ?? 'AI'})` : ''}
+            {player.isAI ? (table?.seatOf(player.id)?.covering ? ' (bot covering)' : ` (${player.difficulty ?? 'AI'})`) : ''}
             {seat?.isMe ? ' (you)' : ''}
           </span>
           <span className="player-score">{player.score}</span>

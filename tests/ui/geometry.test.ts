@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { makeCurve } from '../../src/games/ticket-to-ride/ui/geometry';
 import { ROUTE_BENDS, bendKey } from '../../src/games/ticket-to-ride/ui/data/routeCurves';
-import { ROUTES } from '../../src/games/ticket-to-ride/engine/data/usa/routes';
+import { MAP_LIST } from '../../src/games/ticket-to-ride/engine/maps';
 
 const A = { x: 0, y: 0 };
 const B = { x: 100, y: 0 };
@@ -55,7 +55,7 @@ describe('makeCurve', () => {
 
 describe('ROUTE_BENDS', () => {
   it('only references existing routes (by id or double-route group)', () => {
-    const keys = new Set(ROUTES.map(bendKey));
+    const keys = new Set(MAP_LIST.flatMap((m) => m.routes).map(bendKey));
     for (const k of Object.keys(ROUTE_BENDS)) expect(keys.has(k)).toBe(true);
   });
 });

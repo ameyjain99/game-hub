@@ -166,6 +166,9 @@ export function TicketToRideApp({ onBackToHub }: { onBackToHub: () => void }) {
           onSubmit={(name, avatar) =>
             navigate({ kind: 'online', intent: { kind: 'join', code: p.code, name, avatar } })
           }
+          onRejoin={(seat) =>
+            navigate({ kind: 'online', intent: { kind: 'join', code: p.code, name: seat.name, avatar: '', seat: seat.index } })
+          }
         />
       );
     }

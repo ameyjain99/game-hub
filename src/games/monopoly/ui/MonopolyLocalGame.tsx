@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { pickBotNames } from '../../../shared/botNames';
+import { TOKEN_IDS } from '../../../shared/pieceIds';
+import { TableProvider, useTableState } from '../../../online/TableContext';
 import { createMonopolyGame, type MonopolyDifficulty, type SeatConfig, type Settings } from '../engine/state';
 import { applyAction } from '../engine/reducer';
 import { chooseMonopolyAction, monopolyActor } from '../engine/bot';
@@ -25,16 +28,16 @@ export function MonopolyLocalGame({
   settings?: Partial<Settings>;
   onBackToHub: () => void;
 }) {
-  const configs = useMemo<SeatConfig[]>(
-    () =>
-      Array.from({ length: playerCount }, (_, i) => ({
-        name: i === 0 ? 'You' : `Bot ${i}`,
-        avatar: '',
+  const configs = useMemo<SeatConfig[]>(() => {
+    const bots = pickBotNames(playerCount - 1);
+    return Array.from({ length: playerCount }, (_, i) => ({
+        name: i === 0 ? 'You' : bots[i - 1],
+        // Everyone gets a playing piece, as at a real board.
+        avatar: TOKEN_IDS[i % TOKEN_IDS.length],
         isAI: i > 0,
         difficulty,
-      })),
-    [playerCount, difficulty],
-  );
+      }));
+  }, [playerCount, difficulty]);
   const [state, setState] = useState(() =>
     // You always go first on your own device.
     createMonopolyGame(configs, seed ?? Math.floor(Math.random() * 2 ** 31), { ...settings, randomizeOrder: false }),
@@ -51,8 +54,10 @@ export function MonopolyLocalGame({
   }, [state, actorIsBot]);
 
   const nameFor = (id: string) => state.players.find((p) => p.id === id)?.name ?? id;
+  const table = useTableState({ meId: HUMAN_ID, nameFor, players: state.players });
 
   return (
+    <TableProvider value={table}>
     <MonopolyGame
       view={redactFor(state, HUMAN_ID)}
       meId={HUMAN_ID}
@@ -61,5 +66,6 @@ export function MonopolyLocalGame({
       onExit={onBackToHub}
       exitLabel="Back to games"
     />
+    </TableProvider>
   );
 }

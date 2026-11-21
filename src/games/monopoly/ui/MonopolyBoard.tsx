@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { BOARD, type Space } from '../engine/board';
+import { useCurrency, useSpaceFlag, useSpaceName } from './boardNames';
+import { Plane } from 'lucide-react';
 import type { MonopolyState } from '../engine/state';
 import {
   ArrowLeft,
@@ -20,10 +22,10 @@ import { MonopolyTokens } from './MonopolyTokens';
 const seatOfId = (state: MonopolyState, id: string) => state.players.findIndex((p) => p.id === id);
 
 /** The small pictogram a non-street space carries. */
-function spaceIcon(sp: Space): ReactNode {
+function spaceIcon(sp: Space, name: string): ReactNode {
   switch (sp.kind) {
     case 'railroad':
-      return <TrainFront size={16} strokeWidth={1.75} />;
+      return name.endsWith('Airport') ? <Plane size={16} strokeWidth={1.75} /> : <TrainFront size={16} strokeWidth={1.75} />;
     case 'utility':
       return sp.name.startsWith('Water') ? <Droplets size={16} strokeWidth={1.75} /> : <Lightbulb size={16} strokeWidth={1.75} />;
     case 'tax':
@@ -37,12 +39,12 @@ function spaceIcon(sp: Space): ReactNode {
   }
 }
 
-function Corner({ sp, pot }: { sp: Space; pot: number }) {
+function Corner({ sp, pot, currency }: { sp: Space; pot: number; currency: string }) {
   switch (sp.kind) {
     case 'go':
       return (
         <>
-          <span className="mono-corner-sub">Collect $200</span>
+          <span className="mono-corner-sub">Collect {currency}200</span>
           <span className="mono-corner-title">GO</span>
           <ArrowLeft size={22} strokeWidth={2.25} className="mono-corner-icon" />
         </>
@@ -106,6 +108,9 @@ export function MonopolyBoard({
   flashIds,
   children,
 }: Props) {
+  const nameOf = useSpaceName();
+  const flagOf = useSpaceFlag();
+  const currency = useCurrency();
   return (
     <div className={`mono-board${spotlight ? ' is-spotlit' : ''}`} role="group" aria-label="Monopoly board">
       {BOARD.map((sp) => {
@@ -116,8 +121,8 @@ export function MonopolyBoard({
         const owner = own?.owner ?? null;
         const ownable = !!own;
         const label = [
-          sp.name,
-          own?.owner ? `owned by ${nameFor(own.owner)}` : ownable ? `$${sp.price}` : '',
+          nameOf(sp.id),
+          own?.owner ? `owned by ${nameFor(own.owner)}` : ownable ? `${currency}${sp.price}` : '',
           own && own.houses === 5 ? 'hotel' : own && own.houses > 0 ? `${own.houses} house${own.houses > 1 ? 's' : ''}` : '',
           own?.mortgaged ? 'mortgaged' : '',
         ]
@@ -152,9 +157,10 @@ export function MonopolyBoard({
 
         if (side === 'corner') {
           return (
-            <div key={sp.id} className={className} style={style} aria-label={label}>
+            <div key={sp.id} className={className}
+              data-space={sp.id} style={style} aria-label={label}>
               <span className="mono-corner">
-                <Corner sp={sp} pot={view.settings.freeParkingJackpot ? view.freeParkingPot : 0} />
+                <Corner sp={sp} pot={view.settings.freeParkingJackpot ? view.freeParkingPot : 0} currency={currency} />
               </span>
             </div>
           );
@@ -175,10 +181,15 @@ export function MonopolyBoard({
               </span>
             )}
             <span className="mono-cell-body">
-              {sp.kind !== 'property' && <span className="mono-cell-icon">{spaceIcon(sp)}</span>}
-              <span className="mono-cell-name">{sp.name}</span>
-              {sp.price != null && !own?.owner && <span className="mono-cell-price">${sp.price}</span>}
-              {sp.kind === 'tax' && <span className="mono-cell-price">Pay ${sp.taxAmount}</span>}
+              {sp.kind !== 'property' && <span className="mono-cell-icon">{spaceIcon(sp, nameOf(sp.id))}</span>}
+              {flagOf(sp.id) && (
+                <span className="mono-cell-flag" aria-hidden="true">
+                  {flagOf(sp.id)}
+                </span>
+              )}
+              <span className="mono-cell-name">{nameOf(sp.id)}</span>
+              {sp.price != null && !own?.owner && <span className="mono-cell-price">{currency}{sp.price}</span>}
+              {sp.kind === 'tax' && <span className="mono-cell-price">Pay {currency}{sp.taxAmount}</span>}
             </span>
             {ownerSeat >= 0 && <span className="mono-owner" style={{ background: tokenColor(ownerSeat) }} />}
           </>
@@ -189,6 +200,7 @@ export function MonopolyBoard({
             key={sp.id}
             type="button"
             className={className}
+              data-space={sp.id}
             style={style}
             aria-label={label}
             aria-pressed={inspected === sp.id}
@@ -198,7 +210,8 @@ export function MonopolyBoard({
             {body}
           </button>
         ) : (
-          <div key={sp.id} className={className} style={style} aria-label={label}>
+          <div key={sp.id} className={className}
+              data-space={sp.id} style={style} aria-label={label}>
             {body}
           </div>
         );

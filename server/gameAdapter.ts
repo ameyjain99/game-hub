@@ -26,6 +26,21 @@ export interface GameAdapter {
    *  idle player times out (games with long, many-step turns). */
   refreshClockOnAction?: boolean;
 
+  /** The pieces a seat may hold (a character, a colour, a token, an avatar),
+   *  by id. Each seat holds a different one, kept in the seat's `avatar`. */
+  pieces?: readonly string[];
+  /** Whether a rematch waits for every connected player to ask for it (the
+   *  room counts the votes); otherwise REMATCH is an action like any other. */
+  rematchByVote?: boolean;
+
+  /** A chess clock: the time each player has for the whole game under these
+   *  options (null for none). It runs only while they are to move. */
+  bankMs?(options: unknown): number | null;
+  /** With a chess clock: who is to move (bots and untimed games included). */
+  clockActorId?(game: unknown): string | null;
+  /** With a chess clock: this player's time ran out. */
+  flag?(game: unknown, actorId: string): unknown;
+
   /** Null if the seat count is valid for these options, else an error message.
    * May also throw for a wholly invalid option (e.g. unknown map). */
   validateSeatCount(seatCount: number, options: unknown): string | null;
@@ -44,6 +59,9 @@ export interface GameAdapter {
 
   /** Replace a seat with a bot mid-game and let the game advance. */
   replaceWithAi(game: unknown, seatIndex: number, difficulty: string | undefined): unknown;
+
+  /** Give a seat a bot was covering back to its (returned) human player. */
+  returnSeat(game: unknown, seatIndex: number): unknown;
 
   /** Remove a seat from the game entirely (cards/routes returned to the pools,
    *  the player skipped and excluded from scoring), then let the game advance. */

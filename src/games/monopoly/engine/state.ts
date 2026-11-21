@@ -1,5 +1,5 @@
 import { makeRng, type Rng } from '../../../shared/rng';
-import { OWNABLE_IDS } from './board';
+import { OWNABLE_IDS, boardOf, type BoardId } from './board';
 import { CHANCE, CHEST } from './cards';
 import { playerIdForSeat } from '../../../net/protocol';
 
@@ -22,6 +22,10 @@ export interface Settings {
   doubleGoSalary: boolean;
   noRentInJail: boolean;
   randomizeOrder: boolean;
+  /** Rounds to play before the highest net worth wins; 0 plays until one player is left. */
+  roundLimit: number;
+  /** Which places are on the board (the squares and prices are the same on all). */
+  board: BoardId;
 }
 
 /** RAW-correct defaults; house rules (jackpot, double-Go, no-rent-in-jail) off. */
@@ -35,6 +39,8 @@ export const DEFAULT_SETTINGS: Settings = {
   doubleGoSalary: false,
   noRentInJail: false,
   randomizeOrder: true,
+  roundLimit: 0,
+  board: 'neo',
 };
 
 export interface MonopolyPlayer {
@@ -130,6 +136,8 @@ export interface MonopolyState {
   freeParkingPot: number;
   /** Count of individual turns taken - a safety net to end pathological games. */
   turns: number;
+  /** The round being played (1 first); everyone has one turn in a round. */
+  round: number;
   /** Trade offers made this turn (bots propose at most one, so they can't loop). */
   tradesThisTurn: number;
   pendingAuction: PendingAuction | null;
@@ -158,6 +166,7 @@ export function createMonopolyGame(
   settings?: Partial<Settings>,
 ): MonopolyState {
   const s: Settings = { ...DEFAULT_SETTINGS, ...settings };
+  s.board = boardOf(s.board);
   const rng = makeRng(seed);
 
   const players: MonopolyPlayer[] = configs.map((c, i) => ({
@@ -203,6 +212,7 @@ export function createMonopolyGame(
     hotelsLeft: 12,
     freeParkingPot: 0,
     turns: 0,
+    round: 1,
     tradesThisTurn: 0,
     pendingAuction: null,
     pendingTrade: null,

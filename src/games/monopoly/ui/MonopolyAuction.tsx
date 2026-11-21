@@ -38,6 +38,18 @@ export function MonopolyAuction({
           </>
         )}
       </p>
+      <ul className="mono-bidders" aria-label="Bidders">
+        {a.participants.map((seat) => {
+          const p = view.players[seat];
+          const out = a.passed.includes(seat);
+          return (
+            <li key={p.id} className={`${out ? 'is-out' : ''}${a.highBidder === seat ? ' is-high' : ''}${a.turn === seat && !out ? ' is-up' : ''}`}>
+              <span>{p.id === meId ? 'You' : nameFor(p.id)}</span>
+              <b key={a.highBidder === seat ? a.highBid : 'x'}>{out ? 'passed' : a.highBidder === seat ? `$${a.highBid}` : a.turn === seat ? 'bidding...' : ''}</b>
+            </li>
+          );
+        })}
+      </ul>
       {myTurn ? (
         <>
           <div className="mono-quick-bids">

@@ -1,4 +1,5 @@
 import type { Settings } from '../engine/state';
+import { BOARDS, type BoardId } from '../engine/board';
 
 /** House rules, in display order. Defaults follow the official rulebook. */
 export const HOUSE_RULES: { key: keyof Settings; label: string; desc: string }[] = [
@@ -23,6 +24,40 @@ export function StartingCashField({ value, onChange }: { value: number; onChange
           <option key={c} value={c}>
             ${c.toLocaleString()}
             {c === 1500 ? ' (standard)' : ''}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/** Which places are on the board. The squares, prices and rents are the same on all. */
+export function BoardField({ value, onChange }: { value: BoardId; onChange: (board: BoardId) => void }) {
+  return (
+    <label className="g-field">
+      <span className="g-field-label">Board</span>
+      <select aria-label="Board" value={value} onChange={(e) => onChange(e.target.value as BoardId)}>
+        {BOARDS.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+const ROUND_LIMITS = [0, 15, 25, 40];
+
+/** How long the game runs: until one player is left, or a set number of rounds. */
+export function RoundLimitField({ value, onChange }: { value: number; onChange: (rounds: number) => void }) {
+  return (
+    <label className="g-field">
+      <span className="g-field-label">Game length</span>
+      <select aria-label="Game length" value={value} onChange={(e) => onChange(Number(e.target.value))}>
+        {ROUND_LIMITS.map((n) => (
+          <option key={n} value={n}>
+            {n === 0 ? 'Until one player is left (classic)' : `${n} rounds, then the highest net worth wins`}
           </option>
         ))}
       </select>

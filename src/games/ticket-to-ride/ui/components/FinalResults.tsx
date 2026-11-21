@@ -108,7 +108,7 @@ export function ResultDetail({
   const won = new Map(
     bonusesFor(state.mapId, state.modeId)
       .filter((b) => b.award(state.players).has(player.id))
-      .map((b) => [b.id, b.points]),
+      .map((b) => [b.id, b.score ? b.score(player) : b.points]),
   );
   const done = score.ticketsCompleted;
   // Routes borrowed through stations count toward this player's tickets.
@@ -134,6 +134,8 @@ export function ResultDetail({
             {done}/{player.tickets.length} done
           </span>
           {won.has('globetrotter') && <span className="detail-sub">+{won.get('globetrotter')} bonus</span>}
+          {won.has('most-tickets') && <span className="detail-sub">+{won.get('most-tickets')} Globetrotter</span>}
+          {won.has('grand-tour') && <span className="detail-sub">+{won.get('grand-tour')} Grand Tour</span>}
         </div>
         <div className="detail-stat">
           <span className="detail-k">Longest</span>

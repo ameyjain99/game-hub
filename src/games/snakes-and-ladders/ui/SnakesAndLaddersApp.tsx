@@ -1,4 +1,5 @@
 import { KitApp, type KitAppConfig } from '../../kit/ui/KitApp';
+import { TOKEN_PIECES } from '../../../online/ui/tokenPieces';
 import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
 import { createSnl, snlKit } from '../engine';
@@ -37,6 +38,7 @@ export function SnakesAndLaddersApp({ onBackToHub }: { onBackToHub: () => void }
           onCode={onCode}
           difficulties={DIFFICULTIES}
           colorFor={snlColor}
+          pieces={TOKEN_PIECES}
           render={(p) => <SnlGame {...p} />}
         />
       )}

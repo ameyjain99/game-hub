@@ -53,6 +53,65 @@
   cursor: pointer;
 }
 
+/* A station just built drops onto its city and settles, while two rings of
+   its owner's colour spread across the map: nobody misses where it went. */
+.city-station-house,
+.city-station-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.city-station.is-fresh .city-station-house {
+  animation: station-drop 0.7s cubic-bezier(0.3, 0, 0.4, 1) both;
+}
+
+@keyframes station-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-90px) scale(3.2);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(0) scale(1.9);
+  }
+  72% {
+    transform: translateY(-7px) scale(2.1);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.city-station-ring {
+  opacity: 0;
+  animation: station-ring 1.3s ease-out 0.35s 2;
+}
+
+.city-station-ring.is-second {
+  animation-delay: 0.75s;
+}
+
+@keyframes station-ring {
+  from {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-station.is-fresh .city-station-house {
+    animation: none;
+  }
+
+  .city-station-ring {
+    display: none;
+  }
+}
+
 
 
 /* ---------------- Tunnel dialog ---------------- */
@@ -282,6 +341,7 @@
 
 
 .board-area {
+  position: relative; /* table moments are laid over the board */
   grid-area: board;
   min-height: 0;
   min-width: 0;
@@ -373,6 +433,10 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   max-width: 46vw;
+  /* Three rows, then the list scrolls: a long list never squeezes the map. */
+  max-height: 114px;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 
@@ -560,10 +624,6 @@
 }
 .player-media .g-vcontrols {
   z-index: 3; /* above the name / score overlay */
-}
-.player-panel.is-me:hover .g-vcontrols,
-.player-panel.is-me:focus-within .g-vcontrols {
-  opacity: 1;
 }
 .player-stats {
   flex: none;
@@ -1433,4 +1493,151 @@
 .copy-code.copied {
   color: #39d98a;
   border-color: #39d98a;
+}
+
+/* "Bob is back", over the top of the screen like the other table notices. */
+.ttr-return {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  z-index: 40;
+  max-width: calc(100vw - 32px);
+  transform: translateX(-50%);
+}
+
+.ttr-return .g-banner {
+  background: #16261cf2;
+  box-shadow: 0 10px 30px #0009;
+}
+
+/* A bot's word sits over its panel. */
+.player-panel {
+  position: relative;
+}
+
+/* A train card on its way to the player who took it. */
+.ttr-flyer {
+  width: 64px;
+  height: 40px;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  box-shadow: 0 8px 18px #0009;
+}
+
+/* ---------------- The count at the end ---------------- */
+.ttr-ceremony {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #0b0b0fd9;
+  border-radius: inherit;
+  animation: kit-fade 0.3s ease-out;
+}
+
+.ttr-ceremony-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(440px, 100%);
+  max-height: 100%;
+  padding: 22px 24px;
+  overflow-y: auto;
+  background: #16171d;
+  border: 2px solid var(--pc, #fff);
+  border-radius: 18px;
+  box-shadow: 0 0 60px color-mix(in srgb, var(--pc, #fff) 40%, transparent), 0 24px 60px #000c;
+  animation: g-moment-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.ttr-ceremony-kicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--pc, #fff) 65%, #fff);
+  text-transform: uppercase;
+}
+
+.ttr-ceremony-name {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ttr-ceremony-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ttr-ceremony-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  font-size: 14.5px;
+  background: #ffffff0a;
+  border-radius: 8px;
+  animation: kit-log-in 0.3s ease-out;
+}
+
+.ttr-ceremony-lines li.is-made b {
+  color: #5fd68f;
+}
+
+.ttr-ceremony-lines li.is-missed {
+  color: #ffb3ab;
+}
+
+.ttr-ceremony-lines li.is-missed span {
+  text-decoration: line-through;
+}
+
+.ttr-ceremony-lines li.is-bonus b {
+  color: #f2c548;
+}
+
+.ttr-ceremony-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 4px 0 0;
+  padding-top: 10px;
+  font-size: 14px;
+  color: var(--muted);
+  border-top: 1px solid #ffffff26;
+}
+
+.ttr-ceremony-total b {
+  font-size: 40px;
+  font-weight: 800;
+  color: #fff;
+  animation: pop 0.25s ease-out;
+  font-variant-numeric: tabular-nums;
+}
+
+.ttr-ceremony-skip {
+  align-self: center;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ttr-ceremony,
+  .ttr-ceremony-card,
+  .ttr-ceremony-lines li,
+  .ttr-ceremony-total b {
+    animation: none;
+  }
 }

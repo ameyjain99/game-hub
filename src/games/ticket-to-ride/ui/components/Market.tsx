@@ -1,3 +1,4 @@
+import { rulesOf } from '../../engine/maps';
 import type { GameState } from '../../engine/types';
 import { CardChip } from './CardChip';
 
@@ -37,7 +38,7 @@ export function Market({
         </button>
 
         {state.market.map((card, i) => {
-          const blockedLoco = midDraw && card === 'locomotive';
+          const blockedLoco = midDraw && card === 'locomotive' && !rulesOf(state.mapId).freeLocomotives;
           return (
             <CardChip
               key={i}

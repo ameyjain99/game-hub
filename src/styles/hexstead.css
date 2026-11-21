@@ -960,3 +960,27 @@
   font-size: 8px;
   letter-spacing: 0;
 }
+
+/* A counter-offer: its terms, and the button to take it. */
+.hx-counter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hx-counter-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* A resource card on its way from the tile that paid to the player who got it. */
+.hx-flyer {
+  width: 20px;
+  height: 28px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  box-shadow: 0 6px 14px #0009;
+}

@@ -1,9 +1,12 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { fly } from '../../../shared/fly';
 import { GameShell, SideSection } from '../../kit/ui/GameShell';
 import { PlayersPanel, tokenLabel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
 import { PlayingCard, SUIT_SYMBOL, rankLabel } from '../../kit/ui/PlayingCard';
+import { TableMomentBanner, freshEvents, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
+import { SeatFace } from '../../../online/ui/SeatFace';
 import { useCues } from '../../kit/ui/useCues';
 import { describeHand, type Card } from '../cards';
 import {
@@ -20,6 +23,9 @@ import {
   type PokerState,
 } from '../engine';
 import { PK_SOUNDS, pkCues } from './sound';
+import { winChances } from '../equity';
+import { shortNames } from '../shortNames';
+import { SeatTimer } from '../../../online/ui/SeatTimer';
 
 const SEAT_COLORS = ['#E5383B', '#2B6BE0', '#20A464', '#F2B705', '#9B6BFF', '#14C3A2', '#FF9F1C', '#FF4F8B', '#8d97ab'];
 export const pkSeatColor = (i: number) => SEAT_COLORS[i % SEAT_COLORS.length];
@@ -199,8 +205,51 @@ function SeatCards({ p, mine, winning, dealt }: { p: PokerPlayer; mine: boolean;
 export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, online }: KitScreenProps<PokerState, PokerAction>) {
   const [spotlight, setSpotlight] = useState<string | null>(null);
   useCues(view, (a, b) => pkCues(a, b, meId), PK_SOUNDS);
+  // All-in, a pot won, a player knocked out: the moments a hand is remembered for.
+  const moment = useTableMoments(view, (a, b): TableMoment[] =>
+    freshEvents(a.log, b.log).flatMap((e): TableMoment[] => {
+      if (e.kind === 'level') return [{ kicker: 'Stakes rise', title: `Big blind is now ${fmt(e.amount ?? 0)}`, color: '#f2c548' }];
+      if (!e.player) return [];
+      const name = e.player === meId ? 'You' : nameFor(e.player);
+      const color = pkSeatColor(b.players.findIndex((p) => p.id === e.player));
+      if (e.allIn) return [{ kicker: name, title: 'All in!', detail: e.amount ? `For ${fmt(e.amount)}.` : undefined, color, feels: { [e.player]: 'good' } }];
+      if (e.kind === 'out') return [{ kicker: name, title: `${name === 'You' ? 'are' : 'is'} out of chips`, color: '#e2483b', feels: { [e.player]: 'bad' } }];
+      return [];
+    }),
+  );
 
   const s = view;
+  // When a betting round closes, each bet slides from its seat into the pot.
+  const boardRef = useRef<HTMLDivElement>(null);
+  const betsBefore = useRef(new Map<string, { amount: number; rect: DOMRect | null; color: string }>());
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    const pot = el.querySelector('.pk-pot');
+    let n = 0;
+    for (const p of s.players) {
+      const was = betsBefore.current.get(p.id);
+      if (was && was.amount > 0 && p.bet === 0 && was.rect && pot) {
+        for (let i = 0; i < 3; i++) {
+          fly({
+            from: was.rect,
+            to: pot,
+            delay: 40 * n++,
+            ms: 420,
+            make: () => {
+              const chip = document.createElement('i');
+              chip.className = 'pk-chip is-flying';
+              chip.style.setProperty('--tc', was.color);
+              return chip;
+            },
+          });
+        }
+      }
+    }
+    betsBefore.current = new Map(
+      s.players.map((p, k) => [p.id, { amount: p.bet, rect: el.querySelector(`[data-bet="${p.id}"]`)?.getBoundingClientRect() ?? null, color: pkSeatColor(k) }]),
+    );
+  }, [s]);
   const spec = VARIANTS[s.variant];
   const n = s.players.length;
   const mine = Math.max(0, s.players.findIndex((p) => p.id === meId));
@@ -215,6 +264,14 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
   const winners = s.result ? Object.keys(s.result.won) : [];
   const winning = showdown ? new Set(winners.flatMap((id) => s.result!.hands[id]?.cards ?? [])) : null;
   const mineValue = me && !me.folded && !me.out ? handValue(s.variant, me.hole as Card[], s.board) : null;
+  // All in with cards to come: everyone's hand is face up, and each seat shows its chance.
+  const allInRun = s.phase === 'dealing' && !spec.stud && s.board.length < 5 && s.players.filter((p) => !p.out && !p.folded).length > 1 && s.players.every((p) => p.out || p.folded || p.hole.every(Boolean));
+  const liveKey = s.players.filter((p) => !p.out && !p.folded).map((p) => p.id).join(',');
+  const chances = useMemo(
+    () => (allInRun ? winChances(s.variant, s.players.filter((p) => !p.out && !p.folded).map((p) => ({ id: p.id, hole: p.hole as Card[] })), s.board) : null),
+    [allInRun, s.hand, s.board.length, liveKey], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const canShow = s.phase === 'result' && !!s.result && !s.result.showdown && !!me && meId in s.result.won && !me.shown;
   const blinds = new Map<string, string>();
   for (const e of s.log) if (e.hand === s.hand && e.kind === 'post' && e.player) blinds.set(e.player, e.text === 'small blind' ? 'SB' : 'BB');
 
@@ -231,7 +288,7 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
   }, [o, onAction]);
 
   const table = (
-    <div className={`pk-board is-${s.variant}`}>
+    <div ref={boardRef} className={`pk-board is-${s.variant}`}>
       <div className="pk-table">
         <div className="pk-felt">
           <span className="pk-felt-mark">{spec.name}</span>
@@ -281,6 +338,7 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
 
         {s.players.map((p, k) => {
           const spot = seatSpot(k, n, mine);
+          const short = shortNames(s.players.map((x) => who(x.id)))[k];
           const bet = toward(spot, 0.42);
           const dealer = toward(spot, 0.22);
           const isMe = k === mine;
@@ -288,23 +346,31 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
           return (
             <div key={p.id} className="pk-seat-group">
               <div
-                className={`pk-seat${isMe ? ' is-me' : ''}${actorId === p.id ? ' is-turn' : ''}${p.folded && !p.out ? ' is-folded' : ''}${p.out ? ' is-out' : ''}${won ? ' is-winner' : ''}${spotlight === p.id ? ' is-spot' : ''}${spot.y < 46 ? ' is-top' : ''}`}
+                className={`pk-seat${isMe ? ' is-me' : ''}${actorId === p.id ? ' is-turn' : ''}${p.folded && !p.out ? ' is-folded' : ''}${p.out ? ' is-out' : ''}${won ? ' is-winner' : ''}${spotlight === p.id ? ' is-spot' : ''}${spot.y < 46 ? ' is-top' : ''}${spot.x > 60 ? ' is-right' : ''}`}
                 style={{ '--x': `${spot.x}%`, '--y': `${spot.y}%`, '--tc': pkSeatColor(k) } as CSSProperties}
               >
                 {!p.out && p.hole.length > 0 && <SeatCards p={p} mine={isMe} winning={winning && !p.folded ? winning : null} dealt />}
                 <div className="pk-plate">
-                  <span className="pk-token">{tokenLabel(who(p.id))}</span>
+                  <SeatFace id={p.id} className="pk-face" color={pkSeatColor(k)} fallback={<span className="pk-token">{tokenLabel(who(p.id))}</span>} />
                   <span className="pk-plate-text">
-                    <span className="pk-name">{who(p.id)}</span>
+                    <span className="pk-name" title={who(p.id)}>
+                      <span className="pk-name-full">{who(p.id)}</span>
+                      {/* On a narrow screen the seat has room for initials only; the list below has the names. */}
+                      <span className="pk-name-short" aria-hidden="true">
+                        {short}
+                      </span>
+                    </span>
                     <span className="pk-stack">{p.out ? `Out · ${ordinal(p.place ?? n)}` : fmt(p.stack)}</span>
                   </span>
                 </div>
                 {tags[p.id] && <span className={`pk-tag is-${tags[p.id].toLowerCase().replace(/[^a-z]/g, '')}`}>{tags[p.id]}</span>}
                 {won && <span className="pk-won">+{fmt(won)}</span>}
+                {chances && chances[p.id] !== undefined && <span className="pk-equity">{Math.round(chances[p.id] * 100)}%</span>}
+                {actorId === p.id && <SeatTimer turnMs={30_000} className="pk-timer" />}
                 {showdown && s.result?.hands[p.id] && <span className="pk-handname">{s.result.hands[p.id].name}</span>}
               </div>
               {p.bet > 0 && (
-                <span className="pk-bet" style={{ '--x': `${bet.x}%`, '--y': `${bet.y}%` } as CSSProperties}>
+                <span className="pk-bet" data-bet={p.id} style={{ '--x': `${bet.x}%`, '--y': `${bet.y}%` } as CSSProperties}>
                   <i className="pk-chip" style={{ '--tc': pkSeatColor(k) } as CSSProperties} />
                   {fmt(p.bet)}
                 </span>
@@ -338,7 +404,18 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
             )}
           </p>
         )}
-        {o && !s.over ? <Controls s={s} o={o} onAction={onAction} /> : <div className="pk-controls is-idle" />}
+        {canShow ? (
+          <div className="pk-controls is-show">
+            <button type="button" className="g-btn g-btn-light" onClick={() => onAction({ type: 'SHOW' })}>
+              Show your cards
+            </button>
+            <span className="g-hint">Nobody called. Show them what you had, or keep them guessing.</span>
+          </div>
+        ) : o && !s.over ? (
+          <Controls s={s} o={o} onAction={onAction} />
+        ) : (
+          <div className="pk-controls is-idle" />
+        )}
       </div>
     </div>
   );
@@ -369,7 +446,7 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
   const perLevel = HANDS_PER_LEVEL[s.speed];
   const handsLeft = perLevel - ((s.hand - 1) % perLevel);
   const atTop = s.level >= LEVELS.length - 1;
-  const events = s.log.map((e) => ({ e, text: describe(e, who) })).filter((x) => x.text).slice(0, 14);
+  const events = s.log.map((e) => ({ e, text: describe(e, who) })).filter((x) => x.text).slice(0, 40);
 
   const side = (
     <>
@@ -415,19 +492,6 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
         </p>
         <p className="kit-muted">{atTop ? 'The stakes are at their highest.' : `They rise in ${handsLeft} ${handsLeft === 1 ? 'hand' : 'hands'}.`}</p>
       </SideSection>
-      <SideSection title="Hand history">
-        {events.length === 0 ? (
-          <p className="kit-muted">The deal is under way.</p>
-        ) : (
-          <ul className="kit-log">
-            {events.map(({ e, text }) => (
-              <li key={e.seq} className={e.kind === 'win' ? 'is-win' : e.kind === 'street' ? 'is-street' : undefined}>
-                {text}
-              </li>
-            ))}
-          </ul>
-        )}
-      </SideSection>
       <SideSection title="Hand rankings" className="pk-ranks">
         <ol>
           {RANKINGS[spec.low ? 'low' : s.variant === 'shortdeck' ? 'short' : 'high'].map((r) => (
@@ -456,8 +520,28 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
       headerExtra={online?.clock}
       banner={online?.banner}
       board={table}
-      overlay={overlay}
+      overlay={
+        <>
+          <TableMomentBanner moment={moment} place="top" />
+          {overlay}
+        </>
+      }
       side={side}
+      log={
+        <SideSection title="Hand history">
+          {events.length === 0 ? (
+            <p className="kit-muted">The deal is under way.</p>
+          ) : (
+            <ul className="kit-log">
+              {events.map(({ e, text }) => (
+                <li key={e.seq} className={e.kind === 'win' ? 'is-win' : e.kind === 'street' ? 'is-street' : undefined}>
+                  {text}
+                </li>
+              ))}
+            </ul>
+          )}
+        </SideSection>
+      }
     />
   );
 }

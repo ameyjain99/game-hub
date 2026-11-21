@@ -31,7 +31,7 @@ function Die({ value }: { value: number }) {
  * roll - a change of `rollKey` - tumbles through random faces before settling;
  * the accessible label always states the real result.
  */
-export function Dice({ values, rollKey = 0 }: { values: [number, number] | null; rollKey?: number }) {
+export function Dice({ values, rollKey = 0, rolling = false }: { values: [number, number] | null; rollKey?: number; /** Asked for, not answered yet: keep turning. */ rolling?: boolean }) {
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [tumble, setTumble] = useState<[number, number] | null>(null);
   const shownKey = useRef(rollKey);
@@ -56,10 +56,22 @@ export function Dice({ values, rollKey = 0 }: { values: [number, number] | null;
     };
   }, [rollKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const faces = tumble ?? values;
+  // From the click until the result arrives, the dice are already in the air.
+  const [spin, setSpin] = useState<[number, number] | null>(null);
+  useEffect(() => {
+    if (!rolling || reduced) return;
+    setSpin([randomFace(), randomFace()]);
+    const t = setInterval(() => setSpin([randomFace(), randomFace()]), FACE_MS);
+    return () => {
+      clearInterval(t);
+      setSpin(null);
+    };
+  }, [rolling, reduced]);
+
+  const faces = tumble ?? spin ?? values;
   return (
     <span
-      className={`mono-dice${values ? '' : ' is-idle'}${tumble ? ' is-rolling' : ''}`}
+      className={`mono-dice${values || spin ? '' : ' is-idle'}${tumble || spin ? ' is-rolling' : ''}`}
       role="img"
       aria-label={values ? `Rolled ${values[0]} and ${values[1]}` : 'Dice'}
     >

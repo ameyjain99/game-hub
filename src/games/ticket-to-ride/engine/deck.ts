@@ -1,3 +1,4 @@
+import { rulesOf } from './maps';
 import type { GameState, Hand, TrainCard } from './types';
 import { CARD_COLORS } from './types';
 import { DECK_COMPOSITION } from './data/deck';
@@ -82,6 +83,7 @@ export function dealMarket(state: GameState): GameState {
   };
 
   s = fill(s);
+  if (rulesOf(s.mapId).freeLocomotives) return s; // locomotives are ordinary draws here
 
   // Redeal loop: only applies to a full 5-card market.
   let guard = 0;

@@ -6,6 +6,7 @@ import type { DifficultyOption } from '../../../online/ui/OnlineLobby';
 import { GameLanding } from '../../../shared/ui/GameLanding';
 import { GameForm } from '../../../shared/ui/GameForm';
 import { RulesContext, type GameRules } from '../../../shared/rules';
+import { OnlineSeatsContext } from './KitOnline';
 
 export interface LocalSetup {
   /** Seats including yours (the rest are bots). */
@@ -42,6 +43,8 @@ interface Props {
   localExtra?: ReactNode;
   /** Game options shown for a local game and when hosting a room (Last Card's mode). */
   optionFields?: ReactNode;
+  /** Options only a room has (Chess: the clock), shown when hosting. */
+  hostFields?: ReactNode;
   /** The options' current value, sent with a new room. */
   optionValue?: unknown;
   /** The game's rules, offered on every screen; `rulesVariant` picks the version shown first. */
@@ -65,7 +68,7 @@ export function KitApp({ rules, rulesVariant, ...props }: Props) {
   );
 }
 
-function KitScreens({ config, onBackToHub, renderLocal, renderOnline, localExtra, optionFields, optionValue }: Omit<Props, 'rules' | 'rulesVariant'>) {
+function KitScreens({ config, onBackToHub, renderLocal, renderOnline, localExtra, optionFields, hostFields, optionValue }: Omit<Props, 'rules' | 'rulesVariant'>) {
   const { gameId, title } = config;
   const { step, navigate, syncCode, exit } = useGameRoute(gameId, onBackToHub);
   const [setup, setSetup] = useState<LocalSetup>({
@@ -82,13 +85,20 @@ function KitScreens({ config, onBackToHub, renderLocal, renderOnline, localExtra
     case 'local':
       return <>{renderLocal({ ...setup, seats }, exit)}</>;
     case 'online':
-      return <>{renderOnline(step.intent, exit, syncCode)}</>;
+      return <OnlineSeatsContext.Provider value={config.onlineSeats}>{renderOnline(step.intent, exit, syncCode)}</OnlineSeatsContext.Provider>;
     case 'create':
       return (
         <KitProfile
           config={config}
           onBack={toLanding}
-          extra={optionFields}
+          extra={
+            optionFields || hostFields ? (
+              <>
+                {optionFields}
+                {hostFields}
+              </>
+            ) : undefined
+          }
           onSubmit={(name, seatCount) =>
             navigate({ kind: 'online', intent: { kind: 'start', seatCount, name, avatar: '', gameId, options: optionValue } })
           }
@@ -96,7 +106,13 @@ function KitScreens({ config, onBackToHub, renderLocal, renderOnline, localExtra
       );
     case 'join':
       return (
-        <JoinGate code={step.code} onBack={toLanding}>
+        <JoinGate
+          code={step.code}
+          onBack={toLanding}
+          onRejoin={(seat) =>
+            navigate({ kind: 'online', intent: { kind: 'join', code: step.code, name: seat.name, avatar: '', gameId, seat: seat.index } })
+          }
+        >
           <KitProfile
             config={config}
             code={step.code}

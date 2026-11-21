@@ -20,6 +20,8 @@ function media(over: Partial<MediaChat> = {}): MediaChat {
     camOff: true,
     toggleMic: vi.fn(async () => {}),
     toggleCam: vi.fn(async () => {}),
+    peerStatus: new Map(),
+    heldPeers: [],
     localStream: null,
     remoteStreams: new Map(),
     peerMedia: new Map(),

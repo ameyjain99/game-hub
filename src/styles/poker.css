@@ -178,6 +178,10 @@
   white-space: nowrap;
 }
 
+.pk-name-short {
+  display: none;
+}
+
 .pk-stack {
   font-size: clamp(10px, 1.12cqw, 14px);
   font-weight: 600;
@@ -226,6 +230,12 @@
   border-radius: 999px;
   transform: translate(50%, 30%);
   animation: pk-pop 0.25s ease-out;
+}
+
+/* A seat on the right edge wears its tag on the inside, so it never hangs off the table. */
+.pk-seat.is-right .pk-tag {
+  right: auto;
+  left: -1.2cqw;
 }
 
 .pk-tag.is-fold {
@@ -688,6 +698,30 @@
     max-width: 20cqw;
   }
 
+  .pk-name-full {
+    display: none;
+  }
+
+  .pk-name-short {
+    display: inline;
+  }
+
+  /* The plate is only initials wide here, so the tag sits clear of it:
+     under the plate, or over it at a top seat (whose cards hang below). */
+  .pk-tag,
+  .pk-seat.is-right .pk-tag {
+    top: 100%;
+    right: auto;
+    left: 50%;
+    transform: translate(-50%, 15%);
+  }
+
+  .pk-seat.is-top .pk-tag {
+    top: auto;
+    bottom: 100%;
+    transform: translate(-50%, -15%);
+  }
+
   .pk-chip {
     width: 3cqw;
     height: 3cqw;
@@ -706,4 +740,47 @@
   .pk-act {
     min-width: 0;
   }
+}
+
+/* A player's live camera takes the place of the seat's token, larger. */
+.pk-face {
+  margin: -1.3cqw 0 -1.3cqw -0.9cqw;
+  --face: clamp(38px, 5.4cqw, 60px);
+}
+
+/* A chip on its way from a bet into the pot. */
+.pk-chip.is-flying {
+  width: 16px;
+  height: 16px;
+  box-shadow: inset 0 0 0 2px #ffffffb3, 0 2px 5px #0008;
+}
+
+/* A seat's chance of winning while an all-in runs out. */
+.pk-equity {
+  position: absolute;
+  top: -1.1cqw;
+  left: -1.4cqw;
+  padding: 0.15cqw 0.8cqw;
+  font-size: clamp(11px, 1.35cqw, 16px);
+  font-weight: 900;
+  color: #0b0b0f;
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: 0 0.3cqw 0.9cqw #0008;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The clock of whoever is to act, draining under their plate. */
+.pk-timer {
+  position: absolute;
+  right: 10%;
+  bottom: -0.7cqw;
+  left: 10%;
+}
+
+.pk-controls.is-show {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
 }

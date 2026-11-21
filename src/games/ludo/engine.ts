@@ -16,7 +16,7 @@
  * A token's progress runs from -1 (in the yard) through 0-50 (the track, from
  * its start square) and 51-55 (its home column) to 56 (home).
  */
-import { IllegalMove, nextRandom, rollDie, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
+import { assignPieces, IllegalMove, nextRandom, rollDie, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
 
 export type LudoColor = 'red' | 'green' | 'yellow' | 'blue';
 export const COLORS: LudoColor[] = ['red', 'green', 'yellow', 'blue'];
@@ -158,7 +158,7 @@ function newGame(s: LudoState, game: number): LudoState {
 }
 
 export function createLudo(seats: KitSeat[], seed: number): LudoState {
-  const colors = colorsFor(seats.length);
+  const colors = assignPieces(seats, COLORS, colorsFor(seats.length));
   const players = seats.map((seat, i) => ({ id: `p${i}`, name: seat.name, isAI: seat.isAI, difficulty: seat.difficulty, color: colors[i], tokens: [] as number[] }));
   const base = { players, score: Object.fromEntries(players.map((p) => [p.id, 0])), seed, rollSeq: 0 } as LudoState;
   return newGame(base, 1);
@@ -307,6 +307,7 @@ export function eventMs(e: LudoEvent | null): number {
 export const ludoKit: GameKit<LudoState, LudoAction> = {
   seatError: (count) => (count >= 2 && count <= 4 ? null : 'Ludo is for 2-4 players'),
   create: (seats, seed) => createLudo(seats, seed),
+  pieces: COLORS,
   apply: applyLudo,
   actor: (s) => (s.over ? null : s.players[s.turn].id),
   players: (s) => s.players,

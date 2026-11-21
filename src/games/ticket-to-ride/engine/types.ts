@@ -45,6 +45,8 @@ export interface Route {
   parallelGroup?: string;
   /** Europe tunnels: claiming flips 3 cards and may demand extra matching cards. */
   isTunnel?: boolean;
+  /** Takes locomotives even on a map that otherwise keeps them for ferries and tunnels. */
+  locomotivesOk?: boolean;
 }
 
 export interface Ticket {

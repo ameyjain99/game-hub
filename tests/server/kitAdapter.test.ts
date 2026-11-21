@@ -87,3 +87,20 @@ describe('Wordgrid adapter', () => {
     expect(good).toHaveProperty('game');
   });
 });
+
+describe('a returning player takes the seat back from the bot that covered it', () => {
+  // Every kit game the room store serves.
+  const games: [string, number][] = [
+    ['tic-tac-toe', 2], ['checkers', 2], ['chess', 2], ['snakes-and-ladders', 2], ['ludo', 2], ['lineup', 2],
+    ['last-card', 2], ['poker', 2], ['cluedo', 3], ['imposter', 4], ['hexstead', 3], ['wordgrid', 2],
+  ];
+  test.each(games)('%s', (gameId, seats) => {
+    const a = adapterFor(gameId);
+    expect(a.validateSeatCount(seats, {})).toBeNull();
+    const humans = Array.from({ length: seats }, (_, i) => ({ name: `P${i}`, isAI: false, avatar: '' }));
+    const isBot = (g: unknown) => (g as { players: { isAI: boolean }[] }).players[1].isAI;
+    const covered = a.replaceWithAi(a.createGame(humans, 7, {}), 1, 'normal');
+    expect(isBot(covered)).toBe(true);
+    expect(isBot(a.returnSeat(covered, 1))).toBe(false);
+  });
+});

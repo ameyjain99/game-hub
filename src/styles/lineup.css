@@ -109,7 +109,7 @@
 }
 
 .seq-cell.is-last {
-  box-shadow: 0 0 0 0.35cqw #fff, 0 0.2cqw 0 #0000002e;
+  box-shadow: 0 0 0 0.45cqw #fff, 0 0 1.8cqw #ffffffb3, 0 0.2cqw 0 #0000002e;
 }
 
 .seq-chip {
@@ -120,15 +120,160 @@
     radial-gradient(circle, var(--tc) 0 46%, color-mix(in srgb, var(--tc) 70%, #000) 47% 54%, var(--tc) 55% 100%);
   border-radius: 50%;
   box-shadow: 0 0.35cqw 0.7cqw #0007, inset 0 -0.3cqw 0 #0003;
-  animation: seq-drop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.3);
   transition: opacity 0.2s;
 }
 
+/* ---- The last play, acted out on its space ---- */
+/* The space steps above its neighbours while a chip lands on it or leaves it. */
+.seq-cell.is-acting {
+  z-index: 3;
+}
+
+/* A chip just placed falls onto the board from above and settles with a bounce. */
+.seq-chip.is-fresh {
+  animation: seq-drop 0.62s cubic-bezier(0.3, 0, 0.4, 1);
+}
+
 @keyframes seq-drop {
-  from {
+  0% {
     opacity: 0;
-    transform: scale(1.5) translateY(-20%);
+    transform: translateY(-260%) scale(2.4);
+    box-shadow: 0 6cqw 5cqw #0005;
   }
+  55% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  70% {
+    transform: translateY(-16%) scale(1.06);
+  }
+  85% {
+    transform: translateY(0) scale(0.97);
+  }
+}
+
+/* A chip taken off: it shakes, then is lifted up and away. */
+.seq-chip.is-leaving {
+  z-index: 2;
+  animation: seq-lift 1.25s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+
+@keyframes seq-lift {
+  0% {
+    transform: none;
+  }
+  10%,
+  30% {
+    transform: rotate(-12deg) scale(1.1);
+  }
+  20%,
+  40% {
+    transform: rotate(12deg) scale(1.1);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-30%) scale(1.5);
+    box-shadow: 0 4cqw 3cqw #0006;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-320%) scale(2.2) rotate(40deg);
+  }
+}
+
+/* A ring spreads from the space, in the placing team's colour (red for a removal). */
+.seq-ring {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 0.6cqw solid var(--tc);
+  border-radius: 50%;
+  opacity: 0;
+  animation: seq-ring 0.9s ease-out 0.3s 2;
+}
+
+.seq-ring.is-remove {
+  animation-delay: 0s;
+}
+
+@keyframes seq-ring {
+  from {
+    opacity: 0.95;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3.4);
+  }
+}
+
+/* Who did it, named on the space itself. */
+.seq-tag {
+  position: absolute;
+  bottom: 108%;
+  left: 50%;
+  z-index: 3;
+  padding: 0.35cqw 1.1cqw;
+  font-size: max(11px, 1.7cqw);
+  font-weight: 800;
+  line-height: 1.2;
+  color: #fff;
+  white-space: nowrap;
+  pointer-events: none;
+  background: #0f1015f2;
+  border: 1px solid #ffffff59;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0.5cqw 1.4cqw #0009;
+  translate: -50% 0;
+  animation: seq-tag 2.6s ease-out forwards;
+}
+
+.seq-tag.is-below {
+  top: 108%;
+  bottom: auto;
+}
+
+.seq-tag.is-remove {
+  background: #c9342c;
+  border-color: #fff;
+}
+
+@keyframes seq-tag {
+  0% {
+    opacity: 0;
+    scale: 0.6;
+  }
+  8%,
+  85% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The chip in a table moment: large, and crossed out when it was removed. */
+.seq-chip.is-moment {
+  position: relative;
+  inset: auto;
+  display: block;
+  width: 50px;
+  height: 50px;
+}
+
+.seq-chip.is-struck::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -12%;
+  width: 124%;
+  height: 6px;
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px #0f1015;
+  rotate: -40deg;
+  translate: 0 -50%;
 }
 
 /* A chip in a completed sequence is sealed with a gold ring. */
@@ -157,16 +302,15 @@
 /* The hand. */
 .seq-hand-panel {
   border-color: color-mix(in srgb, var(--tc) 40%, transparent);
+  container-type: inline-size;
 }
 
+/* Four to a row, as large as the panel allows: every card reads at a glance. */
 .seq-hand {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 10px;
-}
-
-/* Cards overlap like a fanned hand; the one under the pointer comes forward. */
-.seq-card + .seq-card {
-  margin-left: -8px;
 }
 
 .seq-card:hover,
@@ -185,7 +329,7 @@
 }
 
 .seq-card .pc {
-  --pc-w: 50px;
+  --pc-w: clamp(50px, calc((100cqw - 24px) / 4), 84px);
 }
 
 .seq-card:not(:disabled) {
@@ -217,7 +361,60 @@
 @media (prefers-reduced-motion: reduce) {
   .seq-cell.is-target,
   .seq-cell.is-victim .seq-chip,
-  .seq-chip {
+  .seq-chip,
+  .seq-tag {
+    animation: none;
+  }
+
+  /* No flight: the removed chip and the ring are simply not drawn. */
+  .seq-chip.is-leaving,
+  .seq-ring {
+    display: none;
+  }
+}
+
+/* A line of five, drawn through its chips the moment it is made. */
+.seq-lines {
+  position: absolute;
+  inset: clamp(6px, 1.4cqmin, 14px);
+  z-index: 4;
+  width: auto;
+  height: auto;
+  pointer-events: none;
+}
+
+.seq-line,
+.seq-line-glow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  animation: seq-line 0.7s ease-out both;
+}
+
+.seq-line {
+  stroke: #fff;
+  stroke-width: 1.1;
+  vector-effect: none;
+}
+
+.seq-line-glow {
+  stroke: var(--tc);
+  stroke-width: 3.2;
+  opacity: 0.85;
+}
+
+@keyframes seq-line {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seq-line,
+  .seq-line-glow {
     animation: none;
   }
 }

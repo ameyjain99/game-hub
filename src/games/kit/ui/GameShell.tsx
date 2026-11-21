@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { BackIcon, Volume2, VolumeX } from '../../../shared/icons';
 import { useMuted } from '../../../shared/sound';
 import { RulesButton } from '../../../shared/ui/Rules';
+import { FacesStrip } from '../../../online/ui/SeatFace';
+import { PausedOverlay } from '../../../online/ui/Pause';
 
 interface Props {
   title: string;
@@ -19,6 +21,8 @@ interface Props {
   overlay?: ReactNode;
   /** The right column: video table, players, game panels. */
   side: ReactNode;
+  /** The game log: its own column left of the board on a wide screen, under the sidebar otherwise. */
+  log?: ReactNode;
   /** A game-specific class on the screen root, for its palette and layout. */
   className?: string;
   /** Which version's rules the Rules sheet opens on (Poker's variant, Last Card's mode). */
@@ -27,12 +31,13 @@ interface Props {
 
 /**
  * The screen every kit game shares, laid out like Monopoly: a header (back,
- * title, status, clock, mute), the board filling the stage, and a sidebar.
+ * title, status, clock, mute), the board filling the stage, and a sidebar;
+ * a game may add its log as a column on the board's left.
  */
-export function GameShell({ title, exitLabel, onExit, status, headerExtra, banner, board, overlay, side, className, rulesVariant }: Props) {
+export function GameShell({ title, exitLabel, onExit, status, headerExtra, banner, board, overlay, side, log, className, rulesVariant }: Props) {
   const [muted, setMuted] = useMuted();
   return (
-    <div className={`kit-game${className ? ` ${className}` : ''}`}>
+    <div className={`kit-game${log ? ' has-left' : ''}${className ? ` ${className}` : ''}`}>
       <header className="kit-head">
         <button type="button" className="back-link" onClick={onExit}>
           <BackIcon size={16} />
@@ -59,13 +64,16 @@ export function GameShell({ title, exitLabel, onExit, status, headerExtra, banne
         </div>
       </header>
       <main className="kit-stage">
+        <FacesStrip />
         {banner}
         <div className="kit-board-wrap">
           {board}
           {overlay}
+          <PausedOverlay />
         </div>
       </main>
       <aside className="kit-side">{side}</aside>
+      {log && <aside className="kit-left">{log}</aside>}
     </div>
   );
 }

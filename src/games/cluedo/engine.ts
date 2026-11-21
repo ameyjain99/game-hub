@@ -7,7 +7,7 @@
  * Name all three correctly to win; a wrong accusation puts you out, though you
  * still show cards.
  */
-import { IllegalMove, nextRandom, shuffle, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
+import { assignPieces, IllegalMove, nextRandom, shuffle, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
 import { START, inRoom, passageFrom, reachable, type Reach, type Spot } from './board';
 import { cluedoBot } from './bot';
 import { ROOMS, SUSPECTS, WEAPONS, type Card, type Room, type Suspect, type Triple, type Weapon } from './engine/cards';
@@ -126,20 +126,21 @@ export function createCluedo(seats: KitSeat[], seed: number): ClState {
   [rooms, next] = shuffle(ROOMS, next);
   const hands: Card[][] = seats.map(() => []);
   rest.forEach((c, i) => hands[i % seats.length].push(c));
+  const suspects = assignPieces(seats, SUSPECTS);
   const s: ClState = {
     players: seats.map((p, i) => ({
       id: `p${i}`,
       name: p.name,
       isAI: p.isAI,
       difficulty: p.difficulty,
-      suspect: SUSPECTS[i],
+      suspect: suspects[i],
       hand: hands[i],
       cards: hands[i].length,
       out: false,
       left: false,
     })),
-    // Miss Scarlett, the first seat, always starts.
-    current: 0,
+    // Miss Scarlett always starts; without her, the first seat does.
+    current: Math.max(0, suspects.indexOf(SUSPECTS[0])),
     phase: 'turn',
     seed: next,
     solution,
@@ -369,6 +370,7 @@ export const cluedoKit: GameKit<ClState, ClAction> = {
     return count > MAX_SEATS ? `Cluedo seats at most ${MAX_SEATS} players` : null;
   },
   create: (seats, seed) => createCluedo(seats, seed),
+  pieces: SUSPECTS,
   apply: applyCluedo,
   actor: cluedoActor,
   players: (s) => s.players,

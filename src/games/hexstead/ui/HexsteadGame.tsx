@@ -1,9 +1,11 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { fly } from '../../../shared/fly';
 import { GameShell, SideSection } from '../../kit/ui/GameShell';
 import { PlayersPanel, tokenLabel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
 import { Die } from '../../kit/ui/Die';
+import { TableMomentBanner, freshEvents, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
 import { useCues } from '../../kit/ui/useCues';
 import { RESOURCES, geoOf, isLand, type Resource } from '../board';
 import { COMMODITIES, EDICT_NAME, EDICT_NEEDS, FIXED_TOKENS, GUILDS, GUILD_NAME, WARDENS_PER_LEVEL, emptyGoods, goodsSize, type Card, type Edict } from '../wardens';
@@ -284,6 +286,37 @@ function TradePanel({ s, meId, onAction, onClose }: { s: HxState; meId: string; 
   );
 }
 
+/** Other terms for a trade on the table: what you would give, and what you want for it. */
+function CounterPanel({ me, onSend, onCancel }: { me: HxState['players'][number]; onSend: (give: Hand, get: Hand) => void; onCancel: () => void }) {
+  const [give, setGive] = useState(emptyHand());
+  const [get, setGet] = useState(emptyHand());
+  const giving = RESOURCES.some((r) => give[r] > 0);
+  const getting = RESOURCES.some((r) => get[r] > 0);
+  const clash = RESOURCES.some((r) => give[r] > 0 && get[r] > 0);
+  return (
+    <div className="hx-counter-form">
+      <div className="hx-offer-sides">
+        <div>
+          <p className="hx-side-label">You give</p>
+          <Picker value={give} onChange={setGive} max={me.hand} />
+        </div>
+        <div>
+          <p className="hx-side-label">You want</p>
+          <Picker value={get} onChange={setGet} />
+        </div>
+      </div>
+      <div className="hx-choice">
+        <button type="button" className="primary" disabled={!giving || !getting || clash} onClick={() => onSend(give, get)}>
+          Send counter-offer
+        </button>
+        <button type="button" className="g-btn g-btn-ghost" onClick={onCancel}>
+          Back
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** The Hexstead table: the island, your hand and actions below it, the players and log alongside. */
 export function HexsteadGame({ view, meId, nameFor, onAction, onExit, exitLabel, online }: KitScreenProps<HxState, HxAction>) {
   const s = view;
@@ -300,7 +333,62 @@ export function HexsteadGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   const [pick, setPick] = useState<Hand>(emptyHand());
   const [choosing, setChoosing] = useState<'bounty' | 'market' | null>(null);
   const [spotlight, setSpotlight] = useState<string | null>(null);
+  const [countering, setCountering] = useState(false);
+  // Production you can see: a card for each resource flies from a tile that
+  // paid to the player who got it.
+  const seenLog = useRef(view.log);
+  useEffect(() => {
+    const fresh = freshEvents(seenLog.current, view.log);
+    seenLog.current = view.log;
+    const tiles = [...document.querySelectorAll('.hx-tile.is-producing .hx-hex')];
+    if (tiles.length === 0) return;
+    let n = 0;
+    for (const e of fresh) {
+      if (e.kind !== 'produce' || !e.player) continue;
+      const to = document.querySelector(`[data-player="${e.player}"]`);
+      for (const r of RESOURCES) {
+        for (let i = 0; i < Math.min(e.cards?.[r] ?? 0, 3); i++) {
+          const color = RES_COLOR[r];
+          fly({
+            from: tiles[n % tiles.length],
+            to,
+            delay: 250 + 70 * n++,
+            ms: 640,
+            scaleTo: 0.7,
+            make: () => {
+              const el = document.createElement('span');
+              el.className = 'hx-flyer';
+              el.style.background = color;
+              return el;
+            },
+          });
+        }
+      }
+    }
+  }, [view.log]);
   useCues(view, (a, b) => hxCues(a, b, meId, hexActor), HX_SOUNDS);
+  // The swings of the game: an award changing hands, the raider moved, a raid, a landfall.
+  const moment = useTableMoments(view, (a, b): TableMoment[] =>
+    freshEvents(a.log, b.log).flatMap((e): TableMoment[] => {
+      if (e.kind === 'roll' && e.dice && e.dice[0] + e.dice[1] === 7) {
+        const owing = b.discards.map((id) => (id === meId ? 'You' : nameFor(id)));
+        return [
+          {
+            kicker: e.player === meId ? 'You' : nameFor(e.player!),
+            title: 'rolled a 7!',
+            detail: owing.length ? `${owing.join(', ')} must discard half ${owing.length === 1 && owing[0] !== 'You' ? 'their' : owing.length === 1 ? 'your' : 'their'} cards. Then the raider moves.` : 'Nobody has to discard. The raider moves.',
+            color: '#e2483b',
+          },
+        ];
+      }
+      if (!['award', 'raider', 'pirate', 'landfall', 'attack', 'capital', 'out'].includes(e.kind)) return [];
+      const name = (id: string) => (id === meId ? 'You' : nameFor(id));
+      const text = describe(e, name);
+      const w = e.player ? name(e.player) : '';
+      const title = w && text.startsWith(`${w} `) ? text.slice(w.length + 1) : text;
+      return [{ kicker: w && title !== text ? w : undefined, title, color: e.player ? hxSeatColor(b.players.findIndex((p) => p.id === e.player)) : '#f2c548', feels: e.player ? { [e.player]: e.kind === 'out' || e.text === 'pillaged' ? 'bad' : 'good' } : undefined }];
+    }),
+  );
 
   const seat = s.players.findIndex((p) => p.id === meId);
   const me = s.players[seat];
@@ -520,7 +608,7 @@ export function HexsteadGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           </div>
         </section>
       )}
-      {offerPending && offer.asked[0] === meId && (
+      {offerPending && offer.from !== meId && me && !me.out && (
         <section className="hx-panel is-small" role="dialog" aria-label="Trade offer">
           <header className="hx-panel-head">
             <h3>{who(offer.from)} offers a trade</h3>
@@ -528,14 +616,33 @@ export function HexsteadGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           <p className="hx-offer-line">
             You get <Cards size="md" cards={offer.give} goods={offer.giveGoods} /> for <Cards size="md" cards={offer.get} goods={offer.getGoods} />
           </p>
-          <div className="hx-choice">
-            <button type="button" className="primary" onClick={() => onAction({ type: 'ANSWER', accept: true })}>
-              Accept
-            </button>
-            <button type="button" className="g-btn g-btn-ghost" onClick={() => onAction({ type: 'ANSWER', accept: false })}>
-              Decline
-            </button>
-          </div>
+          {offer.counters?.[meId] ? (
+            <p className="kit-muted">
+              Your counter-offer is with {who(offer.from)}: <Cards size="md" cards={offer.counters[meId].give} /> for <Cards size="md" cards={offer.counters[meId].get} />
+            </p>
+          ) : meId in offer.answers ? (
+            <p className="kit-muted">{offer.answers[meId] ? `You said yes. It is ${who(offer.from)}'s choice now.` : 'You said no.'}</p>
+          ) : countering ? (
+            <CounterPanel me={me} onSend={(give, get) => { onAction({ type: 'COUNTER', give, get }); setCountering(false); }} onCancel={() => setCountering(false)} />
+          ) : (
+            <div className="hx-choice">
+              {offer.asked.includes(meId) ? (
+                <>
+                  <button type="button" className="primary" onClick={() => onAction({ type: 'ANSWER', accept: true })}>
+                    Accept
+                  </button>
+                  <button type="button" className="g-btn g-btn-ghost" onClick={() => onAction({ type: 'ANSWER', accept: false })}>
+                    Decline
+                  </button>
+                </>
+              ) : (
+                <span className="kit-muted">You don't hold what they want.</span>
+              )}
+              <button type="button" className="g-btn g-btn-ghost" onClick={() => setCountering(true)}>
+                Counter
+              </button>
+            </div>
+          )}
         </section>
       )}
       {offerPending && offer.from === meId && (
@@ -547,14 +654,26 @@ export function HexsteadGame({ view, meId, nameFor, onAction, onExit, exitLabel,
             <Cards size="md" cards={offer.give} goods={offer.giveGoods} /> for <Cards size="md" cards={offer.get} goods={offer.getGoods} />
           </p>
           <ul className="hx-answers">
-            {Object.entries(offer.answers).map(([id, yes]) => (
-              <li key={id}>
-                {who(id)}: {yes ? 'accepts' : 'declines'}
-                {yes && offer.asked.length === 0 && (
-                  <button type="button" className="g-btn g-btn-light g-btn-sm" onClick={() => onAction({ type: 'CLOSE_OFFER', with: id })}>
-                    Trade with {who(id)}
-                  </button>
-                )}
+            {Object.entries(offer.answers)
+              .filter(([id]) => !offer.counters?.[id])
+              .map(([id, yes]) => (
+                <li key={id}>
+                  {who(id)}: {yes ? 'accepts' : 'declines'}
+                  {yes && (
+                    <button type="button" className="g-btn g-btn-light g-btn-sm" onClick={() => onAction({ type: 'CLOSE_OFFER', with: id })}>
+                      Trade with {who(id)}
+                    </button>
+                  )}
+                </li>
+              ))}
+            {Object.entries(offer.counters ?? {}).map(([id, c]) => (
+              <li key={id} className="hx-counter">
+                <span>
+                  {who(id)} counters: gives <Cards size="md" cards={c.give} /> for <Cards size="md" cards={c.get} />
+                </span>
+                <button type="button" className="g-btn g-btn-light g-btn-sm" onClick={() => onAction({ type: 'CLOSE_OFFER', with: id, counter: true })}>
+                  Take it
+                </button>
               </li>
             ))}
             {offer.asked.map((id) => (
@@ -877,13 +996,6 @@ export function HexsteadGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           ))}
         </div>
       </SideSection>
-      <SideSection title="Log">
-        <ul className="kit-log">
-          {s.log.slice(0, 14).map((e) => (
-            <li key={e.seq}>{describe(e, who)}</li>
-          ))}
-        </ul>
-      </SideSection>
     </>
   );
 
@@ -957,8 +1069,26 @@ export function HexsteadGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           {dock}
         </div>
       }
-      overlay={overlay}
+      overlay={
+        <>
+          <TableMomentBanner moment={moment} place="top" />
+          {overlay}
+        </>
+      }
       side={side}
+      log={
+        <SideSection title="Game log">
+          {s.log.length === 0 ? (
+            <p className="kit-muted">Every roll, build, trade and raid is listed here as it happens.</p>
+          ) : (
+            <ul className="kit-log">
+              {s.log.map((e) => (
+                <li key={e.seq}>{describe(e, who)}</li>
+              ))}
+            </ul>
+          )}
+        </SideSection>
+      }
     />
   );
 }

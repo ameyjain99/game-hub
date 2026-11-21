@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pickBotNames } from '../../../shared/botNames';
 import { BackIcon, CloseIcon, AddIcon } from '../../../shared/icons';
 import { RulesButton } from '../../../shared/ui/Rules';
 import { TTR_RULES } from '../rules';
@@ -16,7 +17,7 @@ interface Row {
 
 const DEFAULT_ROWS: Row[] = [
   { name: 'You', isAI: false, difficulty: 'normal' },
-  { name: 'Bot 1', isAI: true, difficulty: 'normal' },
+  { name: pickBotNames(1)[0], isAI: true, difficulty: 'normal' },
 ];
 
 interface Props {
@@ -40,11 +41,12 @@ export function TicketToRideSetup({ onStart, onBackToHub, onPlayOnline }: Props)
   const addRow = () =>
     setRows((r) => [
       ...r,
-      { name: `Bot ${r.length}`, isAI: true, difficulty: 'normal' },
+      { name: pickBotNames(1, r.map((x) => x.name))[0], isAI: true, difficulty: 'normal' },
     ]);
   const removeRow = (i: number) => setRows((r) => r.filter((_, idx) => idx !== i));
 
-  const canStart = rows.length >= 2 && rows.length <= 5 && rows.every((r) => r.name.trim());
+  const maxPlayers = getMap(mapId).maxPlayers;
+  const canStart = rows.length >= 2 && rows.length <= maxPlayers && rows.every((r) => r.name.trim());
 
   return (
     <div className="setup-screen">
@@ -64,11 +66,13 @@ export function TicketToRideSetup({ onStart, onBackToHub, onPlayOnline }: Props)
           onChange={(e) => {
             setMapId(e.target.value);
             setModeId('default');
+            // A smaller map seats fewer players: the extra seats go.
+            setRows((r) => r.slice(0, getMap(e.target.value).maxPlayers));
           }}
         >
           {MAP_LIST.map((m) => (
             <option key={m.id} value={m.id}>
-              {m.name}
+              {m.name} · {m.minPlayers}-{m.maxPlayers} players
             </option>
           ))}
         </select>
@@ -132,7 +136,7 @@ export function TicketToRideSetup({ onStart, onBackToHub, onPlayOnline }: Props)
       </div>
 
       <div className="setup-actions">
-        {rows.length < 5 && (
+        {rows.length < maxPlayers && (
           <button type="button" onClick={addRow}>
             <AddIcon size={15} />Add player
           </button>

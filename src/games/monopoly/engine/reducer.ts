@@ -1,6 +1,7 @@
 import { makeRng } from '../../../shared/rng';
-import { BOARD, GO_SALARY, GO_TO_JAIL_ID, JAIL_ID } from './board';
-import { CHANCE, CHEST, type CardEffect } from './cards';
+import { createMonopolyGame } from './state';
+import { BOARD, GO_SALARY, GO_TO_JAIL_ID, JAIL_ID, spaceName } from './board';
+import { CHANCE, CHEST, cardText, type CardEffect } from './cards';
 import {
   currentPlayer,
   currentSeat,
@@ -237,7 +238,7 @@ function payRentOnLanding(draft: MonopolyState, seat: number, spaceId: number): 
 
 function payTax(draft: MonopolyState, seat: number, spaceId: number): void {
   const amount = BOARD[spaceId].taxAmount ?? 0;
-  note(draft, `${tag(draft, seat)} paid $${amount} ${BOARD[spaceId].name}`);
+  note(draft, `${tag(draft, seat)} paid $${amount} ${spaceName(spaceId, draft.settings.board)}`);
   pay(draft, seat, null, amount, draft.settings.freeParkingJackpot);
 }
 
@@ -331,8 +332,8 @@ function drawCard(draft: MonopolyState, seat: number, deck: 'chance' | 'chest'):
   if (deck === 'chance') draft.chancePtr = nextPtr;
   else draft.chestPtr = nextPtr;
 
-  note(draft, `${tag(draft, seat)} drew ${deck === 'chance' ? 'Chance' : 'Community Chest'}: ${card.text}`);
-  draft.lastCard = { deck, text: card.text, playerId: draft.players[seat].id, atRoll: draft.rollSeq };
+  note(draft, `${tag(draft, seat)} drew ${deck === 'chance' ? 'Chance' : 'Community Chest'}: ${cardText(card, draft.settings.board)}`);
+  draft.lastCard = { deck, text: cardText(card, draft.settings.board), playerId: draft.players[seat].id, atRoll: draft.rollSeq };
   applyCardEffect(draft, seat, deck, card.effect);
 }
 
@@ -340,7 +341,7 @@ function drawCard(draft: MonopolyState, seat: number, deck: 'chance' | 'chest'):
  *  players in turn order starting from the current player. */
 function openAuction(draft: MonopolyState, spaceId: number): void {
   const current = currentSeat(draft);
-  note(draft, `${BOARD[spaceId].name} goes up for auction`);
+  note(draft, `${spaceName(spaceId, draft.settings.board)} goes up for auction`);
   const order = draft.turnOrder;
   const start = order.indexOf(current);
   const participants: number[] = [];
@@ -366,9 +367,9 @@ function resolveAuction(draft: MonopolyState): void {
     const seat = a.highBidder;
     draft.players[seat].cash -= a.highBid;
     draft.ownership[a.spaceId].owner = draft.players[seat].id;
-    note(draft, `${tag(draft, seat)} won ${BOARD[a.spaceId].name} at auction for $${a.highBid}`);
+    note(draft, `${tag(draft, seat)} won ${spaceName(a.spaceId, draft.settings.board)} at auction for $${a.highBid}`);
   } else {
-    note(draft, `Nobody bid, so ${BOARD[a.spaceId].name} stays with the bank`);
+    note(draft, `Nobody bid, so ${spaceName(a.spaceId, draft.settings.board)} stays with the bank`);
   }
   draft.pendingAuction = null;
   draft.phase = 'action';
@@ -421,7 +422,7 @@ function buy(draft: MonopolyState): void {
   draft.players[seat].cash -= price;
   draft.ownership[spaceId].owner = draft.players[seat].id;
   draft.pendingPurchase = null;
-  note(draft, `${tag(draft, seat)} bought ${BOARD[spaceId].name} for $${price}`);
+  note(draft, `${tag(draft, seat)} bought ${spaceName(spaceId, draft.settings.board)} for $${price}`);
 }
 
 function decline(draft: MonopolyState): void {
@@ -456,7 +457,7 @@ function build(draft: MonopolyState, spaceId: number): void {
     own.houses += 1;
     draft.housesLeft -= 1;
   }
-  note(draft, `{${me.id}} built a ${own.houses === 5 ? 'hotel' : 'house'} on ${BOARD[spaceId].name}`);
+  note(draft, `{${me.id}} built a ${own.houses === 5 ? 'hotel' : 'house'} on ${spaceName(spaceId, draft.settings.board)}`);
 }
 
 function clearDebtIfSettled(draft: MonopolyState): void {
@@ -477,7 +478,7 @@ function sellHouse(draft: MonopolyState, spaceId: number): void {
     own.houses -= 1;
     draft.housesLeft += 1;
   }
-  note(draft, `{${me.id}} sold a building on ${BOARD[spaceId].name}`);
+  note(draft, `{${me.id}} sold a building on ${spaceName(spaceId, draft.settings.board)}`);
   clearDebtIfSettled(draft);
 }
 
@@ -487,7 +488,7 @@ function mortgage(draft: MonopolyState, spaceId: number): void {
   if (draft.ownership[spaceId].owner !== me.id || !canMortgage(draft, spaceId)) illegal('cannot mortgage');
   draft.ownership[spaceId].mortgaged = true;
   me.cash += mortgageValue(spaceId);
-  note(draft, `{${me.id}} mortgaged ${BOARD[spaceId].name} for $${mortgageValue(spaceId)}`);
+  note(draft, `{${me.id}} mortgaged ${spaceName(spaceId, draft.settings.board)} for $${mortgageValue(spaceId)}`);
   clearDebtIfSettled(draft);
 }
 
@@ -497,7 +498,7 @@ function unmortgage(draft: MonopolyState, spaceId: number): void {
   if (!canUnmortgage(draft, me.id, spaceId)) illegal('cannot unmortgage');
   draft.ownership[spaceId].mortgaged = false;
   me.cash -= unmortgageCost(spaceId);
-  note(draft, `{${me.id}} paid off the mortgage on ${BOARD[spaceId].name}`);
+  note(draft, `{${me.id}} paid off the mortgage on ${spaceName(spaceId, draft.settings.board)}`);
 }
 
 const JAIL_FINE = 50;
@@ -669,11 +670,18 @@ function nextActive(draft: MonopolyState): void {
   for (let i = 1; i <= n; i++) {
     const idx = (draft.current + i) % n;
     if (!draft.players[draft.turnOrder[idx]].bankrupt) {
+      if (idx <= draft.current) draft.round += 1; // back round to the top of the order
       draft.current = idx;
       break;
     }
   }
   draft.turns += 1;
+  // A game with a round limit ends when its last round has been played.
+  if (draft.settings.roundLimit > 0 && draft.round > draft.settings.roundLimit) {
+    note(draft, `The last of ${draft.settings.roundLimit} rounds is over: the highest net worth wins`);
+    endGameInPlace(draft);
+    return;
+  }
   draft.tradesThisTurn = 0;
   if (draft.turns >= MAX_TURNS) {
     endGameInPlace(draft);
@@ -760,7 +768,20 @@ export function endGame(state: MonopolyState): MonopolyState {
   return draft;
 }
 
+/** A fresh game for the same players, pieces and rules. */
+export function rematch(state: MonopolyState): MonopolyState {
+  return createMonopolyGame(
+    state.players.map((p) => ({ name: p.name, avatar: p.avatar, isAI: p.isAI, difficulty: p.difficulty })),
+    (state.rngState ^ 0x9e3779b9) >>> 0,
+    state.settings,
+  );
+}
+
 export function applyAction(state: MonopolyState, action: Action): MonopolyState {
+  if (action.type === 'REMATCH') {
+    if (state.phase !== 'over') illegal('the game is still on');
+    return rematch(state);
+  }
   const draft = clone(state);
   switch (action.type) {
     case 'ROLL':

@@ -9,9 +9,11 @@ interface Props {
   /** Whether the player can afford the extra cost right now. */
   canAfford: boolean;
   onResolve: (commit: boolean) => void;
+  /** Watching someone else's tunnel: the same cards, no buttons. Their name. */
+  watching?: string;
 }
 
-export function TunnelDialog({ pending, canAfford, onResolve }: Props) {
+export function TunnelDialog({ pending, canAfford, onResolve, watching }: Props) {
   const { flipped, extra, combo } = pending;
   const unit = combo.colorCount > 0 && combo.color ? combo.color : 'locomotive';
   const route = getRoute(pending.routeId);
@@ -25,7 +27,15 @@ export function TunnelDialog({ pending, canAfford, onResolve }: Props) {
       <div className="popover-head">
         <h3>{route ? `Tunnel · ${cityName(route.a)} → ${cityName(route.b)}` : 'Tunnel!'}</h3>
         <span className="dialog-sub">
-          {canAfford ? (
+          {watching ? (
+            extra === 0 ? (
+              <>{watching}: no extra cards needed</>
+            ) : (
+              <>
+                {watching} must pay {extra} more <b>{unit}</b> card{extra === 1 ? '' : 's'}, or back out
+              </>
+            )
+          ) : canAfford ? (
             <>
               Pay {extra} more <b>{unit}</b> card{extra === 1 ? '' : 's'}
             </>
@@ -43,6 +53,7 @@ export function TunnelDialog({ pending, canAfford, onResolve }: Props) {
           return <CardChip key={i} card={c} dimmed={!match} title={`${c}: ${match ? 'matches' : 'no match'}`} />;
         })}
       </div>
+      {!watching && (
       <div className="tunnel-actions">
         <button type="button" className="primary" disabled={!canAfford} onClick={() => onResolve(true)}>
           Pay &amp; claim
@@ -51,6 +62,7 @@ export function TunnelDialog({ pending, canAfford, onResolve }: Props) {
           Cancel
         </button>
       </div>
+      )}
     </div>
   );
 }

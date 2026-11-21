@@ -82,7 +82,9 @@ export const CHESS_RULES: GameRules = {
           section(
             'Timing and the computer',
             list(
-              'Chess is played **without a clock**. Online, if your opponent walks away you may remove them from the game, which counts as their loss.',
+              'Chess is played **without a clock** unless the host of a room sets one: 3, 5, 10, 15 or 30 minutes each for the whole game. Your clock runs only while it is your move, and stops while the game is paused.',
+              'If your clock reaches zero you **lose on time**, whatever is on the board. Nobody can add time to a clock.',
+              'Online, if your opponent walks away you may remove them from the game, which counts as their loss.',
               'On this device you play Stockfish at one of five strengths: Beginner (about 1350), Intermediate (about 1700), Advanced (about 2000), Master (about 2400) or full strength.',
             ),
           ),

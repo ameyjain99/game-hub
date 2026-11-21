@@ -279,11 +279,33 @@
 }
 
 .lc-catch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5cqw;
+  padding: 0.6cqw 1.4cqw;
+  font-size: max(12px, 1.5cqw);
   color: #fff;
+  white-space: nowrap;
   background: #e2483b;
-  border: 0;
-  box-shadow: 0 4px 12px #e2483b88;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 0.5cqw #e2483b55, 0 4px 18px #e2483bcc;
   animation: lc-bounce 0.7s ease-in-out infinite;
+}
+
+/* A player who forgot to call: their seat flashes until the chance passes. */
+.lc-opp.is-exposed .lc-opp-name {
+  border-color: #e2483b;
+  animation: lc-exposed 0.7s ease-in-out infinite;
+}
+
+@keyframes lc-exposed {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px #e2483b, 0 0 0 0 #e2483b99;
+  }
+  50% {
+    box-shadow: 0 0 0 2px #e2483b, 0 0 0 1.6cqw #e2483b00;
+  }
 }
 
 .lc-one {
@@ -434,29 +456,88 @@
   transform: rotate(var(--r));
 }
 
+/* The card on top was just played: it flies in from the seat of whoever
+   played it (--fx / --fy, set per play) and slaps down on the pile. */
 .lc-discard .lc-card.is-top {
-  animation: lc-land 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  animation: lc-land 0.42s cubic-bezier(0.2, 0.8, 0.3, 1.15);
 }
 
 @keyframes lc-land {
   from {
-    opacity: 0;
-    transform: translateY(18cqw) rotate(calc(var(--r) + 20deg)) scale(1.2);
+    opacity: 0.2;
+    transform: translate(var(--fx, 0), var(--fy, 18cqw)) rotate(calc(var(--r) + 40deg)) scale(0.45);
+  }
+  70% {
+    opacity: 1;
   }
 }
 
+/* A card on its way from the deck to whoever drew it. */
+.lc-flyer {
+  width: clamp(26px, 5cqw, 46px);
+  aspect-ratio: 5 / 7.4;
+  background: repeating-linear-gradient(135deg, #1d2659 0 6px, #232e6b 6px 12px);
+  border: 2px solid #fff;
+  border-radius: 6px;
+  box-shadow: 0 6px 14px #0008;
+}
+
+/* The colour to match, named under the pile; a change of colour pops it. */
 .lc-colour {
   position: absolute;
-  bottom: -4.2cqw;
+  bottom: -5.4cqw;
   left: 50%;
-  padding: 0.2cqw 1cqw;
-  font-size: max(11px, 1.3cqw);
+  padding: 0.45cqw 1.6cqw;
+  font-size: max(13px, 1.9cqw);
   font-weight: 800;
   color: #0b0b0f;
   white-space: nowrap;
   background: var(--cc);
+  border: 2px solid #ffffffd9;
   border-radius: var(--radius-pill);
-  transform: translateX(-50%);
+  box-shadow: 0 0 2.4cqw color-mix(in srgb, var(--cc) 70%, transparent);
+  translate: -50% 0;
+  animation: lc-colour-pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.5);
+}
+
+@keyframes lc-colour-pop {
+  from {
+    scale: 2.2;
+    opacity: 0;
+  }
+}
+
+/* A ring of the new colour sweeps out from the pile across the felt. */
+.lc-colour-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12cqw;
+  aspect-ratio: 1;
+  pointer-events: none;
+  border: 1.2cqw solid var(--cc);
+  border-radius: 50%;
+  opacity: 0;
+  translate: -50% -50%;
+  animation: lc-colour-burst 0.9s ease-out;
+}
+
+@keyframes lc-colour-burst {
+  from {
+    opacity: 0.9;
+    scale: 0.6;
+  }
+  to {
+    opacity: 0;
+    scale: 7;
+  }
+}
+
+/* The size of a heavy draw, in a table moment. */
+.lc-moment-count {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
 }
 
 /* ---- Your hand ---- */
@@ -466,7 +547,11 @@
   left: 50%;
   z-index: 3;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1cqw;
+  width: max-content;
+  max-width: 96cqw;
   transform: translateX(-50%);
 }
 
@@ -494,6 +579,17 @@
   background: #e2483b;
   border-color: #ff8a80;
   animation: lc-bounce 0.7s ease-in-out infinite;
+}
+
+/* The catch and the late call are the loudest things on the table. */
+.lc-call.is-big {
+  gap: 8px;
+  height: 46px;
+  padding: 0 20px;
+  font-size: 16px;
+  white-space: nowrap;
+  border-color: #fff;
+  box-shadow: 0 0 0 6px #e2483b40, 0 8px 28px #e2483bcc;
 }
 
 .lc-hand {
@@ -558,7 +654,8 @@
 .lc-picker {
   position: absolute;
   inset: 0;
-  z-index: 10;
+  /* Above the table's banners: a choice you must make is never covered. */
+  z-index: 30;
   display: grid;
   place-content: center;
   justify-items: center;
@@ -614,12 +711,312 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .lc-colour-burst {
+    display: none;
+  }
+
   .lc-direction,
   .lc-catch,
+  .lc-colour,
+  .lc-opp.is-exposed .lc-opp-name,
   .lc-call.is-urgent,
   .lc-deck.is-live .lc-card,
   .lc-discard .lc-card.is-top,
   .lc-hand-card {
     animation: none;
   }
+}
+
+/* Table moments sit between the opponents and the piles, so the card that
+   caused one stays in view beneath it. */
+.lc-game .g-moment {
+  top: 35%;
+}
+
+/* A player's live camera stands in front of their fan of cards. */
+.lc-face {
+  position: absolute;
+  top: 2.6cqw;
+  left: 50%;
+  z-index: 2;
+  translate: -50% 0;
+  --face: clamp(32px, 6.4cqw, 64px);
+}
+
+.lc-opp:has(.lc-face) .lc-opp-name {
+  margin-top: max(2.2cqw, 14px);
+}
+
+/* The sort switch sits at the corner of the table, by your hand. */
+.lc-sort {
+  position: absolute;
+  bottom: 21.5cqw;
+  left: 2.4cqw;
+  z-index: 3;
+  color: #fff;
+  background: #0007;
+  border-color: #ffffff33;
+}
+
+/* ---- Skip and Reverse, shown on the table ---- */
+.lc-skipped {
+  position: absolute;
+  top: 2cqw;
+  left: 50%;
+  z-index: 4;
+  padding: 0.3cqw 1.2cqw;
+  font-size: max(12px, 1.7cqw);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #fff;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: #c9342c;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  box-shadow: 0 0.6cqw 1.6cqw #000a;
+  translate: -50% 0;
+  rotate: -8deg;
+  animation: lc-stamp 1.5s ease-out both;
+}
+
+.lc-skipped.is-me {
+  top: auto;
+  bottom: 22cqw;
+  font-size: max(16px, 2.6cqw);
+}
+
+.lc-reversed {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  font-size: max(18px, 3.4cqw);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-shadow: 0 0.3cqw 1.2cqw #000c;
+  text-transform: uppercase;
+  pointer-events: none;
+  translate: -50% -330%;
+  animation: lc-stamp 1.5s ease-out both;
+}
+
+@keyframes lc-stamp {
+  0% {
+    opacity: 0;
+    scale: 2.4;
+  }
+  14% {
+    opacity: 1;
+    scale: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The ring of arrows swings right round when the direction of play turns. */
+.lc-direction.is-reversing {
+  animation: lc-reverse-spin 0.9s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+@keyframes lc-reverse-spin {
+  from {
+    rotate: 0deg;
+    scale: 1.25;
+    filter: brightness(2.2);
+  }
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* Cards owed under the stacking rule, shown on the deck. */
+.lc-owed {
+  position: absolute;
+  top: -2.6cqw;
+  left: 50%;
+  padding: 0.25cqw 1.1cqw;
+  font-size: max(12px, 1.7cqw);
+  font-weight: 900;
+  color: #fff;
+  white-space: nowrap;
+  background: #c9342c;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  translate: -50% 0;
+  animation: lc-bounce 0.7s ease-in-out infinite;
+}
+
+/* ---- The end-of-hand count ---- */
+.lc-tally {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 44vh;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  overflow-y: auto;
+  text-align: left;
+  list-style: none;
+}
+
+.lc-tally li {
+  display: grid;
+  grid-template-columns: minmax(70px, 110px) 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  background: #ffffff0a;
+  border-radius: var(--radius-md);
+}
+
+.lc-tally-name {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-tally-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.lc-tally .lc-card.is-tally {
+  --lw: 22px;
+}
+
+.lc-tally-points {
+  min-width: 34px;
+  font-size: 16px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.lc-tally-total {
+  background: #ffd25a26 !important;
+}
+
+/* The total's label is a short sentence, not a name: let it wrap. */
+.lc-tally-total .lc-tally-name {
+  white-space: normal;
+}
+
+.lc-tally-total .lc-tally-points {
+  color: #ffd25a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lc-skipped,
+  .lc-reversed,
+  .lc-direction.is-reversing,
+  .lc-owed {
+    animation: none;
+  }
+}
+
+/* ---------------- No Mercy: the swap prompt and the 25-card limit ---------------- */
+.lc-swap-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(320px, 80cqw);
+}
+
+.lc-swap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  text-align: left;
+  background: #16171d;
+  border: 2px solid color-mix(in srgb, var(--tc) 60%, transparent);
+  border-radius: var(--radius-md);
+  transition: transform 0.12s, border-color 0.12s;
+}
+
+.lc-swap:hover,
+.lc-swap:focus-visible {
+  border-color: var(--tc);
+  transform: translateY(-1px);
+}
+
+.lc-swap .lc-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--tc);
+  border-radius: 50%;
+}
+
+.lc-swap-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-swap b {
+  font-size: 13px;
+  color: #ffffffb3;
+  font-variant-numeric: tabular-nums;
+}
+
+.lc-swap-note {
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.lc-count.is-near {
+  color: #fff;
+  background: #d93a2e;
+}
+
+.lc-mercy {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ffd9a0;
+  background: #0b0b0f99;
+  border: 1px solid #ffd25a66;
+  border-radius: 999px;
+}
+
+.lc-mercy.is-near {
+  color: #fff;
+  background: #d93a2e;
+  border-color: #d93a2e;
+}
+
+.lc-one.is-bust {
+  color: #fff;
+  background: #d93a2e;
+}
+
+/* A full table (six or more opponents): smaller fans, so every seat stands clear. */
+.lc-opponents.is-many .lc-opp-cards {
+  width: 8cqw;
+  height: 5cqw;
+}
+
+.lc-opponents.is-many .lc-opp-cards .lc-card {
+  --lw: 3.3cqw;
+  transform: translateX(-50%) translateX(calc(var(--i) * 0.8cqw)) rotate(calc(var(--i) * 6deg));
+}
+
+.lc-opponents.is-many .lc-opp-name {
+  font-size: max(10px, 1.15cqw);
 }

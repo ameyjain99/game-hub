@@ -4,6 +4,7 @@ import { PlayersPanel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
 import { Die } from '../../kit/ui/Die';
+import { TableMomentBanner, freshEvents, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
 import { useCues } from '../../kit/ui/useCues';
 import { CheckIcon, CloseIcon } from '../../../shared/icons';
 import { inRoom, passageFrom } from '../board';
@@ -25,6 +26,57 @@ function suggestionLine(sg: Suggestion, who: (id: string) => string, meId: strin
   if (!sg.disprover) return `${asked}. Nobody could show a card.`;
   if (sg.card) return sg.player === meId ? `${who(sg.disprover)} showed you the ${sg.card}.` : `You showed ${who(sg.player)} the ${sg.card}.`;
   return `${asked}. ${who(sg.disprover)} showed a card.`;
+}
+
+/** How long each player's answer takes to come round the table. */
+const PASS_MS = 700;
+
+/**
+ * A suggestion going round the table, one player at a time, as it does with
+ * real cards: "Riya can't help... Bob can't help... Maya shows a card". The
+ * game works the answers out at once; this plays them out so they can be followed.
+ */
+function PassAround({ passed, disprover, shown, who }: { passed: string[]; disprover: string | null; shown: boolean; who: (id: string) => string }) {
+  const [step, setStep] = useState(0);
+  const total = passed.length + 1;
+  useEffect(() => {
+    if (step >= total) return;
+    const t = setTimeout(() => setStep((n) => n + 1), PASS_MS);
+    return () => clearTimeout(t);
+  }, [step, total]);
+  return (
+    <ol className="cl-pass" aria-label="Answers round the table">
+      {passed.slice(0, step).map((id) => (
+        <li key={id} className="is-no">
+          <CloseIcon size={13} aria-hidden="true" /> {who(id)} can't help
+        </li>
+      ))}
+      {step > passed.length &&
+        (disprover ? (
+          <li className="is-yes">
+            <CheckIcon size={13} aria-hidden="true" /> {who(disprover)} {shown ? 'showed a card' : who(disprover) === 'You' ? 'have a card to show' : 'has a card to show'}
+          </li>
+        ) : (
+          <li className="is-none">Nobody could show a card</li>
+        ))}
+    </ol>
+  );
+}
+
+/** The case file opened at the end: its three cards come out one by one. */
+function CaseReveal({ solution }: { solution: Triple }) {
+  return (
+    <div className="cl-reveal" role="status" aria-label={`The case file: ${solution.suspect}, the ${solution.weapon}, the ${solution.room}`}>
+      <p className="cl-reveal-title">The case file</p>
+      <div className="cl-reveal-cards">
+        {[solution.suspect, solution.weapon, solution.room].map((c, i) => (
+          <span key={c} className="cl-reveal-card" style={{ animationDelay: `${0.5 + i * 0.8}s` }}>
+            <CardFace card={c} />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function eventLine(e: ClEvent, who: (id: string) => string, meId: string): string | null {
@@ -179,6 +231,27 @@ export function CluedoGame({ view: s, meId, nameFor, onAction, onExit, exitLabel
   const [suspect, setSuspect] = useState<Suspect | null>(null);
   const [weapon, setWeapon] = useState<Weapon | null>(null);
   useCues(s, (a, b) => clCues(a, b, meId, cluedoActor), CL_SOUNDS);
+  // A suggestion's answer and an accusation are what everyone is waiting to hear.
+  const moment = useTableMoments(s, (a, b): TableMoment[] =>
+    freshEvents(a.log, b.log).flatMap((e): TableMoment[] => {
+      const name = (id: string) => (id === meId ? 'You' : nameFor(id));
+      const colorOf = (id: string) => SUSPECT_COLOR[b.players.find((p) => p.id === id)?.suspect ?? SUSPECTS[0]];
+      if (e.kind === 'suggest') {
+        return [
+          {
+            kicker: `${name(e.s.player)} suggested ${tripleText(e.s.triple)}`,
+            title: e.s.disprover ? `${name(e.s.disprover)} showed a card` : 'Nobody could show a card!',
+            color: e.s.disprover ? colorOf(e.s.disprover) : '#f2c548',
+            afterMs: e.s.disprover ? 0 : (e.s.passed.length + 1) * PASS_MS,
+          },
+        ];
+      }
+      if (e.kind === 'accuse') {
+        return [{ kicker: `${name(e.player)} accused ${tripleText(e.triple)}`, title: e.correct ? 'Case solved!' : 'Wrong - out of the hunt', color: e.correct ? '#3fbf6f' : '#e2483b', feels: { [e.player]: e.correct ? 'good' : 'bad' } }];
+      }
+      return [];
+    }),
+  );
   useEffect(() => {
     setSuspect(null);
     setWeapon(null);
@@ -304,18 +377,29 @@ export function CluedoGame({ view: s, meId, nameFor, onAction, onExit, exitLabel
           />
         )}
       </div>
-      {dock && (
-        <div className="cl-dock">
-          {s.dice && (
-            <div className="cl-dice">
-              <Die value={s.dice[0]} rollKey={rolls} size={38} label="First die" />
-              <Die value={s.dice[1]} rollKey={rolls} size={38} label="Second die" />
-            </div>
-          )}
-          {dock}
-        </div>
-      )}
     </div>
+  );
+  // What is happening now, and what you can do about it: beside the board, so
+  // the board keeps the whole height.
+  const now = dock && (
+    <SideSection title="Now" className="cl-now">
+      <div className="cl-dock">
+        {s.dice && (
+          <div className="cl-dice">
+            <Die value={s.dice[0]} rollKey={rolls} size={38} label="First die" />
+            <Die value={s.dice[1]} rollKey={rolls} size={38} label="Second die" />
+          </div>
+        )}
+        {dock}
+        {s.pending ? (
+          <PassAround key={`${cur.id}|${tripleText(s.pending.triple)}`} passed={s.pending.passed} disprover={s.pending.disprover} shown={false} who={who} />
+        ) : (
+          s.suggested && lastSuggest?.kind === 'suggest' && (
+            <PassAround key={`${lastSuggest.s.player}|${tripleText(lastSuggest.s.triple)}`} passed={lastSuggest.s.passed} disprover={lastSuggest.s.disprover} shown who={who} />
+          )
+        )}
+      </div>
+    </SideSection>
   );
 
   const winner = s.winner;
@@ -328,7 +412,7 @@ export function CluedoGame({ view: s, meId, nameFor, onAction, onExit, exitLabel
       rematchLabel="New case"
       onExit={onExit}
       exitLabel={exitLabel}
-      delayMs={1400}
+      delayMs={4200}
     >
       <p>
         It was <b>{s.solution.suspect}</b>, with the <b>{s.solution.weapon}</b>, in the <b>{s.solution.room}</b>.
@@ -340,9 +424,9 @@ export function CluedoGame({ view: s, meId, nameFor, onAction, onExit, exitLabel
     .map((e) => ({ e, text: eventLine(e, who, meId) }))
     .filter((x) => x.text)
     .reverse()
-    .slice(0, 16);
+    .slice(0, 40);
 
-  const side = (
+  const left = (
     <>
       <KitVideos
         online={online}
@@ -362,6 +446,7 @@ export function CluedoGame({ view: s, meId, nameFor, onAction, onExit, exitLabel
             ),
           }))}
       />
+      {now}
       <PlayersPanel
         title="Detectives"
         spotlight={spotlight}
@@ -386,26 +471,13 @@ export function CluedoGame({ view: s, meId, nameFor, onAction, onExit, exitLabel
           <CluedoHand hand={me.hand} />
         </SideSection>
       )}
-      {me && (
-        <SideSection title="Notebook">
-          <Notebook s={s} meId={meId} />
-        </SideSection>
-      )}
-      <SideSection title="Case log">
-        {events.length === 0 ? (
-          <p className="kit-muted">Suggestions and accusations land here.</p>
-        ) : (
-          <ul className="kit-log">
-            {events.map(({ e, text }) => (
-              <li key={e.seq} className={e.kind === 'accuse' ? 'is-win' : undefined}>
-                {text}
-              </li>
-            ))}
-          </ul>
-        )}
-      </SideSection>
     </>
   );
+  const side = me ? (
+    <SideSection title="Notebook" className="cl-notes">
+      <Notebook s={s} meId={meId} />
+    </SideSection>
+  ) : null;
 
   let status;
   if (s.over) status = winner ? <><strong>{who(winner)}</strong> solved the case</> : <>The case went unsolved</>;
@@ -423,8 +495,32 @@ export function CluedoGame({ view: s, meId, nameFor, onAction, onExit, exitLabel
       headerExtra={online?.clock}
       banner={online?.banner}
       board={board}
-      overlay={overlay}
+      overlay={
+        <>
+          <TableMomentBanner moment={moment} place="top" />
+          {s.over && <CaseReveal solution={s.solution} />}
+          {overlay}
+        </>
+      }
       side={side}
+      log={
+        <>
+          {left}
+        <SideSection title="Case log">
+          {events.length === 0 ? (
+            <p className="kit-muted">Suggestions and accusations land here.</p>
+          ) : (
+            <ul className="kit-log">
+              {events.map(({ e, text }) => (
+                <li key={e.seq} className={e.kind === 'accuse' ? 'is-win' : undefined}>
+                  {text}
+                </li>
+              ))}
+            </ul>
+          )}
+        </SideSection>
+        </>
+      }
     />
   );
 }

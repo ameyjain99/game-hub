@@ -142,7 +142,7 @@
 .im-wall {
   display: grid;
   flex: 1;
-  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  grid-template-columns: repeat(calc(var(--cols, 4) * 2), minmax(0, 1fr));
   align-content: center;
   gap: var(--space-3);
   min-height: 0;
@@ -156,6 +156,7 @@
 .im-tile {
   position: relative;
   display: flex;
+  grid-column: var(--start, auto) / span 2;
   flex-direction: column;
   gap: 10px;
   min-height: 150px;
@@ -344,6 +345,16 @@
   border-radius: var(--radius-sm);
   transform: rotate(-6deg);
   animation: im-stamp 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+/* The imposter badge takes its own line under the name, so it never squeezes it. */
+.im-tile-head:has(.im-tag.is-imposter) {
+  flex-wrap: wrap;
+}
+
+.im-tile-head .im-tag.is-imposter {
+  flex-basis: 100%;
+  justify-content: center;
 }
 
 .im-vote-btn {
@@ -591,6 +602,7 @@
   }
 
   .im-tile {
+    grid-column: auto;
     min-height: 96px;
     padding: 10px;
   }
@@ -615,6 +627,65 @@
   .im-dots::after,
   .im-timer::after {
     transition: none;
+    animation: none;
+  }
+}
+
+/* ---- Faces on the clue cards ---- */
+/* A player's camera sits at the top of their card. While the table talks it
+   over, the cards grow to fill the stage and the faces with them: this is the
+   part of the game played by looking at each other. */
+.im-face {
+  flex: none;
+}
+
+.im-wall.is-talk {
+  grid-auto-rows: minmax(0, 1fr);
+  align-content: stretch;
+}
+
+.im-wall.is-talk .im-face {
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
+.im-wall.is-talk .im-face .g-video {
+  position: absolute;
+  inset: 0;
+}
+
+.im-face.is-off {
+  display: grid;
+  place-items: center;
+  font-size: clamp(28px, 5cqw, 56px);
+  font-weight: 800;
+  color: color-mix(in srgb, var(--tc) 70%, #fff);
+  background: color-mix(in srgb, var(--tc) 16%, var(--panel));
+  border-radius: var(--radius-md);
+}
+
+/* The ballot read out one vote at a time: each vote drops onto its card in
+   turn, the count follows, and only then does the verdict land. */
+.im-vote-dot.is-read,
+.im-vote-count {
+  animation: im-vote-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+.im-tile-foot .im-stamp {
+  animation-fill-mode: both;
+}
+
+@keyframes im-vote-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(1.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .im-vote-dot.is-read,
+  .im-vote-count {
     animation: none;
   }
 }
