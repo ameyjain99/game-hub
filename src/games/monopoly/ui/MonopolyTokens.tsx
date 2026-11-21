@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { BOARD } from '../engine/board';
+import { useSpaceName } from './boardNames';
 import type { MonopolyPlayer, MonopolyState } from '../engine/state';
 import { useMediaQuery } from '../../../shared/useMediaQuery';
 import { movePath, tokenAnchor, tokenColor, tokenLabel } from './board-layout';
@@ -77,6 +77,7 @@ export function MonopolyTokens({
   /** A spotlit player's token stays bright while the rest of the board dims. */
   spotlight?: string | null;
 }) {
+  const nameOf = useSpaceName();
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
   const players = view.players.filter((p) => !p.bankrupt);
   const shown = useShownSquares(players, reduced);
@@ -106,7 +107,7 @@ export function MonopolyTokens({
             key={p.id}
             data-token={p.id}
             role="img"
-            aria-label={`${nameFor(p.id)} on ${BOARD[sq].name}${jailed ? ', in jail' : ''}`}
+            aria-label={`${nameFor(p.id)} on ${nameOf(sq)}${jailed ? ', in jail' : ''}`}
             title={`${nameFor(p.id)}${jailed ? ' (in jail)' : ''}`}
             className={`mono-token is-placed${p.id === actorId ? ' is-active' : ''}${jailed ? ' is-jailed' : ''}${
               shown[p.id]?.glide ? ' is-gliding' : ''

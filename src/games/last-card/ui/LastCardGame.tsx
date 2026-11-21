@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { colorsOf, faceOf, fits, lastCardKit, points, type Card, type Color, type LcAction, type LcEvent, type LcState } from '../engine';
+import { colorsOf, faceOf, fits, lastCardKit, points, type Card, type Color, type LcAction, type LcEvent, type LcState, MERCY } from '../engine';
 import { GameShell } from '../../kit/ui/GameShell';
 import { PlayersPanel, tokenLabel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
@@ -25,7 +25,7 @@ function describe(e: LcEvent, who: (id: string) => string, side: 'light' | 'dark
       return `${who(e.player)} played ${name}${f && f.color === null && e.color ? ` → ${COLOR_NAME[e.color]}` : ''}`;
     }
     case 'draw':
-      return `${who(e.player)} drew a card`;
+      return (e.count ?? 1) > 1 ? `${who(e.player)} drew ${e.count} cards to find one to play` : `${who(e.player)} drew a card`;
     case 'pass':
       return `${who(e.player)} kept it and passed`;
     case 'penalty':
@@ -34,6 +34,12 @@ function describe(e: LcEvent, who: (id: string) => string, side: 'light' | 'dark
       return `${who(e.player)} called "Last card!"`;
     case 'catch':
       return `${who(e.player)} caught ${who(e.target!)} - draw ${e.count}`;
+    case 'swap':
+      return `${who(e.player)} swapped hands with ${who(e.target!)}`;
+    case 'rotate':
+      return `Every hand moved on to the next player`;
+    case 'bust':
+      return `${who(e.player)} hit ${e.count} cards and ${who(e.player) === 'You' ? 'are' : 'is'} out of the hand`;
   }
 }
 
@@ -64,6 +70,12 @@ export function lcMoments(prev: LcState, next: LcState, who: (id: string) => str
         art: <Siren size={44} />,
         feels: { [e.target!]: 'bad', [e.player]: 'good' },
       });
+    } else if (e.kind === 'swap') {
+      out.push({ kicker: who(e.player), title: `swapped hands with ${who(e.target!)}`, detail: 'A 7 trades your whole hand for theirs.', color: colorOf(e.player), feels: { [e.target!]: 'bad' } });
+    } else if (e.kind === 'rotate') {
+      out.push({ kicker: `${who(e.player)} played a 0`, title: 'Every hand moves on', detail: 'You now hold the hand of the player before you.', color: colorOf(e.player) });
+    } else if (e.kind === 'bust') {
+      out.push({ kicker: who(e.player), title: `${who(e.player) === 'You' ? 'are' : 'is'} out of the hand`, detail: `${e.count} cards: 25 is the limit. Their points wait for the winner.`, color: '#e2483b', art: <span className="lc-moment-count">${e.count}</span>, feels: { [e.player]: 'bad' } });
     } else if (e.kind === 'penalty' && (e.count ?? 0) >= 2) {
       const you = who(e.target!) === 'You';
       out.push({ kicker: who(e.target!), title: `${you ? 'draw' : 'draws'} ${e.count}`, color: '#e2483b', art: <span className="lc-moment-count">+{e.count}</span>, feels: { [e.target!]: 'bad' } });
@@ -74,7 +86,7 @@ export function lcMoments(prev: LcState, next: LcState, who: (id: string) => str
 
 const SORTS = ['colour', 'number', 'dealt'] as const;
 const SORT_LABEL: Record<(typeof SORTS)[number], string> = { colour: 'by colour', number: 'by number', dealt: 'as dealt' };
-const KIND_RANK: Record<string, number> = { number: 0, skip: 10, 'skip-all': 10, reverse: 11, draw: 12, flip: 13, wild: 20, 'wild-draw': 21, 'wild-hunt': 21 };
+const KIND_RANK: Record<string, number> = { number: 0, skip: 10, 'skip-all': 10, reverse: 11, draw: 12, flip: 13, 'discard-all': 14, wild: 20, 'wild-draw': 21, 'wild-hunt': 21, 'wild-reverse-draw': 22 };
 
 /** Your hand in the order you like it: grouped by colour, by number, or as the cards came. */
 export function sortHand(hand: Card[], side: 'light' | 'dark', mode: (typeof SORTS)[number]): Card[] {
@@ -93,6 +105,9 @@ export function sortHand(hand: Card[], side: 'light' | 'dark', mode: (typeof SOR
 /** The Last Card table: opponents round the top, the piles in the middle, your hand along the bottom. */
 export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel, online }: KitScreenProps<LcState, LcAction>) {
   const [choosing, setChoosing] = useState<number | null>(null);
+  // No Mercy: the 7 waiting for a player to swap hands with.
+  const [swapping, setSwapping] = useState<number | null>(null);
+  const unlimited = view.variant === 'unlimited';
   const [callArmed, setCallArmed] = useState(false);
   const [spotlight, setSpotlight] = useState<string | null>(null);
   useCues(view, (a, b) => lcCues(a, b, meId), LC_SOUNDS);
@@ -115,13 +130,20 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
 
   useEffect(() => {
     setChoosing(null);
+    setSwapping(null);
     if (hand.length !== 2) setCallArmed(false);
   }, [view.last?.seq, hand.length]);
 
   const play = (c: Card) => {
     if (!canPlay(c)) return;
-    if (faceOf(c, side)!.color === null) {
+    const f = faceOf(c, side)!;
+    if (f.color === null) {
       setChoosing(c.id);
+      return;
+    }
+    // No Mercy: a 7 swaps hands, so it needs a player (unless it is your last card).
+    if (unlimited && f.kind === 'number' && f.value === 7 && hand.length > 1) {
+      setSwapping(c.id);
       return;
     }
     onAction({ type: 'PLAY', card: c.id, callLast: callArmed });
@@ -132,6 +154,11 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   const others = view.players.map((_, k) => view.players[(seat + 1 + k) % view.players.length]).filter((p) => p.id !== meId);
   /** Where opponent `k` of `n` sits, as a point on the table (percent). */
   const seatAt = (k: number, n: number) => {
+    if (n > 5) {
+      // A full table: the seats go round the sides and the top, clear of your hand.
+      const round = Math.PI * (1.13 - (1.26 * (k + 0.5)) / n);
+      return { x: 50 + Math.cos(round) * 42, y: 45 - Math.sin(round) * 33 };
+    }
     const angle = Math.PI * (0.92 - (0.84 * (k + 0.5)) / n);
     return { x: 50 + Math.cos(angle) * 40, y: 26 - Math.sin(angle) * 17 };
   };
@@ -182,16 +209,16 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   const table = (
     <div ref={tableRef} className={`kit-board lc-table is-${side}${myTurn ? ' is-my-turn' : ''}`}>
       <div className="lc-felt" />
-      <div className="lc-opponents">
+      <div className={`lc-opponents${others.length > 5 ? ' is-many' : ''}`}>
         {others.map((p, k) => {
           const { x, y } = seatAt(k, others.length);
-          const shown = Math.min(p.handCount, 10);
+          const shown = Math.min(p.handCount, others.length > 5 ? 6 : 10);
           const exposed = view.exposed === p.id;
           return (
             <div
               key={p.id}
               data-seat={p.id}
-              className={`lc-opp${actor === p.id ? ' is-turn' : ''}${p.out ? ' is-out' : ''}${spotlight === p.id ? ' is-spot' : ''}${exposed ? ' is-exposed' : ''}`}
+              className={`lc-opp${actor === p.id ? ' is-turn' : ''}${p.out || p.bust ? ' is-out' : ''}${spotlight === p.id ? ' is-spot' : ''}${exposed ? ' is-exposed' : ''}`}
               style={{ left: `${x}%`, top: `${y}%`, '--tc': lcSeatColor(view.players.indexOf(p)) } as CSSProperties}
             >
               <div className="lc-opp-cards" aria-hidden="true">
@@ -205,14 +232,18 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
               <div className="lc-opp-name">
                 <span className="lc-dot" />
                 {nameFor(p.id)}
-                <span className="lc-count">{p.handCount}</span>
+                <span className={`lc-count${unlimited && p.handCount >= MERCY - 7 ? ' is-near' : ''}`} title={unlimited ? `${p.handCount} of ${MERCY}: at ${MERCY} they are out of the hand` : undefined}>
+                  {p.handCount}
+                  {unlimited && p.handCount >= MERCY - 7 && !p.bust ? `/${MERCY}` : ''}
+                </span>
               </div>
               {exposed && me && (
                 <button type="button" className="lc-catch" onClick={() => onAction({ type: 'CATCH', target: p.id })}>
                   <Siren size={14} /> Didn't call - catch!
                 </button>
               )}
-              {!exposed && p.handCount === 1 && !p.out && <span className="lc-one">Last card</span>}
+              {!exposed && p.handCount === 1 && !p.out && !p.bust && <span className="lc-one">Last card</span>}
+              {p.bust && <span className="lc-one is-bust">Out: {MERCY} cards</span>}
               {fx?.skipped === p.id && (
                 <span key={fx.seq} className="lc-skipped" role="status">
                   Skipped
@@ -272,7 +303,13 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
               <Siren size={18} /> {nameFor(view.exposed)} didn't call "Last card" - catch them!
             </button>
           )}
-          {myTurn && view.drawn !== null && (
+          {unlimited && me && !me.bust && hand.length >= MERCY - 10 && (
+            <span className={`lc-mercy${hand.length >= MERCY - 4 ? ' is-near' : ''}`} role="status">
+              {hand.length} of {MERCY} cards · at {MERCY} you are out of the hand
+            </span>
+          )}
+          {me?.bust && <span className="lc-mercy is-near" role="status">You are out of this hand: you reached {MERCY} cards</span>}
+          {myTurn && view.drawn !== null && !unlimited && (
             <button type="button" className="g-btn g-btn-light g-btn-sm" onClick={() => onAction({ type: 'PASS' })}>
               Keep it &amp; pass
             </button>
@@ -310,6 +347,39 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
               </button>
             );
           })}
+        </div>
+      )}
+
+      {swapping !== null && (
+        <div className="lc-picker" role="dialog" aria-label="Swap hands with">
+          <p>Swap hands with</p>
+          <div className="lc-swap-list">
+            {others
+              .filter((p) => !p.out && !p.bust)
+              .map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="lc-swap"
+                  style={{ '--tc': lcSeatColor(view.players.indexOf(p)) } as CSSProperties}
+                  onClick={() => {
+                    onAction({ type: 'PLAY', card: swapping, swapWith: p.id, callLast: callArmed });
+                    setSwapping(null);
+                    setCallArmed(false);
+                  }}
+                >
+                  <span className="lc-dot" />
+                  <span className="lc-swap-name">{nameFor(p.id)}</span>
+                  <b>
+                    {p.handCount} {p.handCount === 1 ? 'card' : 'cards'}
+                  </b>
+                </button>
+              ))}
+          </div>
+          <p className="lc-swap-note">You give them your {hand.length - 1} and take theirs.</p>
+          <button type="button" className="lc-picker-cancel" onClick={() => setSwapping(null)}>
+            Cancel
+          </button>
         </div>
       )}
 
@@ -355,7 +425,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
     >
       <ul className="lc-tally" aria-label="Cards left in each hand">
         {view.players
-          .filter((p) => p.id !== view.winner && !p.out)
+          .filter((p) => p.id !== view.winner && !p.out && !p.bust)
           .map((p) => {
             const faces = p.hand.map((c) => ({ c, f: faceOf(c, side) })).filter((x) => x.f);
             const total = faces.reduce((n, x) => n + points(x.f!), 0);
@@ -372,6 +442,15 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
               </li>
             );
           })}
+        {view.pot > 0 && (
+          <li>
+            <span className="lc-tally-name">Knocked out</span>
+            <span className="lc-tally-cards">
+              <i>{view.players.filter((p) => p.bust).map((p) => who(p.id)).join(', ')}: the hands that reached {MERCY} cards</i>
+            </span>
+            <b className="lc-tally-points">{view.pot}</b>
+          </li>
+        )}
         <li className="lc-tally-total">
           <span className="lc-tally-name">{who(view.winner)} {view.winner === meId ? 'score' : 'scores'}</span>
           <span className="lc-tally-cards">every card left in the other hands, added up</span>
@@ -379,7 +458,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
             +
             {view.players
               .filter((p) => p.id !== view.winner && !p.out)
-              .reduce((n, p) => n + p.hand.reduce((m, c) => m + (faceOf(c, side) ? points(faceOf(c, side)!) : 0), 0), 0)}
+              .reduce((n, p) => n + p.hand.reduce((m, c) => m + (faceOf(c, side) ? points(faceOf(c, side)!) : 0), 0), 0) + view.pot}
           </b>
         </li>
       </ul>
@@ -402,7 +481,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           .map((p) => ({ id: p.id, accent: lcSeatColor(view.players.indexOf(p)), active: actor === p.id, badge: <span className="kit-badge" style={{ '--tc': lcSeatColor(view.players.indexOf(p)) } as CSSProperties}>{tokenLabel(nameFor(p.id))}</span> }))}
       />
       <PlayersPanel
-        title={`Hand ${view.game} · ${view.variant === 'flip' ? `Flip - ${side} side` : 'Classic'}`}
+        title={`Hand ${view.game} · ${view.variant === 'flip' ? `Flip - ${side} side` : unlimited ? 'No Mercy' : 'Classic'}`}
         spotlight={spotlight}
         onSpotlight={setSpotlight}
         players={view.players.map((p, i) => ({
@@ -410,7 +489,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           name: who(p.id),
           you: p.id === meId,
           color: lcSeatColor(i),
-          detail: p.out ? 'Left the game' : `${p.handCount} ${p.handCount === 1 ? 'card' : 'cards'}${view.exposed === p.id ? " · didn't call!" : ''}`,
+          detail: p.out ? 'Left the game' : p.bust ? `Out of the hand: ${MERCY} cards` : `${p.handCount} ${p.handCount === 1 ? 'card' : 'cards'}${view.exposed === p.id ? " · didn't call!" : ''}`,
           trailing: view.score[p.id] ?? 0,
           active: actor === p.id,
           out: p.out,
@@ -423,7 +502,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   if (view.over && view.winner) status = <><strong>{who(view.winner)}</strong> {view.winner === meId ? 'win' : 'wins'} the hand</>;
   else if (myTurn) {
     const onWhat = !topFace || view.color === null ? 'play any card' : topFace.color === null ? `on ${faceName(topFace)} · ${COLOR_NAME[view.color]}` : `on ${faceName(topFace)}`;
-    status = view.owed > 0 ? <><strong>Draw {view.owed}</strong> · or stack a draw card of the same kind</> : view.drawn !== null ? <><strong>Play it or keep it</strong></> : <><strong>Your turn</strong> · {onWhat}</>;
+    status = view.owed > 0 ? <><strong>Draw {view.owed}</strong> · or {unlimited ? 'answer with a draw card as big or bigger' : 'stack a draw card of the same kind'}</> : view.drawn !== null ? (unlimited ? <><strong>Play the card you drew</strong></> : <><strong>Play it or keep it</strong></>) : <><strong>Your turn</strong> · {onWhat}</>;
   }
   else status = <><strong>{nameFor(actor ?? '')}</strong> is playing...</>;
 
@@ -456,7 +535,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           empty={
             <>
               Match the colour or the symbol.{' '}
-              {view.variant === 'flip' ? 'A Flip card turns the whole table over to the dark side - and back.' : 'Wild Draw 4 only when you have nothing of the colour.'}
+              {view.variant === 'flip' ? 'A Flip card turns the whole table over to the dark side - and back.' : unlimited ? `Draw cards stack, you draw until you can play, and ${MERCY} cards puts you out of the hand.` : 'Wild Draw 4 only when you have nothing of the colour.'}
             </>
           }
         />

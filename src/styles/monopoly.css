@@ -1764,3 +1764,9 @@ button.mono-cell.is-owned:hover {
 .mono-bidders li.is-out {
   opacity: 0.45;
 }
+
+/* A lot's flag on a board that has them (Nations). */
+.mono-cell-flag {
+  font-size: 1.25em;
+  line-height: 1;
+}

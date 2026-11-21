@@ -11,7 +11,8 @@ import { LeaveConfirm } from '../../../online/ui/LeaveConfirm';
 import { TOKEN_PIECES } from '../../../online/ui/tokenPieces';
 import type { RulesFor } from '../../../online/ui/LobbyRules';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/state';
-import { HOUSE_RULES, HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
+import { BoardField, HOUSE_RULES, HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
+import { BOARDS, boardOf } from '../engine/board';
 import { RoomError } from '../../../online/ui/RoomError';
 import { TurnClock } from '../../../online/ui/TurnClock';
 import { VideoTiles } from '../../../online/ui/VideoTiles';
@@ -33,9 +34,10 @@ const lobbyRules: RulesFor = (options, onChange) => {
   const settings: Settings = { ...DEFAULT_SETTINGS, ...((options ?? {}) as Partial<Settings>) };
   const on = HOUSE_RULES.filter((r) => settings[r.key]);
   return {
-    summary: [`Starting cash $${settings.startingCash.toLocaleString()}`, settings.roundLimit > 0 ? `${settings.roundLimit} rounds` : 'Until one player is left', ...on.map((r) => r.label)],
+    summary: [`Board: ${BOARDS.find((b) => b.id === boardOf(settings.board))!.name}`, `Starting cash ${settings.board === 'india' ? '₹' : '$'}${settings.startingCash.toLocaleString()}`, settings.roundLimit > 0 ? `${settings.roundLimit} rounds` : 'Until one player is left', ...on.map((r) => r.label)],
     editor: onChange ? (
       <>
+        <BoardField value={boardOf(settings.board)} onChange={(board) => onChange({ ...settings, board })} />
         <StartingCashField value={settings.startingCash} onChange={(startingCash) => onChange({ ...settings, startingCash })} />
         <RoundLimitField value={settings.roundLimit} onChange={(roundLimit) => onChange({ ...settings, roundLimit })} />
         <div className="g-field">

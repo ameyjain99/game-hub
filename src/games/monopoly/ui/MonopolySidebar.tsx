@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { BOARD, OWNABLE_IDS } from '../engine/board';
+import { useCurrency, useSpaceName } from './boardNames';
 import type { MonopolyPlayer, MonopolyState } from '../engine/state';
 import type { Action } from '../engine/actions';
 import { monopolyActor } from '../engine/bot';
@@ -88,7 +89,7 @@ function useCashDeltas(players: MonopolyPlayer[]): Record<string, CashDelta[]> {
   return deltas;
 }
 
-const money = (n: number) => `$${n.toLocaleString()}`;
+const money = (n: number, cur: string = '$') => `${cur}${n.toLocaleString()}`;
 
 /** The right column: the video table (online), every player's cash, worth and
  *  holdings, the viewer's own properties with build / sell / mortgage controls,
@@ -105,6 +106,8 @@ export function MonopolySidebar({
   top,
   showLog = true,
 }: Props) {
+  const nameOf = useSpaceName();
+  const currency = useCurrency();
   const table = useTable();
   const actor = monopolyActor(view);
   const me = view.players.find((p) => p.id === meId);
@@ -160,14 +163,14 @@ export function MonopolySidebar({
                   )}
                   <span className="mono-player-money">
                     <span className="mono-player-cash">
-                      {p.bankrupt ? 'Bankrupt' : money(p.cash)}
+                      {p.bankrupt ? 'Bankrupt' : money(p.cash, currency)}
                       {(deltas[p.id] ?? []).map((d) => (
                         <span key={d.key} className={`mono-cash-delta ${d.amount > 0 ? 'is-gain' : 'is-loss'}`} aria-hidden>
-                          {`${d.amount > 0 ? '+' : '-'}${money(Math.abs(d.amount))}`}
+                          {`${d.amount > 0 ? '+' : '-'}${money(Math.abs(d.amount), currency)}`}
                         </span>
                       ))}
                     </span>
-                    {!p.bankrupt && <span className="mono-player-worth">{`Net ${money(netWorth(view, p.id))}`}</span>}
+                    {!p.bankrupt && <span className="mono-player-worth">{`Net ${money(netWorth(view, p.id), currency)}`}</span>}
                   </span>
                   {canTrade && p.id !== meId && !p.bankrupt && (
                     <button
@@ -188,7 +191,7 @@ export function MonopolySidebar({
                         key={id}
                         className={`mono-swatch${view.ownership[id].mortgaged ? ' is-mortgaged' : ''}`}
                         style={{ background: swatch(id) }}
-                        title={BOARD[id].name}
+                        title={nameOf(id)}
                       />
                     ))}
                   </div>
@@ -226,7 +229,7 @@ export function MonopolySidebar({
                   <li key={id} className={`mono-prop${own.mortgaged ? ' is-mortgaged' : ''}`}>
                     <button type="button" className="mono-prop-name" onClick={() => onInspect(id)}>
                       <span className="mono-swatch" style={{ background: swatch(id) }} />
-                      <span>{sp.name}</span>
+                      <span>{nameOf(id)}</span>
                     </button>
                     <span className="mono-prop-build">
                       {own.mortgaged ? (
@@ -252,7 +255,7 @@ export function MonopolySidebar({
                             type="button"
                             className="mono-tool"
                             disabled={!sell}
-                            aria-label={`Sell a building on ${sp.name}`}
+                            aria-label={`Sell a building on ${nameOf(id)}`}
                             title={`Sell a building (+$${Math.floor(sp.houseCost! / 2)})`}
                             onClick={() => onAction({ type: 'SELL_HOUSE', spaceId: id })}
                           >
@@ -262,7 +265,7 @@ export function MonopolySidebar({
                             type="button"
                             className="mono-tool"
                             disabled={!build}
-                            aria-label={`Build on ${sp.name}`}
+                            aria-label={`Build on ${nameOf(id)}`}
                             title={`Build (${own.houses === 4 ? 'hotel' : 'house'}, $${sp.houseCost})`}
                             onClick={() => onAction({ type: 'BUILD', spaceId: id })}
                           >
@@ -275,7 +278,7 @@ export function MonopolySidebar({
                           type="button"
                           className="mono-tool is-wide"
                           disabled={!redeem}
-                          aria-label={`Pay off the mortgage on ${sp.name}`}
+                          aria-label={`Pay off the mortgage on ${nameOf(id)}`}
                           title={`Pay off ($${unmortgageCost(id)})`}
                           onClick={() => onAction({ type: 'UNMORTGAGE', spaceId: id })}
                         >
@@ -286,7 +289,7 @@ export function MonopolySidebar({
                           type="button"
                           className="mono-tool is-wide"
                           disabled={!mort}
-                          aria-label={`Mortgage ${sp.name}`}
+                          aria-label={`Mortgage ${nameOf(id)}`}
                           title={`Mortgage for $${mortgageValue(id)}`}
                           onClick={() => onAction({ type: 'MORTGAGE', spaceId: id })}
                         >

@@ -654,7 +654,8 @@
 .lc-picker {
   position: absolute;
   inset: 0;
-  z-index: 10;
+  /* Above the table's banners: a choice you must make is never covered. */
+  z-index: 30;
   display: grid;
   place-content: center;
   justify-items: center;
@@ -921,4 +922,101 @@
   .lc-owed {
     animation: none;
   }
+}
+
+/* ---------------- No Mercy: the swap prompt and the 25-card limit ---------------- */
+.lc-swap-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(320px, 80cqw);
+}
+
+.lc-swap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  text-align: left;
+  background: #16171d;
+  border: 2px solid color-mix(in srgb, var(--tc) 60%, transparent);
+  border-radius: var(--radius-md);
+  transition: transform 0.12s, border-color 0.12s;
+}
+
+.lc-swap:hover,
+.lc-swap:focus-visible {
+  border-color: var(--tc);
+  transform: translateY(-1px);
+}
+
+.lc-swap .lc-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--tc);
+  border-radius: 50%;
+}
+
+.lc-swap-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-swap b {
+  font-size: 13px;
+  color: #ffffffb3;
+  font-variant-numeric: tabular-nums;
+}
+
+.lc-swap-note {
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.lc-count.is-near {
+  color: #fff;
+  background: #d93a2e;
+}
+
+.lc-mercy {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ffd9a0;
+  background: #0b0b0f99;
+  border: 1px solid #ffd25a66;
+  border-radius: 999px;
+}
+
+.lc-mercy.is-near {
+  color: #fff;
+  background: #d93a2e;
+  border-color: #d93a2e;
+}
+
+.lc-one.is-bust {
+  color: #fff;
+  background: #d93a2e;
+}
+
+/* A full table (six or more opponents): smaller fans, so every seat stands clear. */
+.lc-opponents.is-many .lc-opp-cards {
+  width: 8cqw;
+  height: 5cqw;
+}
+
+.lc-opponents.is-many .lc-opp-cards .lc-card {
+  --lw: 3.3cqw;
+  transform: translateX(-50%) translateX(calc(var(--i) * 0.8cqw)) rotate(calc(var(--i) * 6deg));
+}
+
+.lc-opponents.is-many .lc-opp-name {
+  font-size: max(10px, 1.15cqw);
 }

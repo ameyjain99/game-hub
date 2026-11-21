@@ -1,14 +1,18 @@
 import type { City, MapId, Route } from '../types';
-import type { BonusId, GameMap, GameMode } from './types';
+import type { BonusId, GameMap, GameMode, MapRules } from './types';
 import { USA_MAP } from './usa';
 import { EUROPE_MAP } from './europe';
+import { NORDIC_MAP } from './nordic';
+import { INDIA_MAP } from './india';
 
-export type { BonusId, GameMap, GameMode };
+export type { BonusId, GameMap, GameMode, MapRules };
 
 /** All playable maps, keyed by id. New maps register here. */
 export const MAPS: Record<MapId, GameMap> = {
   usa: USA_MAP,
   europe: EUROPE_MAP,
+  nordic: NORDIC_MAP,
+  india: INDIA_MAP,
 };
 
 export const MAP_LIST: GameMap[] = Object.values(MAPS);
@@ -19,6 +23,12 @@ export function getMap(id: MapId): GameMap {
   if (!m) throw new Error(`unknown map "${id}"`);
   return m;
 }
+
+/** The special rules of a map (none for the standard game). */
+export const rulesOf = (mapId: MapId): MapRules => MAPS[mapId]?.rules ?? {};
+
+/** The special rules of the map a route is on. */
+export const rulesForRoute = (routeId: string): MapRules => MAP_LIST.find((m) => m.routes.some((r) => r.id === routeId))?.rules ?? {};
 
 /** The mode to use for a map: the named one, or the default one. */
 export function modeFor(mapId: MapId, modeId?: string): GameMode {

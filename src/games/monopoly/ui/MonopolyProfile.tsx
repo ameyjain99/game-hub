@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { GameForm } from '../../../shared/ui/GameForm';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/state';
-import { HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
+import { BoardField, HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
 
 interface Props {
   action: 'start' | 'join';
@@ -38,12 +38,7 @@ export function MonopolyProfile({ action, code, onBack, onSubmit }: Props) {
       {hosting && (
         <>
           <div className="g-field-row">
-            <label className="g-field">
-              <span className="g-field-label">Board</span>
-              <select aria-label="Board" defaultValue="us">
-                <option value="us">Classic (US)</option>
-              </select>
-            </label>
+            <BoardField value={rules.board} onChange={(board) => setRules((r) => ({ ...r, board }))} />
             <label className="g-field">
               <span className="g-field-label">Players</span>
               <select aria-label="Number of players" value={seatCount} onChange={(e) => setSeatCount(Number(e.target.value))}>

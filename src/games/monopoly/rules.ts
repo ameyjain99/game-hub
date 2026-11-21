@@ -1,7 +1,7 @@
 import { figure, list, note, p, section, steps, sub, table, terms, type GameRules } from '../../shared/rules';
 import { Deed, Doubles } from './ui/ruleFigures';
-import { BOARD } from './engine/board';
-import { CHANCE, CHEST } from './engine/cards';
+import { BOARD, BOARDS, OWNABLE_IDS, spaceName } from './engine/board';
+import { CHANCE, CHEST, cardText } from './engine/cards';
 import { DEFAULT_SETTINGS } from './engine/state';
 
 const $ = (n: number) => `$${n.toLocaleString('en-US')}`;
@@ -27,6 +27,7 @@ const propertyRows = BOARD.filter((s) => s.kind === 'property').map((s) => [
 const stations = BOARD.filter((s) => s.kind === 'railroad').map((s) => s.name).join(', ');
 const utilities = BOARD.filter((s) => s.kind === 'utility').map((s) => s.name).join(' and ');
 const onOff = (on: boolean) => (on ? 'On' : 'Off');
+const boardRows = OWNABLE_IDS.map((id) => BOARDS.map((b) => spaceName(id, b.id)));
 
 export const MONOPOLY_RULES: GameRules = {
   title: 'Monopoly',
@@ -142,9 +143,14 @@ export const MONOPOLY_RULES: GameRules = {
             ),
           ),
           section(
+            'Boards',
+            p('A game is played on one of four boards, chosen when it is set up. Every board has the same 40 squares, prices, rents and cards; only the places differ. On the Nations board each colour set is a country and the stations are airports. This book uses the Classic names; a card that sends you to a place names the one on your board.'),
+            table(BOARDS.map((b) => b.name), ...boardRows),
+          ),
+          section(
             'Cards',
-            table(['Chance'], ...CHANCE.map((c) => [c.text])),
-            table(['Community Chest'], ...CHEST.map((c) => [c.text])),
+            table(['Chance'], ...CHANCE.map((c) => [cardText(c)])),
+            table(['Community Chest'], ...CHEST.map((c) => [cardText(c)])),
             list(
               'An "Advance to" card moves you forward to that space; if it passes Go you collect $200. "Go back 3 spaces" never collects $200.',
               'A "nearest Station" or "nearest Utility" card moves you forward to the next one. If it is owned, you pay the usual rent to its owner; if not, you may buy it.',

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { BOARD, OWNABLE_IDS } from '../engine/board';
+import { useCurrency } from './boardNames';
 import type { DrawnCard, MonopolyState } from '../engine/state';
 import type { Action } from '../engine/actions';
 import { monopolyActor } from '../engine/bot';
@@ -43,9 +44,9 @@ function Card({ kicker, title, children }: { kicker?: string; title?: string; ch
 
 /** Under an open deed: who owns the lot, what's built, and the rent it charges
  *  right now (utilities depend on the roll, so say how). */
-function ownershipLine(view: MonopolyState, id: number, nameFor: (id: string) => string): string {
+function ownershipLine(view: MonopolyState, id: number, nameFor: (id: string) => string, cur: string): string {
   const own = view.ownership[id];
-  if (!own?.owner) return `Unowned · for sale at $${BOARD[id].price}`;
+  if (!own?.owner) return `Unowned · for sale at ${cur}${BOARD[id].price}`;
   const parts = [`Owned by ${nameFor(own.owner)}`];
   if (own.houses === 5) parts.push('a hotel');
   else if (own.houses > 0) parts.push(`${own.houses} house${own.houses > 1 ? 's' : ''}`);
@@ -53,7 +54,7 @@ function ownershipLine(view: MonopolyState, id: number, nameFor: (id: string) =>
   else if (BOARD[id].kind === 'utility') {
     const both = OWNABLE_IDS.filter((x) => BOARD[x].kind === 'utility' && view.ownership[x].owner === own.owner).length > 1;
     parts.push(`Rent now ${both ? 10 : 4} × dice`);
-  } else parts.push(`Rent now $${rentFor(view, id, 0)}`);
+  } else parts.push(`Rent now ${cur}${rentFor(view, id, 0)}`);
   return parts.join(' · ');
 }
 
@@ -92,6 +93,7 @@ export function MonopolyCenter({
   onDismissMoments = () => {},
   part = 'all',
 }: Props) {
+  const currency = useCurrency();
   const table = useTable();
   const votes = table?.rematch ?? null;
   const askedRematch = !!votes && votes.votes.includes(meId);
@@ -150,7 +152,7 @@ export function MonopolyCenter({
           <CloseIcon size={15} />
         </button>
         <TitleDeed spaceId={inspected} />
-        <p className="mono-muted">{ownershipLine(view, inspected, nameFor)}</p>
+        <p className="mono-muted">{ownershipLine(view, inspected, nameFor, currency)}</p>
       </div>
     );
   } else if (view.phase === 'over') {
@@ -165,7 +167,7 @@ export function MonopolyCenter({
           {ranked.map((p) => (
             <li key={p.id}>
               <span>{nameFor(p.id)}</span>
-              <span>{p.bankrupt ? 'Bankrupt' : `$${netWorth(view, p.id).toLocaleString()}`}</span>
+              <span>{p.bankrupt ? 'Bankrupt' : `${currency}${netWorth(view, p.id).toLocaleString()}`}</span>
             </li>
           ))}
         </ol>
@@ -212,33 +214,33 @@ export function MonopolyCenter({
         <Card kicker={`${them} is deciding`}>
           <TitleDeed spaceId={view.pendingPurchase} compact />
           <p className="mono-muted">
-            For sale at ${BOARD[view.pendingPurchase].price}. {view.settings.auctions ? 'If they pass, it goes to auction.' : 'If they pass, it stays with the bank.'}
+            For sale at {currency}{BOARD[view.pendingPurchase].price}. {view.settings.auctions ? 'If they pass, it goes to auction.' : 'If they pass, it stays with the bank.'}
           </p>
         </Card>
       );
     } else if (view.phase === 'jail') {
       card = (
         <Card kicker={`${them} is in jail`}>
-          <p className="mono-muted">Rolling for doubles, paying the $50 fine, or playing a card.</p>
+          <p className="mono-muted">Rolling for doubles, paying the {currency}50 fine, or playing a card.</p>
         </Card>
       );
     } else if (view.pendingDebt && current.cash < 0) {
       card = (
         <Card kicker={`${them} is short on cash`}>
-          <p className="mono-muted">${-current.cash} to find by selling buildings or mortgaging, or it is bankruptcy.</p>
+          <p className="mono-muted">{currency}{-current.cash} to find by selling buildings or mortgaging, or it is bankruptcy.</p>
         </Card>
       );
     } else card = null;
   } else if (view.phase === 'jail') {
     card = (
       <Card kicker={`In jail · attempt ${me.jailRolls + 1} of 3`} title="Get out of jail">
-        <p className="mono-muted">Roll doubles to walk out free, or pay the $50 fine and roll.</p>
+        <p className="mono-muted">Roll doubles to walk out free, or pay the {currency}50 fine and roll.</p>
         <div className="mono-card-actions is-stack">
           <button type="button" className="primary" onClick={() => onAction({ type: 'ROLL_JAIL' })}>
             Roll for doubles
           </button>
           <button type="button" className="g-btn g-btn-ghost" disabled={me.cash < 50} onClick={() => onAction({ type: 'PAY_JAIL' })}>
-            Pay $50
+            Pay {currency}50
           </button>
           {me.getOutCards > 0 && (
             <button type="button" className="g-btn g-btn-ghost" onClick={() => onAction({ type: 'USE_JAIL_CARD' })}>
@@ -252,7 +254,7 @@ export function MonopolyCenter({
     card = null; // a small Roll button sits beside the dice instead
   } else if (view.pendingDebt && me.cash < 0) {
     card = (
-      <Card kicker="Short on cash" title={`You owe $${-me.cash} more`}>
+      <Card kicker="Short on cash" title={`You owe ${currency}${-me.cash} more`}>
         <p className="mono-muted">Sell buildings or mortgage property from Your properties to cover it.</p>
         <button type="button" className="g-btn g-btn-ghost mono-danger g-block" onClick={() => onAction({ type: 'DECLARE_BANKRUPTCY' })}>
           Declare bankruptcy
@@ -267,7 +269,7 @@ export function MonopolyCenter({
         <TitleDeed spaceId={view.pendingPurchase} />
         <div className="mono-card-actions">
           <button type="button" className="primary" disabled={!affordable} onClick={() => onAction({ type: 'BUY' })}>
-            Buy for ${price}
+            Buy for {currency}{price}
           </button>
           <button type="button" className="g-btn g-btn-ghost" onClick={() => onAction({ type: 'DECLINE' })}>
             Decline

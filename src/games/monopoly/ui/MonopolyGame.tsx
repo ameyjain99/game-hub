@@ -14,7 +14,8 @@ import { momentLots, useSetMoments } from './SetMoment';
 import { RulesButton } from '../../../shared/ui/Rules';
 import { MONOPOLY_RULES } from '../rules';
 import { LogLine } from './LogLine';
-import { BOARD } from '../engine/board';
+import { spaceByName, spaceName } from '../engine/board';
+import { BoardContext } from './boardNames';
 import { FacesStrip } from '../../../online/ui/SeatFace';
 import { Confetti } from '../../../shared/ui/Confetti';
 import { fly, flyer, stamp } from '../../../shared/fly';
@@ -63,7 +64,7 @@ export function monopolyMoments(prev: MonopolyState, next: MonopolyState, who: (
   });
   for (const [id, o] of Object.entries(next.ownership)) {
     if (o.houses === 5 && prev.ownership[Number(id)]?.houses !== 5 && o.owner) {
-      out.push({ kicker: who(o.owner), title: `built a hotel on ${BOARD[Number(id)].name}`, color: colorOf(o.owner), feels: { [o.owner]: 'good' } });
+      out.push({ kicker: who(o.owner), title: `built a hotel on ${spaceName(Number(id), next.settings.board)}`, color: colorOf(o.owner), feels: { [o.owner]: 'good' } });
     }
   }
   for (const line of next.log.slice(prev.log.length)) {
@@ -95,7 +96,7 @@ function useMoneyInMotion(view: MonopolyState, colorOf: (id: string) => string):
     seen.current = view.log.length;
     const token = (id: string) => document.querySelector(`[data-token="${id}"]`);
     const cell = (name: string) => {
-      const sp = BOARD.find((b) => b.name === name);
+      const sp = spaceByName(name, view.settings.board);
       return sp ? document.querySelector(`[data-space="${sp.id}"]`) : null;
     };
     // A token is still walking to its square when its line arrives: let it land first.
@@ -175,6 +176,7 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   );
 
   return (
+    <BoardContext.Provider value={view.settings.board}>
     <div className={`mono-game${wide ? ' has-logcol' : ''}`}>
       {view.phase === 'over' && view.winner === meId && <Confetti />}
       <header className="mono-head">
@@ -269,5 +271,6 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         />
       )}
     </div>
+    </BoardContext.Provider>
   );
 }

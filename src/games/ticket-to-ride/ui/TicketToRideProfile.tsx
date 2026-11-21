@@ -30,6 +30,8 @@ export function TicketToRideProfile({ action, onBack, onSubmit }: Props) {
   const changeBoard = (id: MapId) => {
     setMapId(id);
     setModeId(getMap(id).modes[0]?.id ?? 'default');
+    // A smaller map seats fewer players.
+    setSeatCount((n) => Math.min(Math.max(n, getMap(id).minPlayers), getMap(id).maxPlayers));
   };
 
   return (
@@ -75,7 +77,7 @@ export function TicketToRideProfile({ action, onBack, onSubmit }: Props) {
             <select aria-label="Board" value={mapId} onChange={(e) => changeBoard(e.target.value)}>
               {MAP_LIST.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.name}
+                  {m.name} · {m.minPlayers}-{m.maxPlayers} players
                 </option>
               ))}
             </select>
@@ -100,10 +102,11 @@ export function TicketToRideProfile({ action, onBack, onSubmit }: Props) {
               value={seatCount}
               onChange={(e) => setSeatCount(Number(e.target.value))}
             >
-              <option value={2}>2 players</option>
-              <option value={3}>3 players</option>
-              <option value={4}>4 players</option>
-              <option value={5}>5 players</option>
+              {Array.from({ length: getMap(mapId).maxPlayers - getMap(mapId).minPlayers + 1 }, (_, i) => getMap(mapId).minPlayers + i).map((n) => (
+                <option key={n} value={n}>
+                  {n} players
+                </option>
+              ))}
             </select>
           </label>
         </>

@@ -45,7 +45,8 @@ export function TicketToRideSetup({ onStart, onBackToHub, onPlayOnline }: Props)
     ]);
   const removeRow = (i: number) => setRows((r) => r.filter((_, idx) => idx !== i));
 
-  const canStart = rows.length >= 2 && rows.length <= 5 && rows.every((r) => r.name.trim());
+  const maxPlayers = getMap(mapId).maxPlayers;
+  const canStart = rows.length >= 2 && rows.length <= maxPlayers && rows.every((r) => r.name.trim());
 
   return (
     <div className="setup-screen">
@@ -65,11 +66,13 @@ export function TicketToRideSetup({ onStart, onBackToHub, onPlayOnline }: Props)
           onChange={(e) => {
             setMapId(e.target.value);
             setModeId('default');
+            // A smaller map seats fewer players: the extra seats go.
+            setRows((r) => r.slice(0, getMap(e.target.value).maxPlayers));
           }}
         >
           {MAP_LIST.map((m) => (
             <option key={m.id} value={m.id}>
-              {m.name}
+              {m.name} · {m.minPlayers}-{m.maxPlayers} players
             </option>
           ))}
         </select>
@@ -133,7 +136,7 @@ export function TicketToRideSetup({ onStart, onBackToHub, onPlayOnline }: Props)
       </div>
 
       <div className="setup-actions">
-        {rows.length < 5 && (
+        {rows.length < maxPlayers && (
           <button type="button" onClick={addRow}>
             <AddIcon size={15} />Add player
           </button>

@@ -6,7 +6,7 @@ import { DEFAULT_SETTINGS, type MonopolyDifficulty, type Settings } from '../eng
 import { MonopolyLocalGame } from './MonopolyLocalGame';
 import { MonopolyOnlineGame } from './MonopolyOnlineGame';
 import { MonopolyProfile } from './MonopolyProfile';
-import { HOUSE_RULES, HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
+import { BoardField, HOUSE_RULES, HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
 import { RulesContext } from '../../../shared/rules';
 import { MONOPOLY_RULES } from '../rules';
 
@@ -76,6 +76,7 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
           onLocal={() => navigate({ kind: 'local' })}
           localOptions={
             <>
+              <BoardField value={localRules.board} onChange={(board) => setLocalRules((r) => ({ ...r, board }))} />
               <label className="g-field">
                 <span className="g-field-label">Players</span>
                 <select aria-label="Players" value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))}>
@@ -101,7 +102,7 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
               <summary>
                 House rules
                 <span className="g-disclosure-meta">
-                  ${localRules.startingCash.toLocaleString()} · {rulesOn} on
+                  {localRules.board === 'india' ? '₹' : '$'}{localRules.startingCash.toLocaleString()} · {rulesOn} on
                 </span>
               </summary>
               <div className="g-disclosure-body">

@@ -3,6 +3,7 @@
  * carries a structured `effect` the reducer applies; the deck order is shuffled
  * per game from the seeded RNG and hidden by redaction.
  */
+import { spaceName, type BoardId } from './board';
 
 export type CardEffect =
   | { kind: 'move-to'; space: number; collectGo?: boolean }
@@ -18,14 +19,18 @@ export type CardEffect =
 
 export interface CardDef {
   id: string;
+  /** What the card says; `{24}` stands for the name of square 24 on the board in play. */
   text: string;
   effect: CardEffect;
 }
 
+/** A card's words on a board. */
+export const cardText = (card: CardDef, board: BoardId = 'neo'): string => card.text.replace(/\{(\d+)\}/g, (_, sq) => spaceName(Number(sq), board));
+
 export const CHANCE: CardDef[] = [
   { id: 'ch-go', text: 'Advance to Go. Collect $200.', effect: { kind: 'move-to', space: 0, collectGo: true } },
-  { id: 'ch-illinois', text: 'Advance to Budapest.', effect: { kind: 'move-to', space: 24, collectGo: true } },
-  { id: 'ch-charles', text: 'Advance to Dublin.', effect: { kind: 'move-to', space: 11, collectGo: true } },
+  { id: 'ch-illinois', text: 'Advance to {24}.', effect: { kind: 'move-to', space: 24, collectGo: true } },
+  { id: 'ch-charles', text: 'Advance to {11}.', effect: { kind: 'move-to', space: 11, collectGo: true } },
   { id: 'ch-util', text: 'Advance to the nearest Utility.', effect: { kind: 'nearest', target: 'utility' } },
   { id: 'ch-rail1', text: 'Advance to the nearest Station.', effect: { kind: 'nearest', target: 'railroad' } },
   { id: 'ch-rail2', text: 'Advance to the nearest Station.', effect: { kind: 'nearest', target: 'railroad' } },
@@ -35,8 +40,8 @@ export const CHANCE: CardDef[] = [
   { id: 'ch-jail', text: 'Go to Jail. Do not pass Go.', effect: { kind: 'jail' } },
   { id: 'ch-repairs', text: 'Make general repairs: $25 per house, $100 per hotel.', effect: { kind: 'pay-per-building', perHouse: 25, perHotel: 100 } },
   { id: 'ch-fine', text: 'Speeding fine. Pay $15.', effect: { kind: 'pay', amount: 15 } },
-  { id: 'ch-reading', text: 'Take a trip to North Station.', effect: { kind: 'move-to', space: 5, collectGo: true } },
-  { id: 'ch-boardwalk', text: 'Advance to Tokyo.', effect: { kind: 'move-to', space: 39 } },
+  { id: 'ch-reading', text: 'Take a trip to {5}.', effect: { kind: 'move-to', space: 5, collectGo: true } },
+  { id: 'ch-boardwalk', text: 'Advance to {39}.', effect: { kind: 'move-to', space: 39 } },
   { id: 'ch-chairman', text: 'You have been elected Chairman. Pay each player $50.', effect: { kind: 'pay-each', amount: 50 } },
   { id: 'ch-loan', text: 'Your building loan matures. Collect $150.', effect: { kind: 'collect', amount: 150 } },
 ];

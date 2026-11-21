@@ -1,5 +1,5 @@
 import { makeRng, type Rng } from '../../../shared/rng';
-import { OWNABLE_IDS } from './board';
+import { OWNABLE_IDS, boardOf, type BoardId } from './board';
 import { CHANCE, CHEST } from './cards';
 import { playerIdForSeat } from '../../../net/protocol';
 
@@ -24,6 +24,8 @@ export interface Settings {
   randomizeOrder: boolean;
   /** Rounds to play before the highest net worth wins; 0 plays until one player is left. */
   roundLimit: number;
+  /** Which places are on the board (the squares and prices are the same on all). */
+  board: BoardId;
 }
 
 /** RAW-correct defaults; house rules (jackpot, double-Go, no-rent-in-jail) off. */
@@ -38,6 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   noRentInJail: false,
   randomizeOrder: true,
   roundLimit: 0,
+  board: 'neo',
 };
 
 export interface MonopolyPlayer {
@@ -163,6 +166,7 @@ export function createMonopolyGame(
   settings?: Partial<Settings>,
 ): MonopolyState {
   const s: Settings = { ...DEFAULT_SETTINGS, ...settings };
+  s.board = boardOf(s.board);
   const rng = makeRng(seed);
 
   const players: MonopolyPlayer[] = configs.map((c, i) => ({

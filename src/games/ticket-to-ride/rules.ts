@@ -2,8 +2,8 @@ import { figure, list, note, p, section, steps, sub, table, terms, type GameRule
 import { TrainCards, Tickets } from './ui/ruleFigures';
 import { getMap } from './engine/maps';
 
-const routeTable = (withEight: boolean) =>
-  table(['Route length', '1', '2', '3', '4', '5', '6', ...(withEight ? ['8'] : [])], ['Points', '1', '2', '4', '7', '10', '15', ...(withEight ? ['21'] : [])]);
+const routeTable = (longest: 6 | 8 | 9) =>
+  table(['Route length', '1', '2', '3', '4', '5', '6', ...(longest === 8 ? ['8'] : longest === 9 ? ['9'] : [])], ['Points', '1', '2', '4', '7', '10', '15', ...(longest === 8 ? ['21'] : longest === 9 ? ['27'] : [])]);
 
 interface ModeText {
   europe: boolean;
@@ -15,6 +15,20 @@ interface ModeText {
   longest: boolean;
   globetrotter: boolean;
   extraSetup?: string;
+  /** A map other than the USA and Europe: its own wording. */
+  map?: {
+    about: string;
+    trains: number;
+    players: string;
+    /** Player count from which both tracks of a double route are open. */
+    doublesFrom: number;
+    tunnels: boolean;
+    /** Locomotives only on ferries and tunnels, drawn like any card. */
+    nordic?: boolean;
+    grandTour?: boolean;
+    longestRoute: 6 | 9;
+    setupDiscard: string;
+  };
 }
 
 function book(m: ModeText): RuleSection[] {
@@ -33,9 +47,10 @@ function book(m: ModeText): RuleSection[] {
       'What is in play',
       figure(TrainCards, 'Train cards: eight colours, and the locomotive, which is wild.'),
       terms(
-        ['Map', m.europe ? 'Europe: 47 cities joined by routes of 1 to 8 spaces, including tunnels and ferries.' : 'The United States and southern Canada: 36 cities joined by routes of 1 to 6 spaces.'],
-        ['Trains', 'Each player has **45 trains** in their colour.'],
-        ['Train cards', '110 cards: 12 in each of 8 colours (red, orange, yellow, green, blue, purple, white, black) and 14 locomotives. **Locomotives are wild**: each counts as any colour.'],
+        ['Map', m.map ? m.map.about : m.europe ? 'Europe: 47 cities joined by routes of 1 to 8 spaces, including tunnels and ferries.' : 'The United States and southern Canada: 36 cities joined by routes of 1 to 6 spaces.'],
+        ['Trains', `Each player has **${m.map?.trains ?? 45} trains** in their colour.`],
+        ...(m.map ? ([['Players', m.map.players]] as [string, string][]) : []),
+        ['Train cards', '110 cards: 12 in each of 8 colours (red, orange, yellow, green, blue, purple, white, black) and 14 locomotives. **Locomotives are wild**: each counts as any colour' + (m.map?.nordic ? ', but on this map they may be played **only on ferries, tunnels and the Arctic line**.' : '.')],
         ['Destination tickets', m.ticketText],
         ...(m.europe ? ([['Train stations', 'Each player has **3 stations**.']] as [string, string][]) : []),
       ),
@@ -48,7 +63,7 @@ function book(m: ModeText): RuleSection[] {
         sub(
           `Each player is dealt **${m.deal} destination tickets** and must keep **at least ${m.keep}**. Everyone chooses at the same time.`,
           ...(m.extraSetup ? [m.extraSetup] : []),
-          m.europe ? 'Tickets not kept at setup go back in the box (out of the game).' : 'Tickets not kept go to the bottom of the ticket pile.',
+          m.map ? m.map.setupDiscard : m.europe ? 'Tickets not kept at setup go back in the box (out of the game).' : 'Tickets not kept go to the bottom of the ticket pile.',
         ),
         'When everyone has chosen, the first player in the seat order (the host online, you on this device) takes the first turn. Play goes round the seats.',
       ),
@@ -59,12 +74,18 @@ function book(m: ModeText): RuleSection[] {
       steps(
         'Take two cards, one at a time. Each one may be a face-up card from the market or the top card of the deck (unseen).',
         'When you take a face-up card, it is replaced at once from the deck before your next draw.',
-        sub(
-          '**Locomotives in the market:**',
-          'Taking a face-up locomotive as your **first** card ends your turn: it is your only card.',
-          'You may **not** take a face-up locomotive as your second card.',
-          'A locomotive drawn blind from the deck is an ordinary draw.',
-        ),
+        m.map?.nordic
+          ? sub(
+              '**Locomotives in the market** are ordinary cards on this map:',
+              'you may take one as either card, or two in the same turn;',
+              'the market is never cleared for showing three of them.',
+            )
+          : sub(
+              '**Locomotives in the market:**',
+              'Taking a face-up locomotive as your **first** card ends your turn: it is your only card.',
+              'You may **not** take a face-up locomotive as your second card.',
+              'A locomotive drawn blind from the deck is an ordinary draw.',
+            ),
         'When the deck runs out, the discards are shuffled into a new deck. If there are no cards left to draw at all, you may not choose this action. If after your first card no second card can be taken (no deck cards and only locomotives face up), your turn ends.',
       ),
     ),
@@ -84,10 +105,30 @@ function book(m: ModeText): RuleSection[] {
         sub(
           '**Double routes** (two parallel routes between the same cities):',
           'One player may never claim both.',
-          'With **2 or 3 players**, once either of the pair is claimed, the other is closed to everyone.',
-          'With 4 or 5 players, both can be claimed, by different players.',
+          ...(m.map
+            ? [
+                `With **fewer than ${m.map.doublesFrom} players**, once either of the pair is claimed, the other is closed to everyone.`,
+                `With ${m.map.doublesFrom} players, both can be claimed, by different players.`,
+              ]
+            : ['With **2 or 3 players**, once either of the pair is claimed, the other is closed to everyone.', 'With 4 or 5 players, both can be claimed, by different players.']),
         ),
-        ...(m.europe
+        ...(m.map?.nordic
+          ? [
+              sub(
+                '**Locomotives** may be played only on a ferry, in a tunnel, or on the **Arctic line** (Murmansk to Kajaani, 9 spaces, worth 27 points).',
+                'Every other route is paid for in cards of its colour alone.',
+              ),
+            ]
+          : []),
+        ...(m.map && !m.map.tunnels
+          ? [
+              sub(
+                '**Ferries** (routes with locomotive symbols) need at least that many **locomotives** among the cards you play.',
+                'The other cards follow the route\'s colour rule as usual.',
+              ),
+            ]
+          : []),
+        ...(m.europe || m.map?.tunnels
           ? [
               sub(
                 '**Ferries** (routes with locomotive symbols) need at least that many **locomotives** among the cards you play.',
@@ -141,11 +182,21 @@ function book(m: ModeText): RuleSection[] {
     section(
       'Scoring',
       p('**Routes** score as you claim them:'),
-      routeTable(m.europe),
+      routeTable(m.map ? m.map.longestRoute : m.europe ? 8 : 6),
       steps(
         'At the end, each player reveals their tickets. Each **completed** ticket adds its value; each **uncompleted** ticket subtracts its value.',
         ...(m.longest
           ? [`**${m.europe ? 'European Express' : 'Longest Continuous Path'}: +10** to the player with the longest continuous chain of their own routes (counted in train spaces; a chain may pass through a city more than once but may not reuse a route). Tied players each score it.`]
+          : []),
+        ...(m.map?.nordic ? ['**Globetrotter: +10** to the player who completed the most tickets. Tied players each score it; nobody scores it if no one completed a ticket.'] : []),
+        ...(m.map?.grandTour
+          ? [
+              sub(
+                '**Grand Tour.** A ticket counts for the Grand Tour when its two cities are joined by **two** continuous chains of your routes that share no route (they may cross at a city).',
+                'Your first and second such tickets are worth **+5** each, your third, fourth and fifth **+10** each: 5, 10, 20, 30 or 40 points in all.',
+                'Tickets beyond the fifth add nothing more. These points come on top of the tickets themselves.',
+              ),
+            ]
           : []),
         ...(m.globetrotter ? ['**Globetrotter: +15** to the player who completed the most tickets. Tied players each score it; nobody scores it if no one completed a ticket.'] : []),
         ...(m.europe ? ['**Stations:** +4 for each station a player did not build.'] : []),
@@ -169,6 +220,8 @@ function book(m: ModeText): RuleSection[] {
 }
 
 const usa = getMap('usa');
+const nordic = getMap('nordic');
+const india = getMap('india');
 const ticketCount = (modeId: string) => usa.modes.find((m) => m.id === modeId)?.tickets.length ?? 0;
 
 export const TTR_RULES: GameRules = {
@@ -236,6 +289,58 @@ export const TTR_RULES: GameRules = {
           longest: true,
           globetrotter: false,
           extraSetup: 'The printed rule gives no bonus card for this mode, so GameHub plays it with the standard Longest Continuous Path bonus.',
+        }),
+      },
+    },
+    {
+      id: 'nordic:default',
+      label: 'Nordic',
+      book: {
+        summary: 'A tight map of fjords, ferries and mountain tunnels from Kobenhavn to Murmansk, for 2 or 3 players. Locomotives are kept for the ferries and tunnels, and are drawn as freely as any card.',
+        sections: book({
+          europe: false,
+          ticketText: `${nordic.modes[0].tickets.length} tickets, each worth the number of trains on the shortest way between its two cities.`,
+          deal: 5,
+          keep: 2,
+          draw: 3,
+          longest: false,
+          globetrotter: false,
+          map: {
+            about: `The Nordic countries: ${nordic.cities.length} cities joined by routes of 1 to 6 spaces and one of 9, with many ferries and tunnels.`,
+            trains: 40,
+            players: 'A map for **2 or 3** players.',
+            doublesFrom: 3,
+            tunnels: true,
+            nordic: true,
+            longestRoute: 9,
+            setupDiscard: 'Tickets not kept, at setup or later, leave the game.',
+          },
+        }),
+      },
+    },
+    {
+      id: 'india:default',
+      label: 'India',
+      book: {
+        summary: 'A crowded map of short routes and loops from Karachi to Chittagong and Srinagar to Colombo, for 2 to 4 players. The Grand Tour rewards joining the cities of a ticket twice over.',
+        sections: book({
+          europe: false,
+          ticketText: `${india.modes[0].tickets.length} tickets, each worth the number of trains on the shortest way between its two cities.`,
+          deal: 4,
+          keep: 2,
+          draw: 3,
+          longest: true,
+          globetrotter: false,
+          map: {
+            about: `India and its neighbours: ${india.cities.length} cities joined by routes of 1 to 6 spaces, with mountain tunnels and sea ferries.`,
+            trains: 45,
+            players: 'A map for **2 to 4** players.',
+            doublesFrom: 4,
+            tunnels: true,
+            grandTour: true,
+            longestRoute: 6,
+            setupDiscard: 'Tickets not kept go to the bottom of the ticket pile.',
+          },
         }),
       },
     },

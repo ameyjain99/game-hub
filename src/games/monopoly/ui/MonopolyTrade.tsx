@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BOARD, OWNABLE_IDS } from '../engine/board';
+import { useSpaceName } from './boardNames';
 import type { MonopolyState, PendingTrade, TradeBundle } from '../engine/state';
 import type { Action } from '../engine/actions';
 import { GROUP_COLOR } from './board-layout';
@@ -12,6 +13,7 @@ const tradableOf = (view: MonopolyState, ownerId: string): number[] =>
   OWNABLE_IDS.filter((id) => view.ownership[id].owner === ownerId && view.ownership[id].houses === 0);
 
 export function Bundle({ bundle }: { bundle: TradeBundle }) {
+  const nameOf = useSpaceName();
   const empty = bundle.cash === 0 && bundle.properties.length === 0 && bundle.getOutCards === 0;
   return (
     <ul className="mono-chips">
@@ -20,7 +22,7 @@ export function Bundle({ bundle }: { bundle: TradeBundle }) {
       {bundle.properties.map((id) => (
         <li key={id} className="mono-chip">
           <span className="mono-swatch" style={{ background: swatch(id) }} />
-          {BOARD[id].name}
+          {nameOf(id)}
         </li>
       ))}
       {bundle.getOutCards > 0 && <li className="mono-chip">Get Out of Jail Free ×{bundle.getOutCards}</li>}
@@ -86,6 +88,7 @@ function Side({
   toggle: (id: number) => void;
   cashLabel: string;
 }) {
+  const nameOf = useSpaceName();
   const lots = tradableOf(view, ownerId);
   return (
     <section className="mono-trade-side">
@@ -111,7 +114,7 @@ function Side({
           <label key={id} className={`mono-pick${picked.includes(id) ? ' is-on' : ''}`}>
             <input type="checkbox" className="g-check" checked={picked.includes(id)} onChange={() => toggle(id)} />
             <span className="mono-swatch" style={{ background: swatch(id) }} />
-            <span className="mono-pick-name">{BOARD[id].name}</span>
+            <span className="mono-pick-name">{nameOf(id)}</span>
             {view.ownership[id].mortgaged && <span className="g-tag g-tag-dim">Mortgaged</span>}
           </label>
         ))}

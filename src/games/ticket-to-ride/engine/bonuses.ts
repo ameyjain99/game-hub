@@ -1,5 +1,5 @@
 import type { MapId, PlayerState } from './types';
-import { areConnected, longestPath } from './graph';
+import { areConnected, longestPath, twoPaths } from './graph';
 import { modeFor, type BonusId } from './maps';
 import type { BonusRule } from './scoring';
 
@@ -40,9 +40,39 @@ export const globetrotterBonus: BonusRule = {
   },
 };
 
+/** +10 to the player(s) who completed the most destination tickets; ties all score. */
+export const mostTicketsBonus: BonusRule = { ...globetrotterBonus, id: 'most-tickets', points: 10 };
+
+/** What the Grand Tour pays for 0, 1, 2... qualifying tickets (five or more pay the same). */
+export const GRAND_TOUR_POINTS = [0, 5, 10, 20, 30, 40];
+
+/** A player's tickets whose two cities are joined by two paths that share no route. */
+export function grandTourTickets(player: PlayerState) {
+  return player.tickets.filter((t) => twoPaths(player.claimedRouteIds, t.a, t.b));
+}
+
+/**
+ * The Grand Tour: every ticket whose cities you joined twice over, by two
+ * paths sharing no route, counts. One or two such tickets pay 5 each, the next
+ * three 10 each, to a most of 40.
+ */
+export const grandTourBonus: BonusRule = {
+  id: 'grand-tour',
+  label: 'Grand Tour',
+  points: 0,
+  award(players: PlayerState[]): Set<string> {
+    return new Set(players.filter((p) => grandTourTickets(p).length > 0).map((p) => p.id));
+  },
+  score(player: PlayerState): number {
+    return GRAND_TOUR_POINTS[Math.min(grandTourTickets(player).length, GRAND_TOUR_POINTS.length - 1)];
+  },
+};
+
 const BONUSES: Record<BonusId, BonusRule> = {
   'longest-path': longestPathBonus,
   globetrotter: globetrotterBonus,
+  'most-tickets': mostTicketsBonus,
+  'grand-tour': grandTourBonus,
 };
 
 /** The bonus cards in play for a map's mode. */

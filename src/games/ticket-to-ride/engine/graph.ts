@@ -44,6 +44,43 @@ export function areConnected(routeIds: string[], a: string, b: string): boolean 
 }
 
 /**
+ * Whether a and b are joined by two continuous paths that share no route (they
+ * may cross at a city). Two rounds of path-finding on the routes as unit
+ * capacities: the second round may undo a route the first one used.
+ */
+export function twoPaths(routeIds: string[], a: string, b: string): boolean {
+  if (a === b) return false;
+  const adj = buildAdjacency(routeIds);
+  // flow[edgeId] is the city the route is travelled FROM, when it is in use.
+  const flow = new Map<string, string>();
+  for (let round = 0; round < 2; round++) {
+    const from = new Map<string, { city: string; edgeId: string }>();
+    const seen = new Set<string>([a]);
+    const queue = [a];
+    while (queue.length && !seen.has(b)) {
+      const node = queue.shift()!;
+      for (const edge of adj.get(node) ?? []) {
+        if (seen.has(edge.to)) continue;
+        const usedFrom = flow.get(edge.edgeId);
+        // Free to use if unused, or if it is in use the other way (undoing it).
+        if (usedFrom !== undefined && usedFrom !== edge.to) continue;
+        seen.add(edge.to);
+        from.set(edge.to, { city: node, edgeId: edge.edgeId });
+        queue.push(edge.to);
+      }
+    }
+    if (!seen.has(b)) return false;
+    for (let node = b; node !== a; ) {
+      const step = from.get(node)!;
+      if (flow.get(step.edgeId) === node) flow.delete(step.edgeId);
+      else flow.set(step.edgeId, step.city);
+      node = step.city;
+    }
+  }
+  return true;
+}
+
+/**
  * Route ids of one longest continuous path, in travel order, using each claimed
  * edge at most once. Cities may be revisited. Exhaustive DFS - fine at map scale.
  */

@@ -1,8 +1,8 @@
 import { CARD_COLORS, type CardCombo, type GameState, type Hand, type PlayerState, type TrainCard } from './types';
 import { type Action, IllegalActionError } from './actions';
 import { drawOne, dealMarket } from './deck';
-import { getRoute, routeIsClaimable } from './selectors';
-import { cityById, modeFor } from './maps';
+import { getRoute, routeIsClaimable, takesLocomotives } from './selectors';
+import { cityById, modeFor, rulesOf } from './maps';
 import { routePoints, finalScores } from './scoring';
 import { payExtra, spentCards, tunnelExtra } from './tunnel';
 import { bonusesFor } from './bonuses';
@@ -183,11 +183,12 @@ function applyDrawTrain(state: GameState, action: Extract<Action, { type: 'DRAW_
   // market draw
   const card = state.market[action.index];
   if (card === undefined) throw new IllegalActionError('no such market card');
-  if (card === 'locomotive' && state.drawnThisTurn === 1) {
+  const freeLocos = !!rulesOf(state.mapId).freeLocomotives;
+  if (card === 'locomotive' && state.drawnThisTurn === 1 && !freeLocos) {
     throw new IllegalActionError('cannot take a face-up locomotive as the second draw');
   }
 
-  const takingFaceUpLoco = card === 'locomotive' && state.drawnThisTurn === 0;
+  const takingFaceUpLoco = card === 'locomotive' && state.drawnThisTurn === 0 && !freeLocos;
 
   let s = clone(state);
   s.players[s.current].hand[card]++;
@@ -225,6 +226,9 @@ function applyClaimRoute(
   }
   if (locomotives < route.locomotivesRequired) {
     throw new IllegalActionError('not enough locomotives for this route');
+  }
+  if (locomotives > 0 && !takesLocomotives(route, rulesOf(state.mapId))) {
+    throw new IllegalActionError('locomotives can only be used on ferries and tunnels here');
   }
   if (locomotives > player.hand.locomotive) {
     throw new IllegalActionError('not enough locomotives in hand');
@@ -402,7 +406,8 @@ function applyKeepTickets(
   const returned = p.pendingTickets.filter((t) => !action.keptIds.includes(t.id));
   p.tickets.push(...kept);
   p.pendingTickets = [];
-  s.ticketPile.push(...returned); // returned to the bottom of the pile
+  // Back under the pile, or out of the game where the map says so.
+  if (modeFor(s.mapId, s.modeId).drawDiscards !== 'box') s.ticketPile.push(...returned);
   s.phase = 'turn';
   pushLog(s, `${p.name} kept ${kept.length} destination ticket${kept.length === 1 ? '' : 's'}.`);
   return endTurn(s);
