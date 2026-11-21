@@ -105,6 +105,7 @@ export function sortHand(hand: Card[], side: 'light' | 'dark', mode: (typeof SOR
 /** The Last Card table: opponents round the top, the piles in the middle, your hand along the bottom. */
 export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel, online }: KitScreenProps<LcState, LcAction>) {
   const [choosing, setChoosing] = useState<number | null>(null);
+  const [fanned, setFanned] = useState<string | null>(null);
   // No Mercy: the 7 waiting for a player to swap hands with.
   const [swapping, setSwapping] = useState<number | null>(null);
   const unlimited = view.variant === 'unlimited';
@@ -212,14 +213,21 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
       <div className={`lc-opponents${others.length > 5 ? ' is-many' : ''}`}>
         {others.map((p, k) => {
           const { x, y } = seatAt(k, others.length);
-          const shown = Math.min(p.handCount, others.length > 5 ? 6 : 10);
+          // Hovered, a hand lays out flat with every card clear, kept inside the table.
+          const open = fanned === p.id;
+          const shown = open ? p.handCount : Math.min(p.handCount, others.length > 5 ? 6 : 10);
+          const gap = Math.min(4.2, 84 / Math.max(shown, 1));
+          const half = (gap * (shown - 1) + 4.6) / 2 + 2;
+          const shift = Math.min(Math.max(x, half), 100 - half) - x;
           const exposed = view.exposed === p.id;
           return (
             <div
               key={p.id}
               data-seat={p.id}
-              className={`lc-opp${actor === p.id ? ' is-turn' : ''}${p.out || p.bust ? ' is-out' : ''}${spotlight === p.id ? ' is-spot' : ''}${exposed ? ' is-exposed' : ''}`}
-              style={{ left: `${x}%`, top: `${y}%`, '--tc': lcSeatColor(view.players.indexOf(p)) } as CSSProperties}
+              className={`lc-opp${actor === p.id ? ' is-turn' : ''}${p.out || p.bust ? ' is-out' : ''}${spotlight === p.id ? ' is-spot' : ''}${exposed ? ' is-exposed' : ''}${open ? ' is-fanned' : ''}`}
+              style={{ left: `${x}%`, top: `${y}%`, '--tc': lcSeatColor(view.players.indexOf(p)), '--gap': `${gap}cqw`, '--shift': `${shift}cqw` } as CSSProperties}
+              onMouseEnter={() => setFanned(p.id)}
+              onMouseLeave={() => setFanned(null)}
             >
               <div className="lc-opp-cards" aria-hidden="true">
                 {Array.from({ length: shown }, (_, i) => {
@@ -228,9 +236,8 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
                   return <LcCard key={i} face={backFace} side={other} back={!backFace} className="is-mini" style={{ '--i': i - (shown - 1) / 2 } as CSSProperties} />;
                 })}
               </div>
-              <SeatFace id={p.id} className="lc-face" color={lcSeatColor(view.players.indexOf(p))} />
               <div className="lc-opp-name">
-                <span className="lc-dot" />
+                <SeatFace id={p.id} className="lc-seat-face" color={lcSeatColor(view.players.indexOf(p))} fallback={<span className="lc-dot" />} />
                 {nameFor(p.id)}
                 <span className={`lc-count${unlimited && p.handCount >= MERCY - 7 ? ' is-near' : ''}`} title={unlimited ? `${p.handCount} of ${MERCY}: at ${MERCY} they are out of the hand` : undefined}>
                   {p.handCount}

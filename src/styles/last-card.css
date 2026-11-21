@@ -230,6 +230,20 @@
   transform: translateX(-50%) translateX(calc(var(--i) * 1.1cqw)) rotate(calc(var(--i) * 6deg));
 }
 
+/* A hand under the pointer lays out flat, every card clear of the next. */
+.lc-opp-cards .lc-card {
+  transition: transform 0.18s ease-out;
+}
+
+.lc-opp.is-fanned {
+  z-index: 6;
+}
+
+.lc-opponents .lc-opp.is-fanned .lc-opp-cards .lc-card {
+  --lw: 4.6cqw;
+  transform: translateX(-50%) translateX(calc(var(--shift) + var(--i) * var(--gap)));
+}
+
 .lc-opp-name {
   display: inline-flex;
   align-items: center;
@@ -733,18 +747,14 @@
   top: 35%;
 }
 
-/* A player's live camera stands in front of their fan of cards. */
-.lc-face {
-  position: absolute;
-  top: 2.6cqw;
-  left: 50%;
-  z-index: 2;
-  translate: -50% 0;
-  --face: clamp(32px, 6.4cqw, 64px);
+/* A player's live camera sits in their name plate, clear of their fan of cards. */
+.lc-seat-face {
+  --face: clamp(26px, 3.8cqw, 44px);
+  margin: -0.2cqw 0 -0.2cqw -0.7cqw;
 }
 
-.lc-opp:has(.lc-face) .lc-opp-name {
-  margin-top: max(2.2cqw, 14px);
+.lc-opponents.is-many .lc-seat-face {
+  --face: clamp(22px, 3cqw, 34px);
 }
 
 /* The sort switch sits at the corner of the table, by your hand. */

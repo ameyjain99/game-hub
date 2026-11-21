@@ -262,7 +262,7 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
               {owner && (
                 <span className="ludo-yard-who">
                   <SeatFace id={owner.id} className="ludo-face" color="#fff" />
-                  <span className="ludo-yard-name">{who(owner.id)}</span>
+                  <span className="ludo-yard-name">{nameFor(owner.id)}</span>
                 </span>
               )}
             </div>
