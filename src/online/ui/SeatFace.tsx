@@ -57,13 +57,12 @@ export function FacesStrip({ colorOf }: { colorOf?: (id: string) => string }) {
   return (
     <div className="g-faces" aria-label="At the table">
       {ids.map((id) => {
-        const me = id === table.meId;
         const seat = table.seatOf(id);
         const letter = table.nameFor(id).trim().slice(0, 1).toUpperCase();
         return (
           <span key={id} className={`g-faces-seat${seat && !seat.connected ? ' is-away' : ''}`} style={colorOf ? ({ '--tc': colorOf(id) } as CSSProperties) : undefined}>
             <SeatFace id={id} color={colorOf?.(id)} fallback={<span className="g-face is-letter">{letter}</span>} />
-            <span className="g-faces-name">{me ? 'You' : table.nameFor(id)}</span>
+            <span className="g-faces-name">{table.nameFor(id)}</span>
           </span>
         );
       })}

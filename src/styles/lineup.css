@@ -89,6 +89,14 @@
   transform: scale(1.06);
 }
 
+/* The chosen card's other space, already under a chip: shown, not playable. */
+.seq-cell.is-taken {
+  z-index: 1;
+  box-shadow: 0 0 0 0.45cqw #ffffffd9, 0 0.2cqw 0 #0000002e;
+  outline: 0.3cqw dashed #1c1d22;
+  outline-offset: 0.1cqw;
+}
+
 .seq-cell.is-victim {
   z-index: 1;
   cursor: pointer;
@@ -121,6 +129,25 @@
   border-radius: 50%;
   box-shadow: 0 0.35cqw 0.7cqw #0007, inset 0 -0.3cqw 0 #0003;
   transition: opacity 0.2s;
+}
+
+/* The card under a chip stays readable, printed on the chip itself. */
+.seq-chip-card {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: max(8px, 1.9cqw);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow: 0 0 0.3cqw #000, 0 0.1cqw 0.2cqw #000c;
+  pointer-events: none;
+}
+
+.seq-cell.is-dim .seq-chip-card {
+  visibility: hidden;
 }
 
 /* ---- The last play, acted out on its space ---- */

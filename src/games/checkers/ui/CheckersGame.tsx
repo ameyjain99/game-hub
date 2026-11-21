@@ -178,7 +178,7 @@ export function CheckersGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           const kings = count(shownBoard, s, true);
           return {
             id,
-            name: who(id),
+            name: nameFor(id),
             you: id === meId,
             color: SIDE_COLOR[s],
             badge: <span className={`ck-token-dot is-${s}`} />,

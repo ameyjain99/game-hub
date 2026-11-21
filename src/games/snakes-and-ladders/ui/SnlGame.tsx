@@ -299,7 +299,7 @@ export function SnlGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
         onSpotlight={setSpotlight}
         players={view.players.map((p, seat) => ({
           id: p.id,
-          name: who(p.id),
+          name: nameFor(p.id),
           you: p.id === meId,
           color: snlColor(seat),
           detail: p.out ? 'Left the game' : p.pos === 0 ? 'At the start' : `On square ${p.pos}`,
