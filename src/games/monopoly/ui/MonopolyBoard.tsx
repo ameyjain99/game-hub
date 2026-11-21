@@ -152,7 +152,8 @@ export function MonopolyBoard({
 
         if (side === 'corner') {
           return (
-            <div key={sp.id} className={className} style={style} aria-label={label}>
+            <div key={sp.id} className={className}
+              data-space={sp.id} style={style} aria-label={label}>
               <span className="mono-corner">
                 <Corner sp={sp} pot={view.settings.freeParkingJackpot ? view.freeParkingPot : 0} />
               </span>
@@ -189,6 +190,7 @@ export function MonopolyBoard({
             key={sp.id}
             type="button"
             className={className}
+              data-space={sp.id}
             style={style}
             aria-label={label}
             aria-pressed={inspected === sp.id}
@@ -198,7 +200,8 @@ export function MonopolyBoard({
             {body}
           </button>
         ) : (
-          <div key={sp.id} className={className} style={style} aria-label={label}>
+          <div key={sp.id} className={className}
+              data-space={sp.id} style={style} aria-label={label}>
             {body}
           </div>
         );

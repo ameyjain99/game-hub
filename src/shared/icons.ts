@@ -66,4 +66,21 @@ export {
   CodeXml,
   Bug,
   GitPullRequest,
+  // The table: pause, sorting a hand
+  Pause,
+  Play,
+  ArrowDownAZ,
+  PartyPopper,
+  // Playing pieces a player can pick (shared/pieces.tsx)
+  Rocket,
+  Anchor,
+  Bike,
+  Umbrella,
+  Compass,
+  Bell,
+  Feather,
+  Flame,
+  Ghost,
+  Key,
+  Zap,
 } from 'lucide-react';

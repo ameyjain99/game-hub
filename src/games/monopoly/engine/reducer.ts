@@ -1,4 +1,5 @@
 import { makeRng } from '../../../shared/rng';
+import { createMonopolyGame } from './state';
 import { BOARD, GO_SALARY, GO_TO_JAIL_ID, JAIL_ID } from './board';
 import { CHANCE, CHEST, type CardEffect } from './cards';
 import {
@@ -669,11 +670,18 @@ function nextActive(draft: MonopolyState): void {
   for (let i = 1; i <= n; i++) {
     const idx = (draft.current + i) % n;
     if (!draft.players[draft.turnOrder[idx]].bankrupt) {
+      if (idx <= draft.current) draft.round += 1; // back round to the top of the order
       draft.current = idx;
       break;
     }
   }
   draft.turns += 1;
+  // A game with a round limit ends when its last round has been played.
+  if (draft.settings.roundLimit > 0 && draft.round > draft.settings.roundLimit) {
+    note(draft, `The last of ${draft.settings.roundLimit} rounds is over: the highest net worth wins`);
+    endGameInPlace(draft);
+    return;
+  }
   draft.tradesThisTurn = 0;
   if (draft.turns >= MAX_TURNS) {
     endGameInPlace(draft);
@@ -760,7 +768,20 @@ export function endGame(state: MonopolyState): MonopolyState {
   return draft;
 }
 
+/** A fresh game for the same players, pieces and rules. */
+export function rematch(state: MonopolyState): MonopolyState {
+  return createMonopolyGame(
+    state.players.map((p) => ({ name: p.name, avatar: p.avatar, isAI: p.isAI, difficulty: p.difficulty })),
+    (state.rngState ^ 0x9e3779b9) >>> 0,
+    state.settings,
+  );
+}
+
 export function applyAction(state: MonopolyState, action: Action): MonopolyState {
+  if (action.type === 'REMATCH') {
+    if (state.phase !== 'over') illegal('the game is still on');
+    return rematch(state);
+  }
   const draft = clone(state);
   switch (action.type) {
     case 'ROLL':

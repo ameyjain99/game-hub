@@ -22,3 +22,28 @@ export function playLastRound(): void {
     );
   });
 }
+
+/** A card slid off the deck or the table. */
+export function playDraw(): void {
+  withAudio((ac, t) => tone(ac, t, { freq: 620, to: 880, glide: 0.06, type: 'triangle', peak: 0.07, decay: 0.09 }));
+}
+
+/** Destination tickets taken: a two-note rustle. */
+export function playTicketsTaken(): void {
+  withAudio((ac, t) => {
+    tone(ac, t, { freq: 440, type: 'triangle', peak: 0.08, decay: 0.12 });
+    tone(ac, t + 0.09, { freq: 554.4, type: 'triangle', peak: 0.08, decay: 0.18 });
+  });
+}
+
+/** Your own ticket completed: a short rising chord. */
+export function playTicketDone(): void {
+  withAudio((ac, t) => {
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => tone(ac, t + i * 0.07, { freq, peak: 0.12, attack: 0.01, decay: 0.5 }));
+  });
+}
+
+/** Into a tunnel: a low rumble. */
+export function playTunnel(): void {
+  withAudio((ac, t) => tone(ac, t, { freq: 110, to: 70, glide: 0.5, type: 'sawtooth', peak: 0.08, decay: 0.6 }));
+}

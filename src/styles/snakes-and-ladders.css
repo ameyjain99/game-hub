@@ -246,3 +246,9 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc) 60%, transparent);
   }
 }
+
+/* The die is thrown in the middle of the board, then steps back so the token's
+   walk (and the snakes and ladders under it) can be seen. */
+.snl-die {
+  --die: clamp(46px, 11cqw, 92px);
+}

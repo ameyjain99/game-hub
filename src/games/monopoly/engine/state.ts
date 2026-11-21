@@ -22,6 +22,8 @@ export interface Settings {
   doubleGoSalary: boolean;
   noRentInJail: boolean;
   randomizeOrder: boolean;
+  /** Rounds to play before the highest net worth wins; 0 plays until one player is left. */
+  roundLimit: number;
 }
 
 /** RAW-correct defaults; house rules (jackpot, double-Go, no-rent-in-jail) off. */
@@ -35,6 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   doubleGoSalary: false,
   noRentInJail: false,
   randomizeOrder: true,
+  roundLimit: 0,
 };
 
 export interface MonopolyPlayer {
@@ -130,6 +133,8 @@ export interface MonopolyState {
   freeParkingPot: number;
   /** Count of individual turns taken - a safety net to end pathological games. */
   turns: number;
+  /** The round being played (1 first); everyone has one turn in a round. */
+  round: number;
   /** Trade offers made this turn (bots propose at most one, so they can't loop). */
   tradesThisTurn: number;
   pendingAuction: PendingAuction | null;
@@ -203,6 +208,7 @@ export function createMonopolyGame(
     hotelsLeft: 12,
     freeParkingPot: 0,
     turns: 0,
+    round: 1,
     tradesThisTurn: 0,
     pendingAuction: null,
     pendingTrade: null,

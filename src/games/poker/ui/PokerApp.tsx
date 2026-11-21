@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { rulesFromSpec } from '../../../online/ui/LobbyRules';
 import { KitApp, type KitAppConfig } from '../../kit/ui/KitApp';
 import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
@@ -21,6 +22,19 @@ const VARIANT_HINT: Record<Variant, string> = {
 };
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+const LOBBY_RULES = rulesFromSpec([
+  { key: 'variant', label: 'Game', choices: (Object.keys(VARIANTS) as Variant[]).map((v) => ({ value: v, label: VARIANTS[v].name })) },
+  {
+    key: 'speed',
+    label: 'Stakes rise',
+    choices: [
+      { value: 'normal', label: 'Every 10 hands' },
+      { value: 'fast', label: 'Every 6 hands (fast)' },
+      { value: 'slow', label: 'Every 15 hands (slow)' },
+    ],
+  },
+]);
 
 export function PokerApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [variant, setVariant] = useState<Variant>('holdem');
@@ -79,6 +93,7 @@ export function PokerApp({ onBackToHub }: { onBackToHub: () => void }) {
           onCode={onCode}
           difficulties={DIFFICULTIES}
           colorFor={pkSeatColor}
+          rulesFor={LOBBY_RULES}
           render={(p) => <PokerGame {...p} />}
         />
       )}

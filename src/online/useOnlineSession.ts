@@ -21,7 +21,8 @@ export type OnlineIntent =
       mapId?: string;
       modeId?: string;
     }
-  | { kind: 'join'; code: string; name: string; avatar: string; gameId?: string }
+  // `seat`: rejoining a game under way by taking back that dropped seat.
+  | { kind: 'join'; code: string; name: string; avatar: string; gameId?: string; seat?: number }
   // Reclaim an existing seat from a stored session (e.g. after a page reload).
   | { kind: 'resume' };
 
@@ -34,6 +35,8 @@ export interface OnlineSession<S = unknown, A = unknown> {
   /** The live socket, exposed for voice-chat signaling. Null until connected. */
   socket: Socket | null;
   error: string | null;
+  /** Whether the link to the server is up right now (it reconnects by itself). */
+  connected: boolean;
   setSeatAi(index: number, isAI: boolean, difficulty?: string): void;
   /** Switch the viewer's avatar (server rejects if another seat holds it). */
   setAvatar(avatar: string): void;
@@ -46,6 +49,14 @@ export interface OnlineSession<S = unknown, A = unknown> {
   extendTime(): void;
   /** Leave the room (cancels the lobby if host) and clear the stored session. */
   leave(): void;
+  /** Pause the game for the whole table, or carry on. */
+  setPaused(paused: boolean): void;
+  /** Host, in the lobby: change the game's options. */
+  setOptions(options: unknown): void;
+  /** Host, in the lobby: add a seat or take the last one away. */
+  setSeatCount(seatCount: number): void;
+  /** Forget the last refused action (once it has been shown). */
+  clearError(): void;
 }
 
 /** Connects to the game server, fires the intent, and exposes online state.
@@ -63,6 +74,7 @@ export function useOnlineSession<S = unknown, A = unknown>(
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [connected, setConnected] = useState(true); // optimistic until a drop is seen
 
   useEffect(() => {
     const socket = io();
@@ -85,8 +97,9 @@ export function useOnlineSession<S = unknown, A = unknown>(
     socket.on(EVT.errorMsg, (e: ErrorMsg) => {
       setError(e.message);
       // A failed reclaim means the stored session is stale; drop it.
-      if (e.message === 'unknown token' || e.message === 'no such room') clearSession();
+      if (e.message === 'unknown token' || e.message === 'no such room' || e.message === 'removed from game') clearSession();
     });
+    socket.on('disconnect', () => setConnected(false));
 
     // Fire the intent on the socket's first connect; later (re)connects re-attach
     // via the stored session. Tying this to the socket lifecycle makes it robust
@@ -100,6 +113,7 @@ export function useOnlineSession<S = unknown, A = unknown>(
     };
     let firstConnect = true;
     socket.on('connect', () => {
+      setConnected(true);
       if (!firstConnect) {
         if (persist) reclaim();
         return;
@@ -116,7 +130,7 @@ export function useOnlineSession<S = unknown, A = unknown>(
           modeId: intent.modeId,
         });
       } else if (intent.kind === 'join') {
-        socket.emit(EVT.joinRoom, { code: intent.code, name: intent.name, avatar: intent.avatar });
+        socket.emit(EVT.joinRoom, { code: intent.code, name: intent.name, avatar: intent.avatar, seat: intent.seat });
       } else {
         reclaim();
       }
@@ -171,6 +185,25 @@ export function useOnlineSession<S = unknown, A = unknown>(
     if (code) emit(EVT.leaveRoom, { code });
     clearSession();
   }, [code]);
+  const setPaused = useCallback(
+    (paused: boolean) => {
+      if (code) emit(EVT.setPaused, { code, paused });
+    },
+    [code],
+  );
+  const setOptions = useCallback(
+    (options: unknown) => {
+      if (code) emit(EVT.setOptions, { code, options });
+    },
+    [code],
+  );
+  const setSeatCount = useCallback(
+    (seatCount: number) => {
+      if (code) emit(EVT.setSeatCount, { code, seatCount });
+    },
+    [code],
+  );
+  const clearError = useCallback(() => setError(null), []);
 
-  return { lobby, state, myPlayerId, code, socket, error, setSeatAi, setAvatar, start, dispatch, replaceWithAi, removeSeat, extendTime, leave };
+  return { lobby, state, myPlayerId, code, socket, error, connected, setSeatAi, setAvatar, start, dispatch, replaceWithAi, removeSeat, extendTime, leave, setPaused, setOptions, setSeatCount, clearError };
 }

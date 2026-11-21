@@ -32,6 +32,8 @@ export interface CheckersState {
   moves: string[];
   /** Plies since the last capture or man move (80 → draw). */
   quiet: number;
+  /** A pending request to take back their last move, by this player. */
+  takeback?: string | null;
   winner: string | null;
   draw: boolean;
   over: boolean;
@@ -42,7 +44,11 @@ export interface CheckersState {
   seed: number;
 }
 
-export type CheckersAction = { type: 'MOVE'; from: number; to: number };
+export type CheckersAction =
+  | { type: 'MOVE'; from: number; to: number }
+  /** Ask to take back your last move (a bot always allows it). */
+  | { type: 'TAKEBACK' }
+  | { type: 'ANSWER_TAKEBACK'; accept: boolean };
 
 /** A whole move: the squares visited and the squares captured. */
 export interface FullMove {
@@ -184,6 +190,42 @@ export function createCheckers(seats: KitSeat[], seed: number): CheckersState {
   return newGame(base, 'p0', 1);
 }
 
+/** The square (0-63) of a square number of the notation (1-32). */
+const squareOf = (n: number): number => {
+  const row = Math.floor((n - 1) / 4);
+  const k = (n - 1) % 4;
+  return row * 8 + (row % 2 === 0 ? 2 * k + 1 : 2 * k);
+};
+
+/** The board and side to move after these moves of the game (in its own notation). */
+export function replayCheckers(moves: string[]): { board: Piece[]; turn: Side } {
+  const board = initialBoard();
+  let turn: Side = 'black';
+  for (const move of moves) {
+    const path = move.split(/[-x]/).map((n) => squareOf(Number(n)));
+    for (let i = 1; i < path.length; i++) {
+      const [from, to] = [path[i - 1], path[i]];
+      let piece = board[from];
+      board[from] = 0;
+      if (Math.abs(rowOf(from) - rowOf(to)) === 2) board[at((rowOf(from) + rowOf(to)) / 2, (colOf(from) + colOf(to)) / 2)] = 0;
+      if (crowns(piece, to)) piece *= 2;
+      board[to] = piece;
+    }
+    turn = other(turn);
+  }
+  return { board, turn };
+}
+
+/** The game with `id`'s last move taken back (and the reply to it, if there was one). */
+function undoCheckers(s: CheckersState, id: string): CheckersState {
+  const mine = sideOfPlayer(s, id);
+  // Whoever is to move did not make the last move.
+  const k = s.turn === mine ? 2 : 1;
+  const moves = s.moves.slice(0, Math.max(0, s.moves.length - k));
+  const { board, turn } = replayCheckers(moves);
+  return { ...s, moves, board, turn, chain: null, lastHop: null, quiet: 0, takeback: null };
+}
+
 export function applyCheckers(s: CheckersState, action: CheckersAction | KitCommonAction, actorId: string): CheckersState {
   if (!s.players.some((p) => p.id === actorId)) throw new IllegalMove('not in this game');
   if (action.type === 'REMATCH') {
@@ -194,6 +236,18 @@ export function applyCheckers(s: CheckersState, action: CheckersAction | KitComm
   }
   if (s.over) throw new IllegalMove('the game is over');
   if (action.type === 'RESIGN') return finish(s, s.players.find((p) => p.id !== actorId)!.id, 'resigned');
+  if (action.type === 'TAKEBACK') {
+    if (s.takeback) throw new IllegalMove('a take-back is already being asked for');
+    if (s.chain !== null) throw new IllegalMove('finish the jump first');
+    const mine = sideOfPlayer(s, actorId);
+    if (s.moves.length < (s.turn === mine ? 2 : 1)) throw new IllegalMove('you have no move to take back');
+    const them = s.players.find((p) => p.id !== actorId)!;
+    return them.isAI ? undoCheckers(s, actorId) : { ...s, takeback: actorId };
+  }
+  if (action.type === 'ANSWER_TAKEBACK') {
+    if (!s.takeback || s.takeback === actorId) throw new IllegalMove('no take-back to answer');
+    return action.accept ? undoCheckers(s, s.takeback) : { ...s, takeback: null };
+  }
   if (action.type !== 'MOVE') throw new IllegalMove('unknown action');
   if (idOf(s, s.turn) !== actorId) throw new IllegalMove('not your turn');
 
@@ -222,10 +276,10 @@ export function applyCheckers(s: CheckersState, action: CheckersAction | KitComm
 
   // Keep jumping with the same piece while it can (crowning ends the move).
   if (hop.capture && !crowned && jumpsFrom(board, hop.to).length > 0) {
-    return { ...s, board, chain: hop.to, lastHop, moves, quiet };
+    return { ...s, board, chain: hop.to, lastHop, moves, quiet, takeback: null };
   }
 
-  const next: CheckersState = { ...s, board, chain: null, turn: other(s.turn), lastHop, moves, quiet };
+  const next: CheckersState = { ...s, board, chain: null, turn: other(s.turn), lastHop, moves, quiet, takeback: null };
   if (legalMoves(board, next.turn).length === 0) return finish(next, actorId, 'no-moves');
   if (quiet >= DRAW_PLIES) return finish(next, null, 'forty-moves');
   return next;

@@ -16,12 +16,17 @@ export function kitAdapter<S, A extends { type: string }>(kit: GameKit<S, A>): G
 
   return {
     turnMs: kit.turnMs,
+    pieces: kit.pieces,
+    rematchByVote: true,
+    bankMs: kit.bankMs,
+    clockActorId: (game) => (kit.isOver(game as S) ? null : kit.actor(game as S)),
+    flag: (game, actorId) => (kit.flag ? kit.flag(game as S, actorId) : game),
 
     validateSeatCount: (count, options) => kit.seatError(count, options),
 
     createGame(configs, seed, options) {
       return kit.create(
-        configs.map((c) => ({ name: c.name, isAI: c.isAI, difficulty: c.difficulty })),
+        configs.map((c) => ({ name: c.name, isAI: c.isAI, difficulty: c.difficulty, piece: c.avatar || undefined })),
         seed,
         options,
       );
@@ -48,6 +53,14 @@ export function kitAdapter<S, A extends { type: string }>(kit: GameKit<S, A>): G
       const s = game as S;
       const p = kit.players(s)[seatIndex];
       return p ? kit.setBot(s, p.id, difficulty ?? 'normal') : s;
+    },
+
+    returnSeat(game, seatIndex) {
+      // Every kit game keeps its players in `state.players`.
+      const s = game as S & { players?: { id: string; isAI: boolean; difficulty?: string }[] };
+      const p = kit.players(s)[seatIndex];
+      if (!p?.isAI || !Array.isArray(s.players)) return s;
+      return { ...s, players: s.players.map((pl) => (pl.id === p.id ? { ...pl, isAI: false, difficulty: undefined } : pl)) };
     },
 
     removeSeat(game, seatIndex) {

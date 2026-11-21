@@ -18,7 +18,9 @@ export type Action =
   | { type: 'USE_JAIL_CARD' }
   | { type: 'ROLL_JAIL' }
   | { type: 'END_TURN' }
-  | { type: 'DECLARE_BANKRUPTCY' };
+  | { type: 'DECLARE_BANKRUPTCY' }
+  /** Once the game is over: start another with the same players and rules. */
+  | { type: 'REMATCH' };
 
 export class IllegalActionError extends Error {
   constructor(message: string) {

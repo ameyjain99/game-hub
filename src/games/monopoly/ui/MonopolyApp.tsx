@@ -6,7 +6,7 @@ import { DEFAULT_SETTINGS, type MonopolyDifficulty, type Settings } from '../eng
 import { MonopolyLocalGame } from './MonopolyLocalGame';
 import { MonopolyOnlineGame } from './MonopolyOnlineGame';
 import { MonopolyProfile } from './MonopolyProfile';
-import { HOUSE_RULES, HouseRuleSwitches, StartingCashField } from './MonopolyRules';
+import { HOUSE_RULES, HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
 import { RulesContext } from '../../../shared/rules';
 import { MONOPOLY_RULES } from '../rules';
 
@@ -45,7 +45,16 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
       );
     case 'join':
       return (
-        <JoinGate code={step.code} onBack={toLanding}>
+        <JoinGate
+          code={step.code}
+          onBack={toLanding}
+          onRejoin={(seat) =>
+            navigate({
+              kind: 'online',
+              intent: { kind: 'join', code: step.code, name: seat.name, avatar: '', gameId: 'monopoly', seat: seat.index },
+            })
+          }
+        >
           <MonopolyProfile
             action="join"
             code={step.code}
@@ -97,6 +106,7 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
               </summary>
               <div className="g-disclosure-body">
                 <StartingCashField value={localRules.startingCash} onChange={(c) => setLocalRules((r) => ({ ...r, startingCash: c }))} />
+                <RoundLimitField value={localRules.roundLimit} onChange={(roundLimit) => setLocalRules((r) => ({ ...r, roundLimit }))} />
                 <HouseRuleSwitches value={localRules} onChange={setLocalRules} />
               </div>
             </details>

@@ -1,10 +1,27 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { DisconnectOverlay } from '../../../src/games/ticket-to-ride/ui/online/DisconnectOverlay';
+import { DROP_GRACE_MS } from '../../../src/online/ui/DisconnectBanner';
 import type { LobbyView, SeatView } from '../../../src/net/protocol';
 
-afterEach(cleanup);
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+
+/** A drop is first given a moment to heal; the choices come after it. */
+const pastGrace = () => act(() => void vi.advanceTimersByTime(DROP_GRACE_MS + 1));
+
+test('a fresh drop only says the player is reconnecting: no replace or remove yet', () => {
+  const l = lobby([{ name: 'Host' }, { name: 'Bob', connected: false }]);
+  render(<DisconnectOverlay lobby={l} currentPlayerId="p1" onReplace={vi.fn()} onRemove={vi.fn()} />);
+  expect(screen.getByText(/bob lost connection/i)).toBeTruthy();
+  expect(screen.queryByRole('button')).toBeNull();
+});
 
 const lobby = (seats: Partial<SeatView>[]): LobbyView => ({
   code: 'AB23',
@@ -19,6 +36,7 @@ test('shows a replace button when the current player is disconnected', () => {
   const l = lobby([{ name: 'Host' }, { name: 'Bob', connected: false }]);
   const onReplace = vi.fn();
   render(<DisconnectOverlay lobby={l} currentPlayerId="p1" onReplace={onReplace} onRemove={vi.fn()} />);
+  pastGrace();
   expect(screen.getByText(/bob disconnected/i)).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: /replace with ai/i }));
   expect(onReplace).toHaveBeenCalledWith(1);
@@ -28,6 +46,7 @@ test('offers removing the dropped player from the game entirely', () => {
   const l = lobby([{ name: 'Host' }, { name: 'Bob', connected: false }]);
   const onRemove = vi.fn();
   render(<DisconnectOverlay lobby={l} currentPlayerId="p1" onReplace={vi.fn()} onRemove={onRemove} />);
+  pastGrace();
   fireEvent.click(screen.getByRole('button', { name: /remove from game/i }));
   expect(onRemove).toHaveBeenCalledWith(1);
 });
@@ -46,6 +65,7 @@ test('any remaining player can replace a dropped host, even when it is not the h
   const l = lobby([{ name: 'Host', connected: false }, { name: 'Bob' }]);
   const onReplace = vi.fn();
   render(<DisconnectOverlay lobby={l} currentPlayerId="p1" onReplace={onReplace} onRemove={vi.fn()} />);
+  pastGrace();
   expect(screen.getByText(/host disconnected/i)).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: /replace with ai/i }));
   expect(onReplace).toHaveBeenCalledWith(0);

@@ -176,3 +176,45 @@
     animation: none;
   }
 }
+
+/* Each yard names its player (and shows their camera) on its outer edge, so
+   the board itself says who is who; the yard of whoever is to move is lit. */
+.ludo-yard-who {
+  position: absolute;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  gap: 0.8cqw;
+  align-items: center;
+  max-width: 92%;
+  translate: -50% 0;
+  --face: clamp(30px, 4.6cqw, 48px);
+}
+
+.ludo-yard.is-top .ludo-yard-who {
+  top: 0.4cqw;
+}
+
+.ludo-yard.is-bottom .ludo-yard-who {
+  bottom: 0.4cqw;
+}
+
+.ludo-yard-name {
+  overflow: hidden;
+  font-size: max(11px, 1.55cqw);
+  font-weight: 800;
+  line-height: 1.5;
+  color: #fff;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px #0006;
+  white-space: nowrap;
+}
+
+.ludo-yard.is-turn {
+  box-shadow: inset 0 0 0 max(3px, 0.5cqw) #fff, inset 0 0 0 1px color-mix(in srgb, var(--lc) 65%, #000);
+}
+
+/* The die sits between the four spots of the yard whose player is to roll. */
+.ludo-die {
+  --die: clamp(30px, 7.4cqw, 62px);
+}

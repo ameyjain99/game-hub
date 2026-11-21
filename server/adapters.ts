@@ -22,6 +22,8 @@ import { IllegalActionError as MonopolyIllegalError, type Action as MonopolyActi
 import { monopolyActor, advanceMonopolyAi, timeoutAction as monopolyTimeoutAction } from '../src/games/monopoly/engine/bot';
 import { redactFor as redactMonopolyFor } from '../src/games/monopoly/engine/redact';
 import { kitAdapter } from './kitAdapter';
+import { AVATARS } from '../src/games/ticket-to-ride/ui/avatars';
+import { TOKEN_IDS } from '../src/shared/pieceIds';
 import { ticTacToeKit } from '../src/games/tic-tac-toe/engine';
 import { checkersKit } from '../src/games/checkers/engine';
 import { chessKit } from '../src/games/chess/engine';
@@ -51,6 +53,8 @@ function toPlayerConfigs(configs: SeatConfig[]): PlayerConfig[] {
 }
 
 const ticketToRideAdapter: GameAdapter = {
+  pieces: AVATARS,
+
   validateSeatCount(seatCount, options) {
     const o = (options ?? {}) as TtrOptions;
     const map = getMap(o.mapId ?? DEFAULT_MAP_ID); // throws on unknown map
@@ -91,6 +95,13 @@ const ticketToRideAdapter: GameAdapter = {
     return advanceAi(finishIfAbandoned(state));
   },
 
+  returnSeat(game, seatIndex) {
+    const player = (game as GameState).players[seatIndex];
+    player.isAI = false;
+    player.difficulty = undefined;
+    return game;
+  },
+
   removeSeat(game, seatIndex) {
     return advanceAi(finishIfAbandoned(removePlayer(game as GameState, seatIndex)));
   },
@@ -123,6 +134,9 @@ function toMonopolyConfigs(configs: SeatConfig[]) {
 }
 
 const monopolyAdapter: GameAdapter = {
+  pieces: TOKEN_IDS,
+  rematchByVote: true,
+
   // A Monopoly turn (buy, build, trade) runs long; activity keeps the clock alive.
   turnMs: 90_000,
   refreshClockOnAction: true,
@@ -139,6 +153,10 @@ const monopolyAdapter: GameAdapter = {
 
   applyAction(game, action, ctx: ApplyCtx) {
     const state = game as MonopolyState;
+    if ((action as { type?: string }).type === 'REMATCH') {
+      if (state.phase !== 'over') return { error: 'the game is still on' };
+      return { game: advanceMonopolyAi(applyMonopolyAction(state, { type: 'REMATCH' })) };
+    }
     if (monopolyActor(state) !== ctx.actorId) return { error: 'not your turn' };
     if ((action as { type?: string }).type === 'SKIP_TURN') {
       // The clock ran out: make the idle player's cautious default choices until
@@ -163,6 +181,11 @@ const monopolyAdapter: GameAdapter = {
     player.isAI = true;
     player.difficulty = (difficulty ?? 'normal') as MonopolyDifficulty;
     return advanceMonopolyAi(finishMonopolyIfAbandoned(state));
+  },
+
+  returnSeat(game, seatIndex) {
+    (game as MonopolyState).players[seatIndex].isAI = false;
+    return game;
   },
 
   removeSeat(game, seatIndex) {

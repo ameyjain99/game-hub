@@ -11,7 +11,7 @@ const swatch = (id: number) => (BOARD[id].group ? GROUP_COLOR[BOARD[id].group!] 
 const tradableOf = (view: MonopolyState, ownerId: string): number[] =>
   OWNABLE_IDS.filter((id) => view.ownership[id].owner === ownerId && view.ownership[id].houses === 0);
 
-function Bundle({ bundle }: { bundle: TradeBundle }) {
+export function Bundle({ bundle }: { bundle: TradeBundle }) {
   const empty = bundle.cash === 0 && bundle.properties.length === 0 && bundle.getOutCards === 0;
   return (
     <ul className="mono-chips">

@@ -5,7 +5,9 @@ import type { CardCombo, GameState, Hand as HandType, TrainCard } from '../engin
 import type { Action } from '../engine/actions';
 import { legalActions, getRoute } from '../engine/selectors';
 import { getMap, modeFor } from '../engine/maps';
-import { isMuted, setMuted, playClaim, playLastRound, playTurn, playTimeWarning } from './sound';
+import { isMuted, setMuted, playClaim, playDraw, playLastRound, playTicketDone, playTicketsTaken, playTunnel, playTurn, playTimeWarning } from './sound';
+import { trainsNeeded } from '../engine/reach';
+import { FinalCeremony } from './components/FinalCeremony';
 import { Board } from './components/Board';
 import { Market } from './components/Market';
 import { Hand } from './components/Hand';
@@ -18,10 +20,17 @@ import { TicketCard } from './components/TicketCard';
 import { FinalScores, ResultDetail, rankPlayers, winners } from './components/FinalResults';
 import { LongestPathOutline, TicketRings } from './components/ResultOverlays';
 import { areConnected, longestPathThrough } from '../engine/graph';
+import { routePoints } from '../engine/scoring';
 import { RulesSheet } from '../../../shared/ui/Rules';
 import { TTR_RULES } from '../rules';
 import { playerColor } from './colors';
 import { cleanName } from './displayName';
+import { StationMark } from './components/CityDot';
+import { PauseButton, PausedOverlay } from '../../../online/ui/Pause';
+import { fly } from '../../../shared/fly';
+import { Confetti } from '../../../shared/ui/Confetti';
+import { cardHex, LOCO_GRADIENT } from './colors';
+import { TableMomentBanner, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
 
 interface Props {
   state: GameState;
@@ -144,6 +153,8 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
   const gameMap = getMap(state.mapId);
   const mode = modeFor(state.mapId, state.modeId);
   const [rulesOpen, setRulesOpen] = useState(false);
+  // The count at the end plays once, then the full results stay up.
+  const [counted, setCounted] = useState(false);
   const gameOver = state.phase === 'game-over';
   const current = state.players[state.current];
   const currentIsHuman = !gameOver && state.phase !== 'setup-tickets' && !current.isAI;
@@ -290,6 +301,136 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
   );
   const canPlaceStation = stationActions.length > 0;
   const placing = placingStation && canPlaceStation;
+  // A card taken slides from where it lay (a face-up slot, or the deck) to the
+  // panel of the player who took it, so everyone sees who took what.
+  const drawFrom = useRef({ log: state.log.length, market: state.market, current: state.players[state.current]?.id, rects: [] as (DOMRect | null)[] });
+  useEffect(() => {
+    const was = drawFrom.current;
+    const slots = [...document.querySelectorAll('.market .card-chip')];
+    for (const line of state.log.slice(was.log)) {
+      if (line.includes('destination ticket')) playTicketsTaken();
+      if (line.includes('going through a tunnel')) playTunnel();
+      const faceUp = line.includes('took a face-up');
+      if (!faceUp && !line.includes('drew a card from the deck')) continue;
+      const to = was.current ? document.querySelector(`.player-panel[data-player-id="${was.current}"]`) : null;
+      const i = faceUp ? was.market.findIndex((c, k) => c !== state.market[k]) : -1;
+      const card = i >= 0 ? was.market[i] : null;
+      playDraw();
+      fly({
+        from: faceUp ? (was.rects[Math.max(i, 0)] ?? slots[0]) : document.querySelector('.market .deck-btn'),
+        to,
+        ms: 520,
+        scaleTo: 0.6,
+        make: () => {
+          const el = document.createElement('span');
+          el.className = 'ttr-flyer';
+          el.style.background = card ? (card === 'locomotive' ? LOCO_GRADIENT : cardHex(card)) : '#2a2d3a';
+          return el;
+        },
+      });
+    }
+    drawFrom.current = { log: state.log.length, market: state.market, current: state.players[state.current]?.id, rects: slots.map((el) => el.getBoundingClientRect()) };
+  }, [state]);
+
+  const doneTickets = viewing.isAI ? 0 : viewing.tickets.filter((t) => t.id && areConnected(viewing.claimedRouteIds, t.a, t.b)).length;
+  const doneBefore = useRef(doneTickets);
+  useEffect(() => {
+    if (doneTickets > doneBefore.current && !gameOver) playTicketDone();
+    doneBefore.current = doneTickets;
+  }, [doneTickets, gameOver]);
+
+  // A station going up is an event for the whole table: it drops onto its city
+  // under rings of its owner's colour, and a banner says who built it where.
+  const [freshStations, setFreshStations] = useState<Set<string>>(new Set());
+  const stationCount = state.players.reduce((n, p) => n + p.stations.length, 0);
+  const seenStations = useRef(new Set(state.players.flatMap((p) => p.stations)));
+  useEffect(() => {
+    const now = new Set(state.players.flatMap((p) => p.stations));
+    const fresh = [...now].filter((c) => !seenStations.current.has(c));
+    seenStations.current = now;
+    if (fresh.length === 0) return;
+    setFreshStations(new Set(fresh));
+    const t = setTimeout(() => setFreshStations(new Set()), 3400);
+    return () => clearTimeout(t);
+  }, [stationCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cityName = (id: string) => gameMap.cities.find((city) => city.id === id)?.name ?? id;
+  const stationMoment = useTableMoments(state, (prev, next): TableMoment[] => [
+    // Yours alone: a ticket completed, or a ticket someone just made harder.
+    ...(() => {
+      const mine = next.players.find((p) => p.id === viewing.id);
+      const before = prev.players.find((p) => p.id === viewing.id);
+      if (!mine || !before || mine.isAI || next.phase === 'game-over') return [];
+      const out: TableMoment[] = [];
+      const taker = Object.entries(next.claimedBy).find(([id, owner]) => !prev.claimedBy[id] && owner !== mine.id);
+      for (const t of mine.tickets) {
+        if (!t.id) continue;
+        const done = areConnected(mine.claimedRouteIds, t.a, t.b);
+        if (done && !areConnected(before.claimedRouteIds, t.a, t.b) && before.tickets.some((x) => x.id === t.id)) {
+          out.push({ kicker: 'Ticket complete', title: `${cityName(t.a)} - ${cityName(t.b)}`, detail: `+${t.points} points, yours at the end. Only you can see this.`, color: '#3fbf6f' });
+        } else if (!done && taker) {
+          const was = trainsNeeded(prev, mine.id, t.a, t.b);
+          const now = trainsNeeded(next, mine.id, t.a, t.b);
+          if (now > was) {
+            const route = gameMap.routes.find((r) => r.id === taker[0]);
+            const who = cleanName(next.players.find((p) => p.id === taker[1])?.name ?? 'Someone');
+            out.push({
+              kicker: `Your ticket ${cityName(t.a)} - ${cityName(t.b)}`,
+              title: now === Infinity ? 'is blocked' : 'just got longer',
+              detail: `${who} took ${route ? `${cityName(route.a)} - ${cityName(route.b)}` : 'a route you needed'}. ${now === Infinity ? 'No way through is left.' : `The shortest way now needs ${now} trains (it was ${was}).`} Only you can see this.`,
+              color: '#e2483b',
+            });
+          }
+        }
+      }
+      return out;
+    })(),
+    // Trains running low: the end is coming.
+    ...next.players.flatMap((p, i): TableMoment[] => {
+      const had = prev.players[i]?.trainsLeft ?? p.trainsLeft;
+      if (!(p.trainsLeft <= 5 && had > 5) || p.trainsLeft <= 2) return [];
+      return [{ kicker: p.id === viewerId || p.name === 'You' ? 'You' : cleanName(p.name), title: `${p.id === viewerId || p.name === 'You' ? 'are' : 'is'} down to ${p.trainsLeft} trains`, detail: 'The last round starts at 2 or fewer.', color: playerColor(i) }];
+    }),
+    ...next.log.slice(prev.log.length).flatMap((line): TableMoment[] => (line.includes('backed out of the tunnel') ? [{ title: cleanName(line.replace(/\.$/, '')), color: '#f2c548' }] : [])),
+    // A route claimed: who, between where, how long and what it scored.
+    ...Object.entries(next.claimedBy)
+      .filter(([id]) => !prev.claimedBy[id])
+      .flatMap(([id, owner]): TableMoment[] => {
+        const route = gameMap.routes.find((r) => r.id === id);
+        const i = next.players.findIndex((p) => p.id === owner);
+        if (!route || i < 0) return [];
+        const p = next.players[i];
+        const you = p.id === viewerId || p.name === 'You';
+        return [
+          {
+            kicker: you ? 'You' : cleanName(p.name),
+            title: `claimed ${cityName(route.a)} - ${cityName(route.b)}`,
+            detail: `${route.length >= 6 ? 'A long one: ' : ''}${route.length} ${route.length === 1 ? 'train' : 'trains'}, +${routePoints(route.length)} points.`,
+            color: playerColor(i),
+            feels: { [p.id]: 'good' },
+          },
+        ];
+      }),
+    ...next.players.flatMap((p, i) => {
+      const had = new Set(prev.players[i]?.stations ?? []);
+      return p.stations
+        .filter((c) => !had.has(c))
+        .map((c) => ({
+          kicker: p.id === viewerId || p.name === 'You' ? 'You' : cleanName(p.name),
+          title: `built a station in ${gameMap.cities.find((city) => city.id === c)?.name ?? c}`,
+          detail: `${p.stationsLeft} of 3 stations left.`,
+          color: playerColor(i),
+          feels: { [p.id]: 'good' as const },
+          art: (
+            <svg viewBox="-14 -14 28 28" width={52} height={52} aria-hidden="true">
+              <g transform="scale(1.25)">
+                <StationMark x={0} y={1} color={playerColor(i)} />
+              </g>
+            </svg>
+          ),
+        }));
+    }),
+  ]);
+
   const stationColors = useMemo(() => {
     const m: Record<string, string> = {};
     state.players.forEach((p, i) => {
@@ -371,6 +512,8 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
         onResolve={(commit) => dispatch({ type: 'RESOLVE_TUNNEL', commit })}
       />
     );
+  } else if (state.phase === 'tunnel-decision' && state.pendingTunnel && !gameOver) {
+    sidePane = <TunnelDialog pending={state.pendingTunnel} canAfford={false} onResolve={() => undefined} watching={cleanName(current.name)} />;
   } else if (resultPlayer) {
     // Game over: the result line + ranked scores go in the top bar; detail in the bottom bar.
     sidePane = (
@@ -416,6 +559,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
 
   return (
     <div className="game-screen">
+      {gameOver && counted && winners(ranked).some((r) => r.player.id === viewing.id) && <Confetti />}
       {showExtendPopup && onExtendTime && (
         <div className="disconnect-overlay" role="alert">
           <span>
@@ -435,6 +579,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
           </button>
           {rulesOpen && <RulesSheet rules={TTR_RULES} variant={`${state.mapId}:${mode.id}`} onClose={() => setRulesOpen(false)} />}
           <div className="tools-row">
+            {!gameOver && <PauseButton />}
             <button
               type="button"
               className="tool-btn"
@@ -497,6 +642,7 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
           hoverLabel={hoverChain ? `${hoverChain.length} trains` : null}
           onRouteHover={handleRouteHover}
           stationColors={stationColors}
+          freshStationIds={freshStations}
           placeableCityIds={placing ? new Set(stationActions.map((a) => a.city)) : undefined}
           onCityClick={(city) => {
             const a = stationActions.find((x) => x.city === city);
@@ -509,6 +655,9 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
         >
           {resultPlayer && <TicketRings player={resultPlayer} />}
         </Board>
+        <TableMomentBanner moment={stationMoment} place="top" />
+        {gameOver && !counted && <FinalCeremony ranked={ranked} onDone={() => setCounted(true)} />}
+        <PausedOverlay />
       </main>
 
       <aside className="players-strip">

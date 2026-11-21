@@ -6,7 +6,8 @@
  * land on 100 exactly: a roll that would overshoot walks to 100 and bounces back
  * the rest of the way. The first to reach 100 wins.
  */
-import { IllegalMove, nextRandom, rollDie, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
+import { TOKEN_IDS } from '../../shared/pieceIds';
+import { assignPieces, IllegalMove, nextRandom, rollDie, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
 
 export const LADDERS: Record<number, number> = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
 export const SNAKES: Record<number, number> = { 16: 6, 48: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
@@ -17,6 +18,8 @@ export interface SnlPlayer extends KitPlayer {
   pos: number;
   /** Left the game (only the remaining players take turns). */
   out?: boolean;
+  /** The pawn this player picked (a token id from shared/pieces). */
+  piece?: string;
 }
 
 export interface SnlMove {
@@ -78,7 +81,8 @@ function newGame(s: SnlState, game: number): SnlState {
 }
 
 export function createSnl(seats: KitSeat[], seed: number): SnlState {
-  const players = seats.map((seat, i) => ({ id: `p${i}`, name: seat.name, isAI: seat.isAI, difficulty: seat.difficulty, pos: 0 }));
+  const pawns = assignPieces(seats, TOKEN_IDS);
+  const players = seats.map((seat, i) => ({ id: `p${i}`, name: seat.name, isAI: seat.isAI, difficulty: seat.difficulty, pos: 0, piece: pawns[i] }));
   const base = { players, score: Object.fromEntries(players.map((p) => [p.id, 0])), seed } as SnlState;
   return newGame(base, 1);
 }
@@ -119,6 +123,7 @@ export function moveMs(m: SnlMove | null): number {
 export const snlKit: GameKit<SnlState, SnlAction> = {
   seatError: (count) => (count >= 2 && count <= 6 ? null : 'Snakes & Ladders is for 2-6 players'),
   create: (seats, seed) => createSnl(seats, seed),
+  pieces: TOKEN_IDS,
   apply: applySnl,
   actor: (s) => (s.over ? null : s.players[s.turn].id),
   players: (s) => s.players,

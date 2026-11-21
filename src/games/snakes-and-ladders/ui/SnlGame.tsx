@@ -3,9 +3,11 @@ import { FINISH, LADDERS, SNAKES, moveMs, snlKit, walk, type SnlAction, type Snl
 import { GameShell, SideSection } from '../../kit/ui/GameShell';
 import { PlayersPanel, tokenLabel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
-import { Die } from '../../kit/ui/Die';
+import { BoardDie } from '../../kit/ui/BoardDie';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
+import { TableMomentBanner, freshEvents, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
 import { useCues } from '../../kit/ui/useCues';
+import { TokenGlyph } from '../../../shared/pieces';
 import { useMediaQuery } from '../../../shared/useMediaQuery';
 import { SQUARES_BY_CELL, centreOf, ladderShape, snakeShape } from './board';
 import { SNL_SOUNDS, playFinish, playLadder, playSnake, playStep, snlCues } from './sound';
@@ -82,6 +84,17 @@ export function SnlGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
   const [spotlight, setSpotlight] = useState<string | null>(null);
   const [hoverSq, setHoverSq] = useState<number | null>(null);
   useCues(view, (a, b) => snlCues(a, b, meId), SNL_SOUNDS);
+  // A snake or a ladder is the whole drama of this game: named as the token arrives.
+  const moment = useTableMoments(view, (a, b): TableMoment[] =>
+    freshEvents(a.history, b.history).flatMap((m): TableMoment[] => {
+      if (!m.via) return [];
+      const name = m.player === meId ? 'You' : nameFor(m.player);
+      const afterMs = WALK_DELAY_MS + m.path.length * STEP_MS;
+      return m.via.kind === 'snake'
+        ? [{ kicker: name, title: 'bitten by a snake!', detail: `Down from ${m.via.from} to ${m.via.to}.`, color: '#e2483b', afterMs, feels: { [m.player]: 'bad' } }]
+        : [{ kicker: name, title: 'climbed a ladder!', detail: `Up from ${m.via.from} to ${m.via.to}.`, color: '#3fbf6f', afterMs, feels: { [m.player]: 'good' } }];
+    }),
+  );
   const { shown, mover } = useTokenWalk(view);
 
   const actor = snlKit.actor(view);
@@ -198,6 +211,17 @@ export function SnlGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
           );
         })}
       </svg>
+      {!view.over && (
+        <BoardDie
+          value={view.last?.roll ?? null}
+          rollKey={view.last?.seq ?? 0}
+          canRoll={myTurn && !animating}
+          onRoll={() => onAction({ type: 'ROLL' })}
+          color={actor ? snlColor(seatOf(actor)) : undefined}
+          className="snl-die"
+          shy
+        />
+      )}
       <div className="snl-tokens">
         {view.players.map((p, seat) => {
           if (p.out) return null;
@@ -218,7 +242,7 @@ export function SnlGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
               style={{ left: `${c.x / 10 + Math.cos(angle) * spread}%`, top: `${c.y / 10 + Math.sin(angle) * spread}%`, '--tc': snlColor(seat) } as CSSProperties}
               aria-label={`${who(p.id)} on ${pos}`}
             >
-              {tokenLabel(nameFor(p.id))}
+              {TokenGlyph({ id: p.piece, size: 14 }) ?? tokenLabel(nameFor(p.id))}
             </span>
           );
         })}
@@ -230,7 +254,6 @@ export function SnlGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
   const tray = (
     <div className="kit-panel snl-tray" style={{ '--tc': actor ? snlColor(seatOf(actor)) : '#fff' } as CSSProperties}>
       <div className="snl-tray-row">
-        <Die value={view.last?.roll ?? null} rollKey={view.last?.seq ?? 0} size={56} />
         <div className="snl-tray-text">
           <span className="snl-tray-kicker">{view.over ? 'Game over' : myTurn ? 'Your turn' : `${nameFor(actor!)}'s turn`}</span>
           <span className="snl-tray-line">
@@ -285,17 +308,6 @@ export function SnlGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
           out: p.out,
         }))}
       />
-      <SideSection title="Recent rolls">
-        {view.history.length === 0 ? (
-          <p className="kit-muted">A 6 rolls again. Land on 100 exactly - too high and you bounce back.</p>
-        ) : (
-          <ul className="kit-log">
-            {view.history.slice(0, 12).map((m) => (
-              <li key={m.seq}>{describe(m, who(m.player))}</li>
-            ))}
-          </ul>
-        )}
-      </SideSection>
     </>
   );
 
@@ -317,8 +329,26 @@ export function SnlGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
       headerExtra={online?.clock}
       banner={online?.banner}
       board={board}
-      overlay={overlay}
+      overlay={
+        <>
+          <TableMomentBanner moment={moment} place="top" />
+          {overlay}
+        </>
+      }
       side={side}
+      log={
+        <SideSection title="Recent rolls">
+          {view.history.length === 0 ? (
+            <p className="kit-muted">A 6 rolls again. Land on 100 exactly - too high and you bounce back.</p>
+          ) : (
+            <ul className="kit-log">
+              {view.history.map((m) => (
+                <li key={m.seq}>{describe(m, who(m.player))}</li>
+              ))}
+            </ul>
+          )}
+        </SideSection>
+      }
     />
   );
 }

@@ -15,6 +15,7 @@ export function useLocalKit<S, A extends { type: string }>(
   opts: { asyncBot?: (state: S) => Promise<A> } = {},
 ) {
   const [state, setState] = useState(init);
+  const [refused, setRefused] = useState<string | null>(null);
   const asyncBot = useRef(opts.asyncBot);
   asyncBot.current = opts.asyncBot;
 
@@ -44,19 +45,25 @@ export function useLocalKit<S, A extends { type: string }>(
     };
   }, [state, auto, botUp, actor, kit]);
 
-  /** The human's action; an illegal one (a stale click) is ignored. */
+  /** The human's action; an illegal one changes nothing, and `refused` says why. */
   const dispatch = useCallback(
     (action: A | KitCommonAction) =>
       setState((s) => {
         try {
-          return kit.apply(s, action, LOCAL_ME);
+          const next = kit.apply(s, action, LOCAL_ME);
+          setRefused(null);
+          return next;
         } catch (err) {
-          if (err instanceof IllegalMove) return s;
+          if (err instanceof IllegalMove) {
+            setRefused(err.message);
+            return s;
+          }
           throw err;
         }
       }),
     [kit],
   );
+  const clearRefused = useCallback(() => setRefused(null), []);
 
-  return { state, dispatch, setState };
+  return { state, dispatch, setState, refused, clearRefused };
 }

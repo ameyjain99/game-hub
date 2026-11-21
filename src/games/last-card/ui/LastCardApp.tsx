@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { rulesFromSpec } from '../../../online/ui/LobbyRules';
 import { KitApp, type KitAppConfig } from '../../kit/ui/KitApp';
 import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
@@ -22,16 +23,37 @@ const CONFIG: KitAppConfig = {
   difficulties: DIFFICULTIES,
 };
 
+const LOBBY_RULES = rulesFromSpec([
+  {
+    key: 'variant',
+    label: 'Mode',
+    choices: [
+      { value: 'classic', label: 'Classic' },
+      { value: 'flip', label: 'Flip (two-sided deck)' },
+    ],
+  },
+  {
+    key: 'stack',
+    label: 'Stacking draw cards',
+    choices: [
+      { value: false, label: 'Off' },
+      { value: true, label: 'On' },
+    ],
+  },
+]);
+
 export function LastCardApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [variant, setVariant] = useState<Variant>('classic');
+  const [stack, setStack] = useState(false);
   return (
     <KitApp
       rules={LAST_CARD_RULES}
       rulesVariant={variant}
       config={CONFIG}
       onBackToHub={onBackToHub}
-      optionValue={{ variant }}
+      optionValue={{ variant, stack }}
       optionFields={
+        <>
         <label className="g-field">
           <span className="g-field-label">Mode</span>
           <select aria-label="Mode" value={variant} onChange={(e) => setVariant(e.target.value as Variant)}>
@@ -39,9 +61,17 @@ export function LastCardApp({ onBackToHub }: { onBackToHub: () => void }) {
             <option value="flip">Flip - two-sided deck, a light and a dark side</option>
           </select>
         </label>
+        <label className="g-switch-row">
+          <span className="g-switch-text">
+            <span>Stack draw cards</span>
+            <span className="g-switch-desc">Answer a Draw 2 with a Draw 2 (or a Wild Draw 4 with one) to pass the total on</span>
+          </span>
+          <input type="checkbox" role="switch" className="g-switch" checked={stack} onChange={() => setStack(!stack)} />
+        </label>
+        </>
       }
       renderLocal={(setup, onExit) => (
-        <KitLocal kit={lastCardKit} init={() => createLastCard(localSeats(setup.seats, setup.difficulty), freshSeed(), { variant })} onExit={onExit} render={(p) => <LastCardGame {...p} />} />
+        <KitLocal kit={lastCardKit} init={() => createLastCard(localSeats(setup.seats, setup.difficulty), freshSeed(), { variant, stack })} onExit={onExit} render={(p) => <LastCardGame {...p} />} />
       )}
       renderOnline={(intent, onExit, onCode) => (
         <KitOnline
@@ -53,6 +83,7 @@ export function LastCardApp({ onBackToHub }: { onBackToHub: () => void }) {
           onCode={onCode}
           difficulties={DIFFICULTIES}
           colorFor={lcSeatColor}
+          rulesFor={LOBBY_RULES}
           render={(p) => <LastCardGame {...p} />}
         />
       )}

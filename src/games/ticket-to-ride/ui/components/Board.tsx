@@ -82,6 +82,8 @@ interface Props {
   onRouteHover?: (routeId: string | null) => void;
   /** City id -> owner color of a train station placed there (Europe). */
   stationColors?: Record<string, string>;
+  /** Cities whose station was only just built (it is played in). */
+  freshStationIds?: Set<string>;
   /** Cities that can receive a station right now (placing mode). */
   placeableCityIds?: Set<string>;
   onCityClick?: (cityId: string) => void;
@@ -108,6 +110,7 @@ export function Board({
   hoverLabel,
   onRouteHover,
   stationColors,
+  freshStationIds,
   placeableCityIds,
   onCityClick,
   cities = CITIES,
@@ -205,6 +208,7 @@ export function Board({
               highlighted={highlightCityIds?.has(c.id)}
               subtle={subtleCityIds?.has(c.id)}
               stationColor={stationColors?.[c.id]}
+              stationFresh={freshStationIds?.has(c.id)}
               placeable={placeable}
               onClick={placeable && onCityClick ? () => onCityClick(c.id) : undefined}
             />

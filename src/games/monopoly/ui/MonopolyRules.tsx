@@ -30,6 +30,24 @@ export function StartingCashField({ value, onChange }: { value: number; onChange
   );
 }
 
+const ROUND_LIMITS = [0, 15, 25, 40];
+
+/** How long the game runs: until one player is left, or a set number of rounds. */
+export function RoundLimitField({ value, onChange }: { value: number; onChange: (rounds: number) => void }) {
+  return (
+    <label className="g-field">
+      <span className="g-field-label">Game length</span>
+      <select aria-label="Game length" value={value} onChange={(e) => onChange(Number(e.target.value))}>
+        {ROUND_LIMITS.map((n) => (
+          <option key={n} value={n}>
+            {n === 0 ? 'Until one player is left (classic)' : `${n} rounds, then the highest net worth wins`}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 /** The house-rule switches. */
 export function HouseRuleSwitches({ value, onChange }: { value: Settings; onChange: (rules: Settings) => void }) {
   return (

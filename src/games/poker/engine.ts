@@ -147,7 +147,9 @@ export type PokerAction =
   /** The dealer: deal the next street. */
   | { type: 'DEAL' }
   /** The dealer: start the next hand. */
-  | { type: 'NEXT' };
+  | { type: 'NEXT' }
+  /** Having won without a showdown: turn your cards face up anyway. */
+  | { type: 'SHOW' };
 
 export interface PokerOptions {
   variant?: Variant;
@@ -598,6 +600,11 @@ function applyPoker(prev: PokerState, action: PokerAction | KitCommonAction, act
       );
     case 'RESIGN':
       return forfeit(prev, actorId);
+    case 'SHOW': {
+      const me = prev.players.find((p) => p.id === actorId);
+      if (prev.phase !== 'result' || !me || !prev.result || !(actorId in prev.result.won) || me.shown) throw new IllegalMove('nothing to show');
+      return { ...prev, players: prev.players.map((p) => (p.id === actorId ? { ...p, shown: true } : p)) };
+    }
     case 'DEAL':
       if (actorId !== DEALER_ID || prev.phase !== 'dealing') throw new IllegalMove('nothing to deal');
       return dealStreet(prev);
@@ -693,6 +700,9 @@ function forfeit(prev: PokerState, id: string): PokerState {
 
 /** A player's view: others' face-down cards hidden until shown, and no deck or seed. */
 export function redactPoker(s: PokerState, viewer: string): PokerState {
+  // All in with the board still to come: the hands are turned face up, as at a real table.
+  const runout = s.phase === 'dealing' && s.players.filter(inHand).length > 1 && s.players.filter(canAct).length < 2;
+  if (runout) return { ...s, seed: 0, deck: [], deckCount: s.deck.length, players: s.players.map((p) => (p.id === viewer || p.shown || inHand(p) ? p : { ...p, hole: p.hole.map((c, i) => (p.up[i] ? c : null)) })) };
   return {
     ...s,
     seed: 0,
@@ -722,7 +732,8 @@ export const pokerKit: GameKit<PokerState, PokerAction> = {
   botDelay: () => 1000,
   auto(s) {
     if (s.phase === 'dealing') return { action: { type: 'DEAL' }, delay: s.players.filter(canAct).length < 2 ? 1400 : 700 };
-    if (s.phase === 'result') return { action: { type: 'NEXT' }, delay: s.result?.showdown ? 4800 : 2200 };
+    // Time to read a showdown; without one, time for the winner to show their cards if they like.
+    if (s.phase === 'result') return { action: { type: 'NEXT' }, delay: s.result?.showdown ? 4800 : 4000 };
     return null;
   },
   setBot: (s, id, difficulty) => ({ ...s, players: s.players.map((p) => (p.id === id ? { ...p, isAI: true, difficulty } : p)) }),

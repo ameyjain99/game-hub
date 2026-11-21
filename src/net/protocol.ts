@@ -6,6 +6,8 @@ export interface SeatView {
   isAI: boolean;
   difficulty?: string;
   connected: boolean;
+  /** A bot is playing this seat for a player who dropped; they take it back when they return. */
+  covering?: boolean;
 }
 
 export interface LobbyView {
@@ -17,6 +19,15 @@ export interface LobbyView {
   /** Epoch ms the current player's turn must end by, or null when no turn timer
    *  is running (setup, an AI's turn, or game over). */
   turnDeadline: number | null;
+  /** A chess clock: the ms each seat has left as this was sent (the seat to
+   *  move runs down to `turnDeadline`). Null or absent when there is none. */
+  clocks?: number[] | null;
+  /** The game's options as the host set them (shape owned by the game). */
+  options?: unknown;
+  /** Set while someone has paused the game for the table: who, and since when. */
+  paused?: { by: string; at: number } | null;
+  /** The players who have asked for a rematch since the game ended. */
+  rematch?: string[];
 }
 
 // Client → server payloads.
@@ -37,6 +48,17 @@ export interface JoinRoom {
   code: string;
   name: string;
   avatar: string;
+  /** Rejoining a game under way: the dropped seat to take back. */
+  seat?: number;
+}
+
+/** What `/api/room-exists` says about a room code. */
+export interface RoomInfo {
+  exists: boolean;
+  gameId?: string;
+  started?: boolean;
+  /** In a started game: seats whose player dropped, which they can take back. */
+  openSeats?: { index: number; name: string }[];
 }
 export interface Reconnect {
   code: string;
@@ -75,6 +97,21 @@ export interface SetAvatar {
   code: string;
   avatar: string;
 }
+/** Pause the game for the whole table, or carry on. Anyone seated may send it. */
+export interface SetPaused {
+  code: string;
+  paused: boolean;
+}
+/** The host changes the game's options in the lobby. */
+export interface SetOptions {
+  code: string;
+  options: unknown;
+}
+/** The host adds a seat, or takes the last (empty or bot) seat away, in the lobby. */
+export interface SetSeatCount {
+  code: string;
+  seatCount: number;
+}
 
 /**
  * WebRTC voice-chat signaling. Relayed verbatim by the server to the rest of the
@@ -85,8 +122,11 @@ export interface VoiceSignal {
   code: string;
   from: string;
   to: string | null;
-  /** 'media' announces the sender's mic/cam on/off state (data: MediaState). */
-  kind: 'hello' | 'bye' | 'offer' | 'answer' | 'ice' | 'media';
+  /** 'media' announces the sender's mic/cam on/off state (data: MediaState).
+   *  'restart' asks the peer that made the offer to restart ICE on a stalled
+   *  connection; 'sync' (after the sender's socket reconnected) lists the peers
+   *  it still holds, so each side can tell whether the pair must start over. */
+  kind: 'hello' | 'bye' | 'offer' | 'answer' | 'ice' | 'media' | 'restart' | 'sync';
   data?: unknown;
 }
 
@@ -104,6 +144,9 @@ export interface Presence {
 export interface MediaState {
   micOn: boolean;
   camOn: boolean;
+  /** The sender's camera is on but paused towards this peer: the link between
+   *  the two is too weak for video, and voices come first. */
+  videoHeld?: boolean;
 }
 
 // Server → client payloads.
@@ -130,6 +173,9 @@ export const EVT = {
   extendTime: 'extendTime',
   leaveRoom: 'leaveRoom',
   setAvatar: 'setAvatar',
+  setPaused: 'setPaused',
+  setOptions: 'setOptions',
+  setSeatCount: 'setSeatCount',
   voice: 'voice',
   presence: 'presence',
   lobby: 'lobby',

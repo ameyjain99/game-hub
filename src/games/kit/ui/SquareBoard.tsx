@@ -30,6 +30,8 @@ interface Props {
   /** Coordinates along the edges: files left→right and ranks top→bottom, as stored. */
   files?: string[];
   ranks?: string[];
+  /** A square's own number, printed small in its bottom-left corner (Checkers: 1-32). */
+  number?: (sq: number) => number | null;
   className?: string;
   ariaLabel: string;
 }
@@ -55,6 +57,7 @@ export function SquareBoard({
   ghosts = [],
   files,
   ranks,
+  number,
   className,
   ariaLabel,
 }: Props) {
@@ -129,6 +132,11 @@ export function SquareBoard({
           >
             {files && i >= 56 && <span className="sq-file">{files[sq % 8]}</span>}
             {ranks && i % 8 === 0 && <span className="sq-rank">{ranks[Math.floor(sq / 8)]}</span>}
+            {number?.(sq) != null && (
+              <span className="sq-num" aria-hidden="true">
+                {number(sq)}
+              </span>
+            )}
             {ghost && (
               <span key={ghost.key} className="sq-piece is-ghost" aria-hidden="true">
                 {ghost.node}

@@ -1,4 +1,8 @@
 import { KitApp, type KitAppConfig } from '../../kit/ui/KitApp';
+import type { CSSProperties } from 'react';
+import type { LobbyPiece } from '../../../online/ui/OnlineLobby';
+import { SUSPECTS } from '../engine/cards';
+import { SUSPECT_COLOR, inkOn, suspectInitial } from './palette';
 import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
 import { MAX_SEATS, MIN_SEATS, cluedoKit, createCluedo } from '../engine';
@@ -23,6 +27,17 @@ const config: KitAppConfig = {
   difficulties: DIFFICULTIES,
 };
 
+/** The six suspects, to pick who you play in the lobby. */
+const SUSPECT_PIECES: LobbyPiece[] = SUSPECTS.map((s) => ({
+  id: s,
+  label: s,
+  node: (
+    <span className="g-piece-token" style={{ '--tc': SUSPECT_COLOR[s], color: inkOn(s) } as CSSProperties}>
+      {suspectInitial(s)}
+    </span>
+  ),
+}));
+
 export function CluedoApp({ onBackToHub }: { onBackToHub: () => void }) {
   return (
     <KitApp
@@ -42,6 +57,7 @@ export function CluedoApp({ onBackToHub }: { onBackToHub: () => void }) {
           onCode={onCode}
           difficulties={DIFFICULTIES}
           colorFor={clSeatColor}
+          pieces={SUSPECT_PIECES}
           render={(p) => <CluedoGame {...p} />}
         />
       )}

@@ -63,13 +63,13 @@ test('joining a room acquires no media; mic/cam are acquired only when toggled o
     await result.current.toggleMic();
   });
   expect(getUserMedia).toHaveBeenCalledWith({ audio: true });
-  expect(getUserMedia).not.toHaveBeenCalledWith({ video: true });
+  expect(getUserMedia).toHaveBeenCalledTimes(1);
   expect(result.current.micMuted).toBe(false);
 
   // Turning the camera on requests exactly the camera.
   await act(async () => {
     await result.current.toggleCam();
   });
-  expect(getUserMedia).toHaveBeenCalledWith({ video: true });
+  expect(getUserMedia).toHaveBeenLastCalledWith({ video: expect.any(Object) });
   expect(result.current.camOff).toBe(false);
 });

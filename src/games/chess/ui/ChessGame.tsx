@@ -3,10 +3,15 @@ import { Chess, type Square } from 'chess.js';
 import { chessKit, colorOf, idOfColor, type ChessAction, type ChessState, type Color, type Promotion } from '../engine';
 import { GameShell, SideSection } from '../../kit/ui/GameShell';
 import { PlayersPanel } from '../../kit/ui/PlayersPanel';
+import { GameClock } from '../../../online/ui/GameClock';
+import { useTable } from '../../../online/TableContext';
 import { ResultCard } from '../../kit/ui/ResultCard';
 import { SquareBoard } from '../../kit/ui/SquareBoard';
 import { MoveList } from '../../kit/ui/MoveList';
+import { Takeback } from '../../kit/ui/Takeback';
+import { replay } from '../engine';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
+import { TableMomentBanner, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
 import { useCues } from '../../kit/ui/useCues';
 import { PIECE_SVG } from './pieces';
 import { CHESS_SOUNDS, chessCues } from './sound';
@@ -35,6 +40,7 @@ const RESULT_TEXT: Record<string, string> = {
   resigned: 'By resignation.',
   agreed: 'Drawn by agreement.',
   abandoned: 'The table emptied.',
+  time: 'Out of time.',
 };
 
 /** Whether Stockfish has loaded, for the engine card. */
@@ -60,13 +66,31 @@ export function ChessGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
   const [hover, setHover] = useState<number | null>(null);
   const [promoting, setPromoting] = useState<{ from: number; to: number } | null>(null);
   const [spotlight, setSpotlight] = useState<string | null>(null);
+  const clocked = !!useTable()?.clocks;
   useCues(view, (a, b) => chessCues(a, b, meId), CHESS_SOUNDS);
+  // Check, a queen taken, a pawn promoted (mate has the result card).
+  const moment = useTableMoments(view, (a, b): TableMoment[] => {
+    if (b.game !== a.game || b.moves.length <= a.moves.length) return [];
+    const m = b.moves[b.moves.length - 1];
+    if (m.san.includes('#')) return [];
+    const mover = idOfColor(b, m.color);
+    const name = mover === meId ? 'You' : nameFor(mover);
+    const out: TableMoment[] = [];
+    if (m.captured === 'q') out.push({ kicker: name, title: 'took the queen', color: '#e2483b', feels: { [mover]: 'good' } });
+    if (m.promotion) out.push({ kicker: name, title: `promoted a pawn to a ${{ q: 'queen', r: 'rook', b: 'bishop', n: 'knight' }[m.promotion]}`, color: '#f2c548', feels: { [mover]: 'good' } });
+    if (m.san.includes('+')) out.push({ kicker: name, title: 'Check!', color: '#e2483b', feels: { [mover]: 'good' } });
+    return out;
+  });
 
-  const chess = useMemo(() => new Chess(view.fen), [view.fen]);
+  // Looking back: the position after a chosen number of moves (null = the live game).
+  const [review, setReview] = useState<number | null>(null);
+  useEffect(() => setReview(null), [view.game]);
+  const shownMoves = review === null ? view.moves : view.moves.slice(0, review);
+  const chess = useMemo(() => (review === null ? new Chess(view.fen) : replay(view.moves.slice(0, review))), [view.fen, review]); // eslint-disable-line react-hooks/exhaustive-deps
   const seated = view.players.some((p) => p.id === meId);
   const myColor: Color = seated ? colorOf(view, meId) : 'w';
   const actor = chessKit.actor(view);
-  const myTurn = actor === meId;
+  const myTurn = actor === meId && review === null;
   const opponentId = view.players.find((p) => p.id !== meId)?.id ?? view.players[1].id;
   const engineOpponent = view.players.find((p) => p.id === opponentId)?.isAI ?? false;
   const engineState = useEngineReady(engineOpponent);
@@ -80,7 +104,7 @@ export function ChessGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
   const movable = new Set(legal.map((m) => indexOf(m.from)));
   const focus = selected ?? (hover !== null && movable.has(hover) ? hover : null);
   const targets = focus === null ? [] : legal.filter((m) => m.from === alg(focus));
-  const last = view.moves[view.moves.length - 1];
+  const last = shownMoves[shownMoves.length - 1];
   const inCheck = chess.inCheck();
   const kingSq = inCheck ? chess.board().flat().find((p) => p && p.type === 'k' && p.color === chess.turn())?.square : undefined;
   const spotColor = spotlight ? colorOf(view, spotlight) : null;
@@ -128,6 +152,7 @@ export function ChessGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
 
   let status;
   if (view.over) status = view.winner ? <><strong>{who(view.winner)}</strong> {view.winner === meId ? 'win' : 'wins'}</> : <>Drawn game</>;
+  else if (review !== null) status = <><strong>Looking back</strong> · after move {review} of {view.moves.length}{actor === meId ? ' · it is your move' : ''}</>;
   else if (myTurn) status = inCheck ? <><strong>Check</strong> · your move</> : <><strong>Your move</strong> · you're {myColor === 'w' ? 'White' : 'Black'}</>;
   else status = engineOpponent ? <><strong>Stockfish</strong> is thinking...</> : <><strong>{nameFor(actor!)}</strong> to move</>;
 
@@ -249,7 +274,7 @@ export function ChessGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
             color: COLOR_ACCENT[c],
             badge: <PieceImg code={`${c}K`} />,
             detail: takenRow(c),
-            trailing: view.game > 1 ? view.score[id] ?? 0 : undefined,
+            trailing: clocked ? <GameClock id={id} running={actor === id} /> : view.game > 1 ? view.score[id] ?? 0 : undefined,
             active: actor === id,
           };
         })}
@@ -297,16 +322,21 @@ export function ChessGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
                   {view.drawOffer === meId ? 'Draw offered' : 'Offer a draw'}
                 </button>
               )}
-              <button type="button" className="g-btn g-btn-ghost" style={engineOpponent ? { gridColumn: '1 / -1' } : undefined} onClick={() => onAction({ type: 'RESIGN' })}>
+              <button type="button" className="g-btn g-btn-ghost" onClick={() => onAction({ type: 'RESIGN' })}>
                 Resign
               </button>
+              <Takeback
+                asker={view.takeback}
+                meId={meId}
+                nameFor={nameFor}
+                canAsk={view.moves.some((m) => m.color === myColor)}
+                onAsk={() => onAction({ type: 'TAKEBACK' })}
+                onAnswer={(accept) => onAction({ type: 'ANSWER_TAKEBACK', accept })}
+              />
             </div>
           )}
         </div>
       )}
-      <SideSection title="Moves">
-        <MoveList moves={view.moves.map((m) => m.san)} empty="White moves first." />
-      </SideSection>
     </>
   );
 
@@ -320,8 +350,18 @@ export function ChessGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
       headerExtra={online?.clock}
       banner={online?.banner}
       board={board}
-      overlay={overlay}
+      overlay={
+        <>
+          <TableMomentBanner moment={moment} place="top" />
+          {overlay}
+        </>
+      }
       side={side}
+      log={
+        <SideSection title="Moves">
+          <MoveList moves={view.moves.map((m) => m.san)} empty="White moves first." picked={review} onPick={setReview} />
+        </SideSection>
+      }
     />
   );
 }

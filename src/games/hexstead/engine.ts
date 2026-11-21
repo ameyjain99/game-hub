@@ -126,9 +126,11 @@ export interface Offer {
   /** Wardens: commodities in the offer too. */
   giveGoods?: Partial<Goods>;
   getGoods?: Partial<Goods>;
-  /** Players still to answer, in order. */
+  /** Players still to answer (they may answer in any order, all at once). */
   asked: string[];
   answers: Record<string, boolean>;
+  /** Other terms a player proposed instead, by player: what THEY would give and get. */
+  counters?: Record<string, { give: Partial<Hand>; get: Partial<Hand> }>;
 }
 
 /**
@@ -317,7 +319,10 @@ export type HxAction =
   | { type: 'HARBOR'; target: string; give: Resource }
   | { type: 'OFFER'; give: Partial<Hand>; get: Partial<Hand>; giveGoods?: Partial<Goods>; getGoods?: Partial<Goods> }
   | { type: 'ANSWER'; accept: boolean }
-  | { type: 'CLOSE_OFFER'; with: string | null }
+  /** Instead of yes or no: other terms, as the answering player would give and get them. */
+  | { type: 'COUNTER'; give: Partial<Hand>; get: Partial<Hand> }
+  /** `counter`: take that player's counter-offer rather than the original terms. */
+  | { type: 'CLOSE_OFFER'; with: string | null; counter?: boolean }
   | { type: 'END_TURN' };
 
 export const emptyHand = (): Hand => ({ timber: 0, clay: 0, wool: 0, grain: 0, stone: 0 });
@@ -976,7 +981,28 @@ function applyHex(prev: HxState, action: HxAction | KitCommonAction, actorId: st
   if (!me) throw new IllegalMove('not in this game');
   // An offerer may withdraw their offer while others are still answering.
   if (action.type === 'CLOSE_OFFER' && s.phase === 'offer' && s.offer?.from === actorId) {
-    closeOffer(s, action.with);
+    closeOffer(s, action.with, !!action.counter);
+    return finish(s);
+  }
+  // An offer is put to the whole table at once: anyone asked may answer, in any order.
+  if (action.type === 'ANSWER' && s.phase === 'offer' && s.offer?.asked.includes(actorId)) {
+    const o = s.offer;
+    o.answers[actorId] = action.accept && canPay(me.hand, o.get) && hasGoods(me.goods, o.getGoods);
+    o.asked = o.asked.filter((id) => id !== actorId);
+    if (o.asked.length === 0 && !Object.values(o.answers).some(Boolean) && !Object.keys(o.counters ?? {}).length) closeOffer(s, null);
+    return finish(s);
+  }
+  // ...or come back with other terms (anyone at the table but the one who made the offer).
+  if (action.type === 'COUNTER' && s.phase === 'offer' && s.offer && s.offer.from !== actorId && !me.out) {
+    const give = clean(action.give);
+    const get = clean(action.get);
+    if (!handSize(give) || !handSize(get)) throw new IllegalMove('offer something for something');
+    if (RESOURCES.some((r) => (give[r] ?? 0) > 0 && (get[r] ?? 0) > 0)) throw new IllegalMove("don't ask for what you're giving");
+    if (!canPay(me.hand, give)) throw new IllegalMove("you don't have those cards");
+    const o = s.offer;
+    o.counters = { ...(o.counters ?? {}), [actorId]: { give, get } };
+    o.answers[actorId] = false;
+    o.asked = o.asked.filter((id) => id !== actorId);
     return finish(s);
   }
   if (hexActor(s) !== actorId) throw new IllegalMove('not your turn');
@@ -1315,11 +1341,27 @@ const clean = (h: Partial<Hand>): Partial<Hand> => Object.fromEntries(RESOURCES.
 const cleanGoods = (g: Partial<Goods> | undefined): Partial<Goods> => Object.fromEntries(COMMODITIES.filter((c) => (g?.[c] ?? 0) > 0).map((c) => [c, Math.floor(g![c]!)]));
 const hasGoods = (have: Goods, want: Partial<Goods> | undefined) => COMMODITIES.every((c) => have[c] >= (want?.[c] ?? 0));
 
-function closeOffer(s: HxState, withId: string | null) {
+function closeOffer(s: HxState, withId: string | null, counter = false) {
   const o = s.offer!;
   s.offer = null;
   s.phase = 'main';
   if (!withId) return;
+  if (counter) {
+    // The offerer takes that player's counter-offer: its terms are from their side.
+    const c = o.counters?.[withId];
+    if (!c) throw new IllegalMove('that player made no counter-offer');
+    const a = s.players.find((p) => p.id === o.from)!;
+    const b = s.players.find((p) => p.id === withId)!;
+    if (!canPay(b.hand, c.give) || !canPay(a.hand, c.get)) return;
+    for (const r of RESOURCES) {
+      const g = c.give[r] ?? 0;
+      const w = c.get[r] ?? 0;
+      b.hand[r] += w - g;
+      a.hand[r] += g - w;
+    }
+    note(s, { kind: 'trade', player: o.from, target: withId, paid: c.get, cards: c.give });
+    return;
+  }
   if (!o.answers[withId]) throw new IllegalMove('that player did not accept');
   const a = s.players.find((p) => p.id === o.from)!;
   const b = s.players.find((p) => p.id === withId)!;

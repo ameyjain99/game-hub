@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { SideSection } from './GameShell';
+import { useTable } from '../../../online/TableContext';
 
 export interface PanelPlayer {
   id: string;
@@ -38,12 +39,17 @@ export function PlayersPanel({
   spotlight?: string | null;
   onSpotlight?: (id: string | null) => void;
 }) {
+  const table = useTable();
   return (
     <SideSection title={title}>
       <ul className="kit-players">
-        {players.map((p) => (
+        {players.map((p) => {
+          const seat = table?.seatOf(p.id);
+          const said = table?.says.get(p.id);
+          return (
           <li
             key={p.id}
+            data-player={p.id}
             className={`kit-player${p.active ? ' is-turn' : ''}${p.out ? ' is-out' : ''}${spotlight === p.id ? ' is-spot' : ''}`}
             style={{ '--tc': p.color } as CSSProperties}
             onMouseEnter={onSpotlight ? () => onSpotlight(p.id) : undefined}
@@ -57,12 +63,20 @@ export function PlayersPanel({
               <span className="kit-player-name">
                 {p.name}
                 {p.you && p.name !== 'You' && <span className="kit-you">you</span>}
+                {seat?.covering && <span className="kit-you">bot covering</span>}
+                {seat && !seat.isAI && !seat.connected && !p.out && <span className="kit-you is-warn">offline</span>}
               </span>
               {p.detail && <span className="kit-player-detail">{p.detail}</span>}
             </span>
             {p.trailing !== undefined && <span className="kit-player-trailing">{p.trailing}</span>}
+            {said && (
+              <span className="kit-say" role="status">
+                {said}
+              </span>
+            )}
           </li>
-        ))}
+          );
+        })}
       </ul>
     </SideSection>
   );

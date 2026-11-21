@@ -5,8 +5,9 @@ import { GameShell, SideSection } from '../../kit/ui/GameShell';
 import { PlayersPanel, tokenLabel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
+import { TableMomentBanner, freshEvents, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
 import { useCues } from '../../kit/ui/useCues';
-import { Shuffle, Undo2 } from '../../../shared/icons';
+import { ArrowDownAZ, Shuffle, Undo2 } from '../../../shared/icons';
 import { WG_SOUNDS, playNope, playTap, wgCues } from './sound';
 
 const SEAT_COLORS = ['#E5383B', '#2B6BE0', '#20A464', '#F2B705'];
@@ -42,6 +43,22 @@ export function WordgridGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   const myTurn = actor === meId;
   const who = (id: string) => (id === meId ? 'You' : nameFor(id));
   useCues(view, (a, b) => wgCues(a, b, meId), WG_SOUNDS);
+  // A big word, or all seven tiles at once, deserves the table's attention.
+  const moment = useTableMoments(view, (a, b): TableMoment[] =>
+    freshEvents(a.history, b.history).flatMap((m): TableMoment[] => {
+      if (m.kind !== 'play' || (!m.bingo && m.score < 30)) return [];
+      const words = m.words?.map((w) => w.word).join(', ') ?? '';
+      return [
+        {
+          kicker: who(m.player),
+          title: m.bingo ? `All seven tiles! ${m.score} points` : `${m.score} points`,
+          detail: words,
+          color: wgSeatColor(b.players.findIndex((p) => p.id === m.player)),
+          feels: { [m.player]: 'good' },
+        },
+      ];
+    }),
+  );
 
   const [pending, setPending] = useState<Map<number, Pending>>(new Map());
   const [order, setOrder] = useState<number[]>([]);
@@ -193,6 +210,8 @@ export function WordgridGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   }, [dragging]);
 
   const lastCells = new Set(view.last?.kind === 'play' ? view.last.cells : []);
+  // The score of the word just played pops up on its last tile.
+  const scoreCell = view.last?.kind === 'play' && view.last.cells?.length ? Math.max(...view.last.cells) : -1;
   const previewCells = valid ? new Set(preview.words.flatMap((w) => w.cells)) : new Set<number>();
 
   const board = (
@@ -218,6 +237,11 @@ export function WordgridGame({ view, meId, nameFor, onAction, onExit, exitLabel,
                 />
               )}
               {pend && <TileFace letter={pend.letter} blank={pend.blank} className="is-pending" />}
+              {i === scoreCell && (
+                <span key={view.last!.seq} className={`wg-score${view.last!.bingo ? ' is-bingo' : ''}`} aria-hidden="true">
+                  +{view.last!.score}
+                </span>
+              )}
             </button>
           );
         })}
@@ -385,6 +409,21 @@ export function WordgridGame({ view, meId, nameFor, onAction, onExit, exitLabel,
               >
                 <Shuffle size={16} />
               </button>
+              <button
+                type="button"
+                className="g-btn g-btn-ghost"
+                aria-label="Sort rack A to Z"
+                title="Sort A to Z (blanks last)"
+                onClick={() =>
+                  setOrder((o) => {
+                    const letter = (id: number) => tileById(id)?.letter ?? '';
+                    const rank = (id: number) => (letter(id) === '?' ? '~' : letter(id));
+                    return [...o].sort((a, b) => rank(a).localeCompare(rank(b)) || a - b);
+                  })
+                }
+              >
+                <ArrowDownAZ size={16} />
+              </button>
             </div>
             <div className="kit-actions">
               <button type="button" className="g-btn g-btn-ghost" disabled={!myTurn || view.bagCount < RACK} onClick={() => { recall(); setSwapping(new Set()); }}>
@@ -413,17 +452,6 @@ export function WordgridGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           out: p.out,
         }))}
       />
-      <SideSection title="Moves">
-        {view.history.length === 0 ? (
-          <p className="kit-muted">The first word must cover the ★. Premiums count only under new tiles; all seven at once earns 50.</p>
-        ) : (
-          <ul className="kit-log">
-            {view.history.slice(0, 10).map((m) => (
-              <li key={m.seq}>{describe(m, who)}</li>
-            ))}
-          </ul>
-        )}
-      </SideSection>
       <SideSection title="Tiles still out" meta={`${unseen.reduce((n, [, c]) => n + c, 0)}`}>
         <div className="wg-unseen">
           {unseen.map(([l, n]) => (
@@ -456,8 +484,26 @@ export function WordgridGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         headerExtra={online?.clock}
         banner={online?.banner}
         board={board}
-        overlay={overlay}
+        overlay={
+          <>
+            <TableMomentBanner moment={moment} place="top" />
+            {overlay}
+          </>
+        }
         side={side}
+        log={
+          <SideSection title="Moves">
+            {view.history.length === 0 ? (
+              <p className="kit-muted">The first word must cover the ★. Premiums count only under new tiles; all seven at once earns 50.</p>
+            ) : (
+              <ul className="kit-log">
+                {view.history.map((m) => (
+                  <li key={m.seq}>{describe(m, who)}</li>
+                ))}
+              </ul>
+            )}
+          </SideSection>
+        }
       />
       {drag?.moved &&
         createPortal(

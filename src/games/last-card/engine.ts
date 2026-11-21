@@ -85,6 +85,10 @@ export interface LcState {
   /** Points won across hands. */
   score: Record<string, number>;
   seed: number;
+  /** House rule: a draw card can be answered with another of its kind, passing the total on. */
+  stack: boolean;
+  /** Cards the player to move must draw, unless they stack (0 when nothing is owed). */
+  owed: number;
 }
 
 export type LcAction =
@@ -155,6 +159,11 @@ export function points(f: Face): number {
 
 /** Whether `face` may go on the pile now. */
 export function fits(s: LcState, face: Face, hand: Card[]): boolean {
+  if (s.owed > 0) {
+    // Cards are owed: the only play is another draw card of the same kind, to pass them on.
+    const top = faceOf(s.discard[s.discard.length - 1], s.side)!;
+    return face.kind === top.kind && (face.kind !== 'draw' || face.value === top.value);
+  }
   if (face.kind === 'wild-draw') {
     // Only with nothing of the colour in play to hand.
     return s.color === null || !hand.some((c) => faceOf(c, s.side)!.color === s.color);
@@ -222,6 +231,7 @@ function deal(s: LcState, game: number, starter: number): LcState {
     winner: null,
     over: false,
     game,
+    owed: 0,
   };
   for (let i = 0; i < next.players.length; i++) {
     if (next.players[i].out) continue;
@@ -239,9 +249,9 @@ function deal(s: LcState, game: number, starter: number): LcState {
   return finalize({ ...next, color: top.color });
 }
 
-export function createLastCard(seats: KitSeat[], seed: number, options: { variant?: Variant } = {}): LcState {
+export function createLastCard(seats: KitSeat[], seed: number, options: { variant?: Variant; stack?: boolean } = {}): LcState {
   const players = seats.map((seat, i) => ({ id: `p${i}`, name: seat.name, isAI: seat.isAI, difficulty: seat.difficulty, hand: [], handCount: 0 }));
-  const base = { variant: options.variant ?? 'classic', players, score: Object.fromEntries(players.map((p) => [p.id, 0])), seed } as unknown as LcState;
+  const base = { variant: options.variant ?? 'classic', stack: !!options.stack, owed: 0, players, score: Object.fromEntries(players.map((p) => [p.id, 0])), seed } as unknown as LcState;
   return deal(base, 1, 0);
 }
 
@@ -290,6 +300,11 @@ function play(s: LcState, seat: number, cardId: number, color: Color | undefined
       break;
     case 'draw':
     case 'wild-draw': {
+      if (next.stack) {
+        // Stacking: the next player answers with a card of the same kind, or draws the lot.
+        next = advance({ ...next, owed: next.owed + face.value! });
+        break;
+      }
       const t = take(next, face.value!);
       next = giveCards(t.s, victim, t.cards);
       next = record(next, { player: next.players[victim].id, kind: 'penalty', count: t.cards.length, target: next.players[victim].id });
@@ -323,7 +338,14 @@ function play(s: LcState, seat: number, cardId: number, color: Color | undefined
     default:
       next = advance(next);
   }
-  if (hand.length === 0) return finalize(endHand(next, seat));
+  if (hand.length === 0) {
+    // Going out on a stacked draw card: whoever owed the cards still takes them.
+    if (next.owed > 0) {
+      const t = take(next, next.owed);
+      next = giveCards({ ...t.s, owed: 0 }, next.turn, t.cards);
+    }
+    return finalize(endHand(next, seat));
+  }
   return finalize(next);
 }
 
@@ -362,6 +384,12 @@ export function applyLastCard(s: LcState, action: LcAction | KitCommonAction, ac
       return play(open, seat, action.card, action.color, !!action.callLast);
     case 'DRAW': {
       if (s.drawn !== null) throw new IllegalMove("you've already drawn");
+      if (s.owed > 0) {
+        // No card to stack: take everything owed, and the turn passes.
+        const t = take(open, s.owed);
+        const took = record(giveCards({ ...t.s, owed: 0 }, seat, t.cards), { player: actorId, kind: 'penalty', count: t.cards.length, target: actorId });
+        return finalize(advance(took));
+      }
       const t = take(open, 1);
       if (t.cards.length === 0) return finalize(advance(record(t.s, { player: actorId, kind: 'pass' })));
       let next = giveCards(t.s, seat, t.cards);
@@ -431,7 +459,7 @@ export function lcBotAction(s: LcState, rand: () => number = Math.random): LcAct
 
 export const lastCardKit: GameKit<LcState, LcAction> = {
   seatError: (count) => (count >= 2 && count <= 10 ? null : 'Last Card is for 2-10 players'),
-  create: (seats, seed, options) => createLastCard(seats, seed, (options ?? {}) as { variant?: Variant }),
+  create: (seats, seed, options) => createLastCard(seats, seed, (options ?? {}) as { variant?: Variant; stack?: boolean }),
   apply: applyLastCard,
   actor: (s) => (s.over ? null : s.players[s.turn].id),
   players: (s) => s.players,
@@ -454,6 +482,8 @@ export const lastCardKit: GameKit<LcState, LcAction> = {
   // Classic: only your own hand. Flip: you see the face in play of your own cards
   // and the other face of everyone else's (the side turned towards you).
   redact: (s, viewer) => {
+    // The hand is over: every hand is turned face up to count the points.
+    if (s.over) return { ...s, deck: [], discard: s.discard.slice(-3) };
     if (s.variant === 'classic') {
       return { ...s, deck: [], players: s.players.map((p) => (p.id === viewer ? p : { ...p, hand: [] })), discard: s.discard.slice(-3) };
     }

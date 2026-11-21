@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pickBotNames } from '../../../shared/botNames';
 import { BackIcon, CloseIcon, AddIcon } from '../../../shared/icons';
 import { RulesButton } from '../../../shared/ui/Rules';
 import { TTR_RULES } from '../rules';
@@ -16,7 +17,7 @@ interface Row {
 
 const DEFAULT_ROWS: Row[] = [
   { name: 'You', isAI: false, difficulty: 'normal' },
-  { name: 'Bot 1', isAI: true, difficulty: 'normal' },
+  { name: pickBotNames(1)[0], isAI: true, difficulty: 'normal' },
 ];
 
 interface Props {
@@ -40,7 +41,7 @@ export function TicketToRideSetup({ onStart, onBackToHub, onPlayOnline }: Props)
   const addRow = () =>
     setRows((r) => [
       ...r,
-      { name: `Bot ${r.length}`, isAI: true, difficulty: 'normal' },
+      { name: pickBotNames(1, r.map((x) => x.name))[0], isAI: true, difficulty: 'normal' },
     ]);
   const removeRow = (i: number) => setRows((r) => r.filter((_, idx) => idx !== i));
 

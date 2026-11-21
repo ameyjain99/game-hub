@@ -23,7 +23,8 @@ any of it.
 | Video seats for the humans at the table (voice and video, no text chat) | `KitVideos` |
 | A players panel; hovering a player spotlights their pieces on the board | `PlayersPanel` |
 | Sounds for every meaningful event, and a turn chime | `useCues`, `ui/sound.ts` |
-| A log of what happened, in plain sentences | sidebar `kit-log` |
+| A log of what happened, in plain sentences, each line in its player's colour | `GameLog` (`GameShell`'s `log`) |
+| The plays the whole table should notice, said large over the board | `useTableMoments`, `TableMomentBanner` |
 | A result card with the standings and a rematch | `ResultCard` |
 | A complete rule book with figures, for every version of the game | `rules.ts`, `ui/ruleFigures.tsx` |
 | Hidden information hidden: each player's view is redacted on the server | `redact` |
@@ -84,7 +85,12 @@ clock and no result.
   square that fits.
 - **Your own things sit under the board, in a dock**: your hand or cards, the
   dice, and your actions. Everyone's things sit in the sidebar: video seats, the
-  players panel, then game panels (scores, the track, the log).
+  players panel, then game panels (scores, the track).
+- **The log stands open on the board's left** when the screen is wide enough
+  (above 1280px): the space beside the board tells the game's story, newest
+  first. On narrower screens it drops under the sidebar.
+- **Pieces are big enough to find at a glance.** A token is about half a
+  square wide; a marker placed on a map (a station) is larger than a city dot.
 - **Prompts that need you float over the board**, as small panels near its
   bottom edge (discard, choose a player, a trade offer), never as a page.
 - **Only show what applies.** Hide actions that make no sense now; disable
@@ -92,6 +98,46 @@ clock and no result.
   button.
 - **Phones**: below 1100px the sidebar drops under the board; below 720px
   everything compacts. Check every new screen at 390px wide.
+- **No pane is half empty while another is cramped.** Look at every screen at
+  1440, 1200 and 390 wide before calling it done. If one side has a tall empty
+  space and another has small or truncated things (a tiny hand, cut-off names,
+  a grid squeezed into a corner), move or enlarge them. The thing a player
+  reads most (a notebook, a hand) gets the most room.
+- **Your hand can be sorted.** Any hand of cards or rack of tiles has a sort
+  button (`HandSort`), and the order you choose stays yours.
+
+## 4a. The table
+
+A game is played at a table of people, and the shared table features come from
+`TableContext` (`useTable()`), not from wiring in each game.
+
+- **Faces sit where the players sit.** In a room, a player's camera (or their
+  initial) is at their seat on the board (`SeatFace`); the sidebar strip is the
+  fallback on a phone. A reaction, a turn and a win show on that face.
+- **Things travel between places.** A card played, chips bet, rent paid, a
+  resource produced: it flies from where it was to where it lands (`fly`,
+  `flyer`, `stamp` in `shared/fly.ts`). Nothing just appears.
+- **The dice are on the board**, where everyone is looking (`BoardDie`), and
+  the roller's die starts to tumble on the click.
+- **Bots are characters**: a name from `shared/botNames.ts`, never "Bot 2",
+  and a short word when something good or bad happens to them (`feels` on a
+  table moment).
+- **Names are unique in a room** (case and spaces ignored); a second "Sam"
+  becomes "Sam (2)".
+- **Pieces are chosen in the lobby** where the game has them (a token, a
+  colour, a suspect), one each.
+- **The lobby shows the rules of this room** to everyone and lets the host
+  change them and the number of seats; people can already talk there.
+- **Anyone can pause**; a pause stops every clock, holds the bots and says who
+  paused. Leaving a game under way asks first.
+- **A rematch starts when everyone at the table asks for it**, and shows who has.
+- **Open information is open.** A trade, a decision or a card shown is seen by
+  the whole table as it happens; only what the rules hide is hidden. What only
+  you may know is told to you alone and says so.
+- **A timed game shows its clock at the seat** (`SeatTimer` for a turn,
+  `GameClock` for a chess clock), not only in the header.
+- **The end is counted out**, not just announced: scores add up in front of
+  everyone, then the winner gets the confetti.
 
 ## 5. Liveliness
 
@@ -99,6 +145,11 @@ clock and no result.
   turn it is and what they are doing; a bot "thinking" shows a pulse or dots.
 - **Movement is animated**: tokens slide, cards deal and flip, tiles that pay out
   glow, stamps land. Respect `prefers-reduced-motion`.
+- **A turning point is an event, not a detail.** A colour chosen, "Last card!"
+  called, a player caught, a chip removed, a station built: the board acts it
+  out where it happened (the piece drops in or lifts off, under the name of who
+  did it) and a table moment says who did what, large, for about two seconds.
+  Keep these for turning points; ordinary plays stay quiet, or nothing stands out.
 - **Every meaningful event has a sound** (procedural Web Audio, no files), and
   your turn has its chime. One mute covers the whole hub.
 - **Hover means something**: hovering a player spotlights their pieces;

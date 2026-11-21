@@ -8,6 +8,11 @@ export interface SeatMediaState {
   stream: MediaStream | null;
   camOn: boolean;
   micOn: boolean;
+  /** A peer whose call is being re-established (never set for your own seat). */
+  reconnecting?: boolean;
+  /** Their camera is on but paused towards you, or yours towards someone: the
+   *  link is too weak for video, and voices come first. */
+  held?: boolean;
 }
 
 /**
@@ -17,17 +22,20 @@ export interface SeatMediaState {
 export function seatMediaState(media: MediaChat, id: string, meId: string): SeatMediaState {
   const isMe = id === meId;
   const announced = media.peerMedia.get(id);
+  const held = isMe ? !media.camOff && (media.heldPeers?.length ?? 0) > 0 : !!announced?.camOn && !!announced.videoHeld;
   return {
     isMe,
+    held,
     stream: isMe ? media.localStream : media.remoteStreams.get(id) ?? null,
-    camOn: isMe ? !media.camOff : announced?.camOn ?? false,
+    camOn: isMe ? !media.camOff : (announced?.camOn ?? false) && !announced?.videoHeld,
     micOn: isMe ? !media.micMuted : announced?.micOn ?? true,
+    reconnecting: !isMe && media.peerStatus?.get(id) === 'reconnecting',
   };
 }
 
 /** A <video> bound to a MediaStream (React has no srcObject prop). Your own
  *  camera is mirrored, like a selfie view; everyone else's reads true. */
-function LiveVideo({ stream, isMe }: { stream: MediaStream; isMe: boolean }) {
+export function LiveVideo({ stream, isMe }: { stream: MediaStream; isMe: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     if (ref.current) ref.current.srcObject = stream;
@@ -58,6 +66,16 @@ export function SeatMedia({
       ) : (
         <div className="g-silhouette" aria-label="camera off">
           {fallback ?? <User size={40} strokeWidth={1.5} />}
+        </div>
+      )}
+      {seat?.held && (
+        <div className={`g-vnote${seat.isMe ? ' is-mine' : ''}`} role="status">
+          {seat.isMe ? 'Your video is paused for some: weak connection' : 'Video paused: weak connection'}
+        </div>
+      )}
+      {seat?.reconnecting && (
+        <div className="g-vstatus" role="status">
+          Reconnecting...
         </div>
       )}
       {seat?.isMe && media && (

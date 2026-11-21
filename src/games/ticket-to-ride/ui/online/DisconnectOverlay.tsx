@@ -1,4 +1,5 @@
-import { playerIdForSeat, type LobbyView } from '../../../../net/protocol';
+import type { LobbyView } from '../../../../net/protocol';
+import { useDroppedSeat } from '../../../../online/ui/DisconnectBanner';
 import { cleanName } from '../displayName';
 
 interface Props {
@@ -14,15 +15,23 @@ interface Props {
  * Banner shown when a human player has dropped. Any remaining player can swap the
  * dropped seat for an AI so the game never stalls - including a dropped host
  * (otherwise the one person allowed to replace would be the one who's gone).
+ * The dropped player takes the seat back from the AI when they return.
  */
 export function DisconnectOverlay({ lobby, currentPlayerId, onReplace, onRemove }: Props) {
-  const dropped = lobby.seats.filter((s) => !s.isAI && s.name !== null && !s.connected);
-  if (dropped.length === 0) return null;
-
   // Prefer the player the game is actually waiting on - it's paused on their turn.
-  const current = dropped.find((s) => playerIdForSeat(s.index) === currentPlayerId);
-  const seat = current ?? dropped[0];
+  const drop = useDroppedSeat(lobby, currentPlayerId);
+  if (!drop) return null;
+  const { seat, waiting: current, reconnecting } = drop;
   const who = seat.name ? cleanName(seat.name) : `Player ${seat.index + 1}`;
+
+  // Most drops are a blip: give them a moment before offering to replace them.
+  if (reconnecting) {
+    return (
+      <div className="disconnect-overlay" role="status">
+        <span>{who} lost connection - giving them a moment to get back...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="disconnect-overlay" role="alert">

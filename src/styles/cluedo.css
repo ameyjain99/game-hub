@@ -591,3 +591,169 @@ button.cl-card.is-action:focus-visible {
     animation: none;
   }
 }
+
+/* ---------------- Layout: notebook right, the table left ---------------- */
+/* The notebook is what a detective works on all game: it gets the whole right
+   column, every row in view. The people, your cards, the case log and the cues
+   (whose turn, what you can do) sit left of the board, which keeps its height. */
+.cl-game .kit-left {
+  gap: var(--space-5);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.cl-game .kit-left > .kit-side-section {
+  flex: none;
+}
+
+.cl-game .kit-left .kit-log {
+  flex: none;
+  max-height: 240px;
+}
+
+.cl-now .cl-dock {
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.cl-now .cl-dice {
+  align-self: flex-start;
+}
+
+.cl-notes {
+  flex: 1;
+  min-height: 0;
+}
+
+.cl-notes .cl-notebook {
+  font-size: 13.5px;
+}
+
+.cl-notes .cl-notebook td {
+  width: 44px;
+  height: clamp(22px, 3vh, 32px);
+  padding: 2px;
+}
+
+.cl-notes .cl-nb-cell {
+  width: 100%;
+  height: 100%;
+}
+
+.cl-notes .cl-nb-token {
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+}
+
+@media (min-width: 1101px) {
+  .kit-game.cl-game.has-left {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(250px, 330px) minmax(0, 1fr) minmax(290px, 360px);
+    grid-template-areas:
+      'head head head'
+      'left stage side';
+    max-width: calc(100dvh + 760px);
+  }
+}
+
+/* Stacked: the cues stay right under the board, the notebook comes last. */
+@media (max-width: 1100px) {
+  .kit-game.cl-game.has-left {
+    grid-template-areas:
+      'head'
+      'stage'
+      'left'
+      'side';
+  }
+
+  .cl-game .kit-left {
+    overflow: visible;
+  }
+}
+
+/* ---- A suggestion going round the table ---- */
+.cl-pass {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-pass li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  animation: kit-log-in 0.3s ease-out;
+}
+
+.cl-pass .is-no {
+  color: var(--muted);
+  background: #ffffff0a;
+}
+
+.cl-pass .is-yes {
+  color: #0b0b0f;
+  background: #f2c548;
+}
+
+.cl-pass .is-none {
+  color: #fff;
+  background: #c9342c;
+}
+
+/* ---- The case file opened ---- */
+.cl-reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 16;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  pointer-events: none;
+  background: #0b0b0fcc;
+  border-radius: inherit;
+  animation: kit-fade 0.3s ease-out;
+}
+
+.cl-reveal-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #f2c548;
+  text-transform: uppercase;
+}
+
+.cl-reveal-cards {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.cl-reveal-card {
+  width: clamp(96px, 16cqw, 150px);
+  animation: cl-reveal 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes cl-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(40px) rotateY(90deg) scale(0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-pass li,
+  .cl-reveal,
+  .cl-reveal-card {
+    animation: none;
+  }
+}

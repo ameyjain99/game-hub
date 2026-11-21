@@ -149,3 +149,19 @@ export function playTimeWarning(): void {
     for (let i = 0; i < 3; i++) tone(ac, t0 + i * 0.42, { freq: 740, peak: 0.14, attack: 0.02, decay: 0.26 });
   });
 }
+
+/** Someone sat down at the table (the lobby). */
+export function playJoin(): void {
+  withAudio((ac, t) => {
+    tone(ac, t, { freq: 587.3, peak: 0.07, decay: 0.16 });
+    tone(ac, t + 0.09, { freq: 880, peak: 0.07, decay: 0.3 });
+  });
+}
+
+/** Someone got up and left. */
+export function playLeft(): void {
+  withAudio((ac, t) => {
+    tone(ac, t, { freq: 587.3, peak: 0.06, decay: 0.16 });
+    tone(ac, t + 0.09, { freq: 392, type: 'triangle', peak: 0.06, decay: 0.3 });
+  });
+}

@@ -4,11 +4,14 @@ import type { MonopolyPlayer, MonopolyState } from '../engine/state';
 import { useMediaQuery } from '../../../shared/useMediaQuery';
 import { movePath, tokenAnchor, tokenColor, tokenLabel } from './board-layout';
 import { playStep } from './sound';
+import { TokenGlyph } from '../../../shared/pieces';
 
 /** One square per hop; a direct move (jail, a card jump) glides in CSS instead. */
 const HOP_MS = 110;
-/** How far apart tokens sharing a square sit, as a fraction of the board. */
-const FAN = 0.013;
+/** How far apart tokens sharing a square sit, as a fraction of the board; a
+ *  crowd closes up (overlapping like stacked pieces) to stay on its square. */
+const FAN = 0.03;
+const FAN_SPAN = 0.062;
 
 interface Shown {
   /** The square the token is drawn on (it trails the real one while walking). */
@@ -87,7 +90,8 @@ export function MonopolyTokens({
       {players.map((p) => {
         const sq = sqOf(p);
         const group = bySquare.get(sq)!;
-        const spread = (group.indexOf(p.id) - (group.length - 1) / 2) * FAN;
+        const step = Math.min(FAN, FAN_SPAN / Math.max(1, group.length - 1));
+        const spread = (group.indexOf(p.id) - (group.length - 1) / 2) * step;
         const a = tokenAnchor(sq);
         const x = a.x + (a.axis === 'x' ? spread : 0);
         const y = a.y + (a.axis === 'y' ? spread : 0);
@@ -100,6 +104,7 @@ export function MonopolyTokens({
         return (
           <span
             key={p.id}
+            data-token={p.id}
             role="img"
             aria-label={`${nameFor(p.id)} on ${BOARD[sq].name}${jailed ? ', in jail' : ''}`}
             title={`${nameFor(p.id)}${jailed ? ' (in jail)' : ''}`}
@@ -108,7 +113,7 @@ export function MonopolyTokens({
             }${sq !== p.position ? ' is-moving' : ''}${spotlight && spotlight !== p.id ? ' is-dim' : ''}`}
             style={style}
           >
-            {tokenLabel(nameFor(p.id))}
+            {TokenGlyph({ id: p.avatar, size: 16 }) ?? tokenLabel(nameFor(p.id))}
           </span>
         );
       })}

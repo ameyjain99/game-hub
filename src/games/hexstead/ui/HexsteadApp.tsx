@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { rulesFromSpec } from '../../../online/ui/LobbyRules';
 import { KitApp, type KitAppConfig } from '../../kit/ui/KitApp';
 import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
@@ -17,6 +18,10 @@ const MODES: Record<HxMode, { name: string; hint: string; seats: number[] }> = {
   sea: { name: 'Open Sea', hint: 'Ships, a corsair, goldfields and outer islands to reach · 13 points wins', seats: [3, 4] },
   wardens: { name: 'Wardens', hint: 'Commodities, guild improvements, wardens and the marauder fleet · 13 points wins', seats: [3, 4] },
 };
+
+const LOBBY_RULES = rulesFromSpec([
+  { key: 'mode', label: 'Expansion', choices: (Object.keys(MODES) as HxMode[]).map((m) => ({ value: m, label: MODES[m].name })) },
+]);
 
 export function HexsteadApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [mode, setMode] = useState<HxMode>('base');
@@ -62,6 +67,7 @@ export function HexsteadApp({ onBackToHub }: { onBackToHub: () => void }) {
           onCode={onCode}
           difficulties={DIFFICULTIES}
           colorFor={hxSeatColor}
+          rulesFor={LOBBY_RULES}
           render={(p) => <HexsteadGame {...p} />}
         />
       )}

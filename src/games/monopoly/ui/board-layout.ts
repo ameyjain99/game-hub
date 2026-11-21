@@ -63,15 +63,15 @@ export function tokenAnchor(i: number): { x: number; y: number; axis: 'x' | 'y' 
   const { row, col } = cellPos(i);
   switch (sideOf(i)) {
     case 'corner':
-      return { x: centre(col), y: along(row, 0.82), axis: 'x' };
+      return { x: centre(col), y: along(row, 0.78), axis: 'x' };
     case 'bottom':
-      return { x: centre(col), y: along(row, 0.85), axis: 'x' };
+      return { x: centre(col), y: along(row, 0.8), axis: 'x' };
     case 'top':
-      return { x: centre(col), y: along(row, 0.15), axis: 'x' };
+      return { x: centre(col), y: along(row, 0.2), axis: 'x' };
     case 'left':
-      return { x: along(col, 0.15), y: centre(row), axis: 'y' };
+      return { x: along(col, 0.2), y: centre(row), axis: 'y' };
     case 'right':
-      return { x: along(col, 0.85), y: centre(row), axis: 'y' };
+      return { x: along(col, 0.8), y: centre(row), axis: 'y' };
   }
 }
 

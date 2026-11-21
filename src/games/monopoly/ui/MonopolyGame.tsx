@@ -13,6 +13,14 @@ import { TradeDialog } from './MonopolyTrade';
 import { momentLots, useSetMoments } from './SetMoment';
 import { RulesButton } from '../../../shared/ui/Rules';
 import { MONOPOLY_RULES } from '../rules';
+import { LogLine } from './LogLine';
+import { BOARD } from '../engine/board';
+import { FacesStrip } from '../../../online/ui/SeatFace';
+import { Confetti } from '../../../shared/ui/Confetti';
+import { fly, flyer, stamp } from '../../../shared/fly';
+import { PausedOverlay } from '../../../online/ui/Pause';
+import { TableMomentBanner, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
+import { tokenColor } from './board-layout';
 
 interface Props {
   view: MonopolyState;
@@ -40,6 +48,81 @@ function useMonopolySounds(view: MonopolyState, meId: string): void {
   }, [view, meId]);
 }
 
+/** Rent at or above this is announced to the table. */
+const BIG_RENT = 150;
+
+/** The swings of a Monopoly game: jail, a bankruptcy, a hotel going up, a heavy rent. */
+export function monopolyMoments(prev: MonopolyState, next: MonopolyState, who: (id: string) => string, colorOf: (id: string) => string): TableMoment[] {
+  const out: TableMoment[] = [];
+  const verb = (id: string, they: string, you: string) => (who(id) === 'You' ? you : they);
+  next.players.forEach((p) => {
+    const was = prev.players.find((x) => x.id === p.id);
+    if (!was) return;
+    if (p.bankrupt && !was.bankrupt) out.push({ kicker: who(p.id), title: `${verb(p.id, 'is', 'are')} bankrupt`, detail: 'Out of the game.', color: '#e2483b', feels: { [p.id]: 'bad' } });
+    else if (p.inJail && !was.inJail) out.push({ kicker: who(p.id), title: `${verb(p.id, 'goes', 'go')} to jail`, color: colorOf(p.id), feels: { [p.id]: 'bad' } });
+  });
+  for (const [id, o] of Object.entries(next.ownership)) {
+    if (o.houses === 5 && prev.ownership[Number(id)]?.houses !== 5 && o.owner) {
+      out.push({ kicker: who(o.owner), title: `built a hotel on ${BOARD[Number(id)].name}`, color: colorOf(o.owner), feels: { [o.owner]: 'good' } });
+    }
+  }
+  for (const line of next.log.slice(prev.log.length)) {
+    const m = line.match(/\{(p\d+)\} paid \$(\d+) rent to \{(p\d+)\}/);
+    if (m && Number(m[2]) >= BIG_RENT) {
+      out.push({ kicker: who(m[1]), title: `${verb(m[1], 'pays', 'pay')} $${m[2]} rent`, detail: `To ${who(m[3]) === 'You' ? 'you' : who(m[3])}.`, color: colorOf(m[3]), feels: { [m[1]]: 'bad', [m[3]]: 'good' } });
+    }
+  }
+  for (const line of next.log.slice(prev.log.length)) {
+    const sold = line.match(/\{(p\d+)\} won (.+) at auction for \$(\d+)/);
+    if (sold) out.push({ kicker: who(sold[1]), title: `won ${sold[2]} for $${sold[3]}`, detail: 'Sold at auction.', color: colorOf(sold[1]), feels: { [sold[1]]: 'good' } });
+    const deal = line.match(/\{(p\d+)\} accepted \{(p\d+)\}'s trade/);
+    if (deal) out.push({ kicker: `${who(deal[2])} and ${who(deal[1])}`, title: 'made a trade', color: colorOf(deal[2]) });
+    const no = line.match(/\{(p\d+)\} turned down the trade/);
+    if (no) out.push({ kicker: who(no[1]), title: 'turned the trade down', color: colorOf(no[1]) });
+  }
+  return out;
+}
+
+/**
+ * Money changes hands where everyone can see it: rent travels from the payer's
+ * token to the owner's, Go pays out at the Go square, and a lot just bought is
+ * stamped SOLD while its deed goes to the buyer's row.
+ */
+function useMoneyInMotion(view: MonopolyState, colorOf: (id: string) => string): void {
+  const seen = useRef(view.log.length);
+  useEffect(() => {
+    const lines = view.log.slice(seen.current);
+    seen.current = view.log.length;
+    const token = (id: string) => document.querySelector(`[data-token="${id}"]`);
+    const cell = (name: string) => {
+      const sp = BOARD.find((b) => b.name === name);
+      return sp ? document.querySelector(`[data-space="${sp.id}"]`) : null;
+    };
+    // A token is still walking to its square when its line arrives: let it land first.
+    const LAND_MS = 900;
+    for (const line of lines) {
+      const rent = line.match(/\{(p\d+)\} paid \$(\d+) rent to \{(p\d+)\}/);
+      if (rent) {
+        for (let i = 0; i < 4; i++) fly({ from: token(rent[1]), to: token(rent[3]), delay: LAND_MS + i * 70, ms: 620, make: flyer('mono-coin') });
+        fly({ from: token(rent[1]), to: token(rent[3]), delay: LAND_MS, ms: 760, make: flyer('mono-cash-fly', `$${rent[2]}`) });
+        continue;
+      }
+      const go = line.match(/\{(p\d+)\} (?:passed Go and collected|landed right on Go: another) \$(\d+)/);
+      if (go) {
+        fly({ from: document.querySelector('[data-space="0"]'), to: token(go[1]), delay: LAND_MS, ms: 700, make: flyer('mono-cash-fly is-gain', `+$${go[2]}`) });
+        continue;
+      }
+      const sale = line.match(/\{(p\d+)\} (?:bought (.+) for|won (.+) at auction for) \$\d+/);
+      if (sale) {
+        const lot = cell(sale[2] ?? sale[3]);
+        const color = colorOf(sale[1]);
+        stamp(lot, 'SOLD', 'mono-sold', color, sale[2] ? LAND_MS / 2 : 0);
+        fly({ from: lot, to: document.querySelector(`[data-player-row="${sale[1]}"]`), delay: 500, ms: 720, scaleTo: 0.5, make: flyer('mono-deed-fly', undefined, { borderTopColor: color }) });
+      }
+    }
+  }, [view.log]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
 /** The full Monopoly screen - header, board with its play area, and sidebar -
  *  shared by local and online games. */
 export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel, headerExtra, banner, sideTop }: Props) {
@@ -52,6 +135,11 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   const [muted, setMuted] = useMuted();
   useMonopolySounds(view, meId);
   const compact = useMediaQuery('(max-width: 720px)');
+  // A wide screen has room beside the board: the log gets its own column there.
+  const wide = useMediaQuery('(min-width: 1281px)');
+  const colorFor = (id: string) => tokenColor(view.players.findIndex((p) => p.id === id));
+  const moment = useTableMoments(view, (a, b) => monopolyMoments(a, b, (id) => (id === meId ? 'You' : nameFor(id)), colorFor));
+  useMoneyInMotion(view, colorFor);
   const actor = monopolyActor(view);
 
   // A new decision for the viewer (or a game event) closes an open deed.
@@ -87,13 +175,19 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   );
 
   return (
-    <div className="mono-game">
+    <div className={`mono-game${wide ? ' has-logcol' : ''}`}>
+      {view.phase === 'over' && view.winner === meId && <Confetti />}
       <header className="mono-head">
         <button type="button" className="back-link" onClick={onExit}>
           <BackIcon size={16} />
           {exitLabel}
         </button>
         <h1 className="mono-title">Monopoly</h1>
+        {view.settings.roundLimit > 0 && view.phase !== 'over' && (
+          <span className="mono-round">
+            Round {Math.min(view.round, view.settings.roundLimit)} of {view.settings.roundLimit}
+          </span>
+        )}
         <div className="mono-head-extra">
           {headerExtra}
           <RulesButton rules={MONOPOLY_RULES} />
@@ -109,6 +203,7 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         </div>
       </header>
       <main className="mono-stage">
+        <FacesStrip colorOf={colorFor} />
         {banner}
         <div className="mono-board-wrap">
           <MonopolyBoard
@@ -123,6 +218,8 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           >
             {center(compact ? 'head' : 'all')}
           </MonopolyBoard>
+          <TableMomentBanner moment={moment} place="top" />
+          <PausedOverlay />
         </div>
         {compact && center('body')}
       </main>
@@ -136,7 +233,31 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         spotlight={spotlight}
         onSpotlight={setSpotlight}
         top={sideTop?.(setSpotlight)}
+        showLog={!wide}
       />
+      {wide && (
+        <aside className="mono-logcol" aria-label="Game log">
+          <h2 className="mono-side-title">
+            Game log
+            {view.log.length > 0 && (
+              <span className="mono-logcol-count">
+                {view.log.length} {view.log.length === 1 ? 'event' : 'events'}
+              </span>
+            )}
+          </h2>
+          {view.log.length === 0 ? (
+            <p className="mono-logcol-empty">Every roll, purchase and payment is listed here as it happens.</p>
+          ) : (
+            <ol className="mono-log is-tall">
+              {[...view.log].reverse().map((line, i) => (
+                <li key={view.log.length - i}>
+                  <LogLine line={line} nameFor={nameFor} colorFor={colorFor} />
+                </li>
+              ))}
+            </ol>
+          )}
+        </aside>
+      )}
       {trading && (
         <TradeDialog
           view={view}

@@ -16,6 +16,8 @@ import {
 import { ArrowLeftRight, House, Hotel, Landmark, Minus, AddIcon } from '../../../shared/icons';
 import { GROUP_COLOR, tokenColor, tokenLabel } from './board-layout';
 import { LogLine } from './LogLine';
+import { useTable } from '../../../online/TableContext';
+import { TokenGlyph } from '../../../shared/pieces';
 
 const swatch = (id: number) => (BOARD[id].group ? GROUP_COLOR[BOARD[id].group!] : '#8a8f98');
 
@@ -33,6 +35,8 @@ interface Props {
   onSpotlight?: (playerId: string | null) => void;
   /** Shown first (the online video table). */
   top?: ReactNode;
+  /** Whether the log folds away here (a wide screen gives it its own column). */
+  showLog?: boolean;
 }
 
 /** How long a change in someone's cash floats beside their balance. */
@@ -99,7 +103,9 @@ export function MonopolySidebar({
   spotlight = null,
   onSpotlight,
   top,
+  showLog = true,
 }: Props) {
+  const table = useTable();
   const actor = monopolyActor(view);
   const me = view.players.find((p) => p.id === meId);
   const current = view.players[view.turnOrder[view.current]];
@@ -136,10 +142,16 @@ export function MonopolySidebar({
                 onMouseEnter={onSpotlight ? () => onSpotlight(p.id) : undefined}
                 onMouseLeave={onSpotlight ? () => onSpotlight(null) : undefined}
               >
-                <div className="mono-player-row">
-                  <span className="mono-token is-static">{tokenLabel(nameFor(p.id))}</span>
+                <div className="mono-player-row" data-player-row={p.id}>
+                  <span className="mono-token is-static">{TokenGlyph({ id: p.avatar, size: 13 }) ?? tokenLabel(nameFor(p.id))}</span>
                   <span className="mono-player-name">{nameFor(p.id)}</span>
                   {p.id === meId && nameFor(p.id) !== 'You' && <span className="g-tag">You</span>}
+                  {table?.seatOf(p.id)?.covering && <span className="g-tag g-tag-dim">Bot covering</span>}
+                  {table?.says.get(p.id) && (
+                    <span className="kit-say" role="status">
+                      {table.says.get(p.id)}
+                    </span>
+                  )}
                   {p.inJail && !p.bankrupt && <span className="g-tag g-tag-warn">In jail</span>}
                   {p.getOutCards > 0 && !p.bankrupt && (
                     <span className="g-tag" title="Get Out of Jail Free">
@@ -291,7 +303,7 @@ export function MonopolySidebar({
         </section>
       )}
 
-      {view.log.length > 0 && (
+      {showLog && view.log.length > 0 && (
         <details className="g-disclosure mono-side-log" aria-label="Game log">
           <summary>
             Game log

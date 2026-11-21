@@ -6,7 +6,10 @@ import { ResultCard } from '../../kit/ui/ResultCard';
 import { PlayingCard, SUIT_SYMBOL, cardName, isRed, rankLabel } from '../../kit/ui/PlayingCard';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
 import { useCues } from '../../kit/ui/useCues';
+import { SortButton, useSortMode } from '../../kit/ui/HandSort';
+import { GameLog } from '../../kit/ui/GameLog';
 import { SafeSquareIcon } from '../../../shared/icons';
+import { TableMomentBanner, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
 import { SEQ_SOUNDS, seqCues } from './sound';
 
 export const TEAM_COLOR = ['#2F6FDB', '#25A35A', '#E0393E'];
@@ -17,9 +20,59 @@ const short = (card: string) => `${rankLabel(card)}${SUIT_SYMBOL[card[1]]}`;
 function describe(p: SeqPlay, name: string): string {
   if (p.kind === 'dead') return `${name} swapped a dead ${short(p.card)}`;
   if (p.kind === 'discard') return `${name} had no play and discarded ${short(p.card)}`;
-  if (p.kind === 'remove') return `${name} used ${short(p.card)} to remove a ${TEAM_NAME[p.removedTeam!].toLowerCase()} chip`;
-  const text = `${name} played ${short(p.card)}${isTwoEyed(p.card) ? ' (wild)' : ''}`;
+  const at = p.cell !== undefined && p.card !== BOARD[p.cell] ? ` on ${short(BOARD[p.cell])}` : '';
+  if (p.kind === 'remove') return `${name} used ${short(p.card)} to remove a ${TEAM_NAME[p.removedTeam!].toLowerCase()} chip${p.cell !== undefined ? ` from ${short(BOARD[p.cell])}` : ''}`;
+  const text = `${name} played ${short(p.card)}${isTwoEyed(p.card) ? ` (wild)${at}` : ''}`;
   return p.made ? `${text} - made a line of five!` : text;
+}
+
+const SORTS = ['dealt', 'suit', 'rank'] as const;
+const SORT_LABEL: Record<(typeof SORTS)[number], string> = { dealt: 'as dealt', suit: 'by suit', rank: 'by rank' };
+const RANKS = 'A23456789TJQK';
+const SUITS = 'SHDC';
+
+/** The positions of your cards in the order you like to hold them (a play still names the card by its real position). */
+export function handOrder(hand: string[], mode: (typeof SORTS)[number]): number[] {
+  const idx = hand.map((_, i) => i);
+  if (mode === 'dealt') return idx;
+  const rank = (c: string) => RANKS.indexOf(c[0]);
+  const suit = (c: string) => SUITS.indexOf(c[1]);
+  return idx.sort((a, b) => (mode === 'suit' ? suit(hand[a]) - suit(hand[b]) || rank(hand[a]) - rank(hand[b]) : rank(hand[a]) - rank(hand[b]) || suit(hand[a]) - suit(hand[b])) || a - b);
+}
+
+/** How long the board shows who just placed or removed a chip, and where. */
+const FX_MS = 2600;
+
+/** A chip removed, or a line made: who did it and where, said large. */
+export function seqMoments(prev: SeqState, next: SeqState, who: (id: string) => string): TableMoment[] {
+  const p = next.last;
+  if (!p || p.seq === prev.last?.seq || next.game !== prev.game) return [];
+  const team = next.players.find((pl) => pl.id === p.player)?.team ?? 0;
+  if (p.kind === 'remove' && p.cell !== undefined) {
+    const theirs = TEAM_COLOR[p.removedTeam!];
+    return [
+      {
+        kicker: `${who(p.player)} played ${short(p.card)}`,
+        title: `removed a ${TEAM_NAME[p.removedTeam!].toLowerCase()} chip`,
+        detail: `Taken off the ${cardName(BOARD[p.cell])}.`,
+        color: theirs,
+        art: <span className="seq-chip is-moment is-struck" style={{ '--tc': theirs } as CSSProperties} />,
+        feels: { [p.player]: 'good' },
+      },
+    ];
+  }
+  if (p.kind === 'place' && p.made) {
+    return [
+      {
+        kicker: `${who(p.player)} · ${TEAM_NAME[team]}`,
+        title: p.made > 1 ? 'Two lines of five!' : 'A line of five!',
+        color: TEAM_COLOR[team],
+        art: <span className="seq-chip is-moment" style={{ '--tc': TEAM_COLOR[team] } as CSSProperties} />,
+        feels: { [p.player]: 'good' },
+      },
+    ];
+  }
+  return [];
 }
 
 /** The Lineup screen, shared by local and online games. */
@@ -29,12 +82,26 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
   const [hoverCell, setHoverCell] = useState<number | null>(null);
   const [spotTeam, setSpotTeam] = useState<number | null>(null);
   useCues(view, (a, b) => seqCues(a, b, meId), SEQ_SOUNDS);
+  const moment = useTableMoments(view, (a, b) => seqMoments(a, b, (id) => (id === meId ? 'You' : nameFor(id))));
+
+  // The last chip placed or removed is acted out on its space for a moment:
+  // the chip drops in (or lifts off) under the name of whoever did it.
+  const [fx, setFx] = useState<number | null>(null);
+  const lastSeq = view.last?.seq;
+  useEffect(() => {
+    if (lastSeq === undefined || view.last?.cell === undefined) return;
+    setFx(lastSeq);
+    const t = setTimeout(() => setFx(null), FX_MS);
+    return () => clearTimeout(t);
+  }, [lastSeq, view.game]); // eslint-disable-line react-hooks/exhaustive-deps
+  const acted = fx !== null && view.last?.seq === fx ? view.last : null;
 
   const me = view.players.find((p) => p.id === meId);
   const actor = lineupKit.actor(view);
   const myTurn = actor === meId;
   const who = (id: string) => (id === meId ? 'You' : nameFor(id));
   const hand = me?.hand ?? [];
+  const [sortBy, nextSort] = useSortMode('gamehub:lineup:sort', SORTS);
   const noPlays = myTurn && legalPlays(view).length === 0;
 
   useEffect(() => setSelected(null), [view.last?.seq, view.game]);
@@ -61,6 +128,21 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
 
   const board = (
     <div className={`kit-board seq-board${removing ? ' is-removing' : ''}`} style={{ '--mine': me ? TEAM_COLOR[me.team] : '#fff' } as CSSProperties} onMouseLeave={() => setHoverCell(null)}>
+      {/* A finished line is drawn through its five chips, in its team's colour. */}
+      <svg className="seq-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        {view.sequences.map((q) => {
+          const cells = [...q.cells].sort((a, b) => a - b);
+          const at = (cell: number) => ({ x: (cell % 10) * 10 + 5, y: Math.floor(cell / 10) * 10 + 5 });
+          const a = at(cells[0]);
+          const b = at(cells[cells.length - 1]);
+          return (
+            <g key={`${view.game}-${cells.join('-')}`} style={{ '--tc': TEAM_COLOR[q.team] } as CSSProperties}>
+              <line className="seq-line-glow" x1={a.x} y1={a.y} x2={b.x} y2={b.y} pathLength={1} />
+              <line className="seq-line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} pathLength={1} />
+            </g>
+          );
+        })}
+      </svg>
       <div className="seq-grid" role="grid" aria-label="Lineup board">
         {BOARD.map((card, i) => {
           const chip = view.chips[i];
@@ -68,6 +150,8 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
           const cls = ['seq-cell', CORNERS.has(i) ? 'is-corner' : isRed(card) ? 'is-red' : 'is-black'];
           if (target) cls.push(removing ? 'is-victim' : 'is-target');
           if (view.last?.cell === i) cls.push('is-last');
+          const here = acted?.cell === i ? acted : null;
+          if (here) cls.push('is-acting');
           if (spotTeam !== null && chip !== null && chip !== spotTeam) cls.push('is-dim');
           const label = CORNERS.has(i) ? 'Free corner' : `${cardName(card)}${chip !== null ? `, ${TEAM_NAME[chip].toLowerCase()} chip` : ''}`;
           return (
@@ -81,7 +165,23 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
                 </span>
               )}
               {chip !== null && (
-                <span key={`${view.game}-${i}-${chip}`} className={`seq-chip${inSequence.has(i) ? ' is-locked' : ''}`} style={{ '--tc': TEAM_COLOR[chip] } as CSSProperties} />
+                <span
+                  key={`${view.game}-${i}-${chip}`}
+                  className={`seq-chip${inSequence.has(i) ? ' is-locked' : ''}${here?.kind === 'place' ? ' is-fresh' : ''}`}
+                  style={{ '--tc': TEAM_COLOR[chip] } as CSSProperties}
+                />
+              )}
+              {here?.kind === 'remove' && (
+                <span key={`gone-${here.seq}`} className="seq-chip is-leaving" style={{ '--tc': TEAM_COLOR[here.removedTeam!] } as CSSProperties} aria-hidden="true" />
+              )}
+              {here && (
+                <>
+                  <span key={`ring-${here.seq}`} className={`seq-ring${here.kind === 'remove' ? ' is-remove' : ''}`} style={{ '--tc': here.kind === 'remove' ? '#e2483b' : TEAM_COLOR[chip ?? 0] } as CSSProperties} aria-hidden="true" />
+                  <span key={`tag-${here.seq}`} className={`seq-tag${here.kind === 'remove' ? ' is-remove' : ''}${i < 10 ? ' is-below' : ''}`} aria-hidden="true">
+                    {who(here.player)}
+                    {here.kind === 'remove' ? ' removed' : ''} · {short(here.card)}
+                  </span>
+                </>
               )}
             </button>
           );
@@ -112,8 +212,10 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
   const handPanel = me && !view.over && (
     <SideSection title="Your hand" meta={`${view.deckCount} in the deck`}>
       <div className="kit-panel seq-hand-panel" style={{ '--tc': TEAM_COLOR[me.team] } as CSSProperties}>
+        <SortButton label={SORT_LABEL[sortBy]} onClick={nextSort} />
         <div className="seq-hand" onMouseLeave={() => setHoverCard(null)}>
-          {hand.map((card, i) => {
+          {handOrder(hand, sortBy).map((i) => {
+            const card = hand[i];
             const dead = isDead(view, card);
             const cls = ['seq-card'];
             if (selected === i) cls.push('is-selected');
@@ -190,17 +292,6 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
           out: p.out,
         }))}
       />
-      <SideSection title="Recent plays">
-        {view.history.length === 0 ? (
-          <p className="kit-muted">Two-eyed Jacks (♦ ♣) are wild; one-eyed Jacks (♥ ♠) remove an opponent's chip. Corners count for everyone.</p>
-        ) : (
-          <ul className="kit-log">
-            {view.history.slice(0, 10).map((p) => (
-              <li key={p.seq}>{describe(p, who(p.player))}</li>
-            ))}
-          </ul>
-        )}
-      </SideSection>
     </>
   );
 
@@ -222,8 +313,24 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
       headerExtra={online?.clock}
       banner={online?.banner}
       board={board}
-      overlay={overlay}
+      overlay={
+        <>
+          <TableMomentBanner moment={moment} place="top" />
+          {overlay}
+        </>
+      }
       side={side}
+      log={
+        <GameLog
+          entries={view.history.map((p) => ({
+            key: p.seq,
+            text: describe(p, who(p.player)),
+            color: TEAM_COLOR[view.players.find((pl) => pl.id === p.player)?.team ?? 0],
+            loud: p.kind === 'remove' || !!p.made,
+          }))}
+          empty="Two-eyed Jacks (♦ ♣) are wild; one-eyed Jacks (♥ ♠) remove an opponent's chip. Corners count for everyone."
+        />
+      }
     />
   );
 }

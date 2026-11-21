@@ -16,6 +16,8 @@ export interface KitSeat {
   name: string;
   isAI: boolean;
   difficulty?: string;
+  /** The piece this seat chose in the lobby (one of the kit's `pieces`), if the game has them. */
+  piece?: string;
 }
 
 /** The player fields every kit game keeps; engines add their own. */
@@ -57,14 +59,42 @@ export interface GameKit<S, A extends { type: string }> {
   end(state: S): S;
   /** The state `viewer` may see. */
   redact(state: S, viewer: string): S;
+  /** A chess clock: the time each player has for the whole game under these
+   *  options (null for none), and what happens when `id` runs out of it. */
+  bankMs?(options: unknown): number | null;
+  flag?(state: S, id: string): S;
   /** A human's turn length online before `timeout` plays for them (default 45s). */
   turnMs?: number;
   /** Whether the room's turn clock runs at all (Chess plays untimed). */
   untimed?: boolean;
+  /** The pieces a player can choose between in the lobby (a character, a
+   *  colour, a token), by id; each seat holds a different one. */
+  pieces?: readonly string[];
   /** A step the game takes by itself (Poker's dealer dealing the next street or
    *  hand) and the pause before it; null while a player is to move. It is
    *  applied as `DEALER_ID`. */
   auto?(state: S): { action: A; delay: number } | null;
+}
+
+/**
+ * The piece each seat plays with: the one it chose in the lobby when that is a
+ * real piece nobody before it took, otherwise the next free one of `fallback`
+ * (the game's usual order). Every seat gets a different piece.
+ */
+export function assignPieces<P extends string>(seats: KitSeat[], pieces: readonly P[], fallback: readonly P[] = pieces): P[] {
+  const taken = new Set<P>();
+  const out: (P | null)[] = seats.map((seat) => {
+    const want = seat.piece as P | undefined;
+    if (!want || !pieces.includes(want) || taken.has(want)) return null;
+    taken.add(want);
+    return want;
+  });
+  return out.map((p) => {
+    if (p) return p;
+    const free = [...fallback, ...pieces].find((x) => !taken.has(x))!;
+    taken.add(free);
+    return free;
+  });
 }
 
 /** The actor a game's own steps (`auto`) are applied as. */
