@@ -379,7 +379,7 @@ export function BlockyardGame({
         title="Builders"
         players={players.map((p) => ({
           id: p.id,
-          name: p.id === meId ? 'You' : nameFor(p.id),
+          name: nameFor(p.id),
           you: p.id === meId,
           color: p.color,
           detail: `${p.placed} placed · ${p.broken} broken`,

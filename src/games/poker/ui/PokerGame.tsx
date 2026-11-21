@@ -338,7 +338,7 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
 
         {s.players.map((p, k) => {
           const spot = seatSpot(k, n, mine);
-          const short = shortNames(s.players.map((x) => who(x.id)))[k];
+          const short = shortNames(s.players.map((x) => nameFor(x.id)))[k];
           const bet = toward(spot, 0.42);
           const dealer = toward(spot, 0.22);
           const isMe = k === mine;
@@ -351,10 +351,10 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
               >
                 {!p.out && p.hole.length > 0 && <SeatCards p={p} mine={isMe} winning={winning && !p.folded ? winning : null} dealt />}
                 <div className="pk-plate">
-                  <SeatFace id={p.id} className="pk-face" color={pkSeatColor(k)} fallback={<span className="pk-token">{tokenLabel(who(p.id))}</span>} />
+                  <SeatFace id={p.id} className="pk-face" color={pkSeatColor(k)} fallback={<span className="pk-token">{tokenLabel(nameFor(p.id))}</span>} />
                   <span className="pk-plate-text">
-                    <span className="pk-name" title={who(p.id)}>
-                      <span className="pk-name-full">{who(p.id)}</span>
+                    <span className="pk-name" title={nameFor(p.id)}>
+                      <span className="pk-name-full">{nameFor(p.id)}</span>
                       {/* On a narrow screen the seat has room for initials only; the list below has the names. */}
                       <span className="pk-name-short" aria-hidden="true">
                         {short}
@@ -436,7 +436,7 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
         <ol className="pk-standings">
           {placed.map((p) => (
             <li key={p.id}>
-              <span>{ordinal(p.place ?? n)}</span> {who(p.id)}
+              <span>{ordinal(p.place ?? n)}</span> {nameFor(p.id)}
             </li>
           ))}
         </ol>
@@ -465,7 +465,7 @@ export function PokerGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
         onSpotlight={setSpotlight}
         players={s.players.map((p, i) => ({
           id: p.id,
-          name: who(p.id),
+          name: nameFor(p.id),
           you: p.id === meId,
           color: pkSeatColor(i),
           detail: p.out

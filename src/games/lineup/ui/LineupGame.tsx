@@ -149,6 +149,7 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
           const target = focusTargets.has(i);
           const cls = ['seq-cell', CORNERS.has(i) ? 'is-corner' : isRed(card) ? 'is-red' : 'is-black'];
           if (target) cls.push(removing ? 'is-victim' : 'is-target');
+          else if (focusCard !== null && chip !== null && !CORNERS.has(i) && hand[focusCard] === card) cls.push('is-taken');
           if (view.last?.cell === i) cls.push('is-last');
           const here = acted?.cell === i ? acted : null;
           if (here) cls.push('is-acting');
@@ -169,7 +170,13 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
                   key={`${view.game}-${i}-${chip}`}
                   className={`seq-chip${inSequence.has(i) ? ' is-locked' : ''}${here?.kind === 'place' ? ' is-fresh' : ''}`}
                   style={{ '--tc': TEAM_COLOR[chip] } as CSSProperties}
-                />
+                >
+                  {!CORNERS.has(i) && (
+                    <span className="seq-chip-card" aria-hidden="true">
+                      {short(card)}
+                    </span>
+                  )}
+                </span>
               )}
               {here?.kind === 'remove' && (
                 <span key={`gone-${here.seq}`} className="seq-chip is-leaving" style={{ '--tc': TEAM_COLOR[here.removedTeam!] } as CSSProperties} aria-hidden="true" />
@@ -282,7 +289,7 @@ export function LineupGame({ view, meId, nameFor, onAction, onExit, exitLabel, o
         onSpotlight={(id) => setSpotTeam(id ? view.players.find((p) => p.id === id)?.team ?? null : null)}
         players={view.players.map((p) => ({
           id: p.id,
-          name: who(p.id),
+          name: nameFor(p.id),
           you: p.id === meId,
           color: TEAM_COLOR[p.team],
           badge: <span className="seq-chip is-token" style={{ '--tc': TEAM_COLOR[p.team] } as CSSProperties} />,

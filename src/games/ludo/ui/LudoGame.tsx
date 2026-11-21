@@ -382,7 +382,7 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
         onSpotlight={setSpotlight}
         players={view.players.map((p) => ({
           id: p.id,
-          name: who(p.id),
+          name: nameFor(p.id),
           you: p.id === meId,
           color: LUDO_COLOR[p.color],
           detail: p.out ? 'Left the game' : `${NAME[p.color]} · ${tally(p.tokens)}`,

@@ -455,7 +455,7 @@ export function CluedoGame({ view: s, meId, nameFor, onAction, onExit, exitLabel
           const at = s.pos[p.suspect];
           return {
             id: p.id,
-            name: who(p.id),
+            name: nameFor(p.id),
             you: p.id === meId,
             color: SUSPECT_COLOR[p.suspect],
             badge: suspectInitial(p.suspect),

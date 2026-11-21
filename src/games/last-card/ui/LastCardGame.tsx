@@ -431,7 +431,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
             const total = faces.reduce((n, x) => n + points(x.f!), 0);
             return (
               <li key={p.id}>
-                <span className="lc-tally-name">{who(p.id)}</span>
+                <span className="lc-tally-name">{nameFor(p.id)}</span>
                 <span className="lc-tally-cards">
                   {faces.map(({ c, f }) => (
                     <LcCard key={c.id} face={f} side={side} className="is-tally" />
@@ -463,7 +463,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         </li>
       </ul>
       <p>
-        Scores: {[...view.players].sort((a, b) => (view.score[b.id] ?? 0) - (view.score[a.id] ?? 0)).map((p) => `${who(p.id)} ${view.score[p.id] ?? 0}`).join(' · ')}
+        Scores: {[...view.players].sort((a, b) => (view.score[b.id] ?? 0) - (view.score[a.id] ?? 0)).map((p) => `${nameFor(p.id)} ${view.score[p.id] ?? 0}`).join(' · ')}
       </p>
       {winnerPoints >= 500 && <p>{who(view.winner)} passed 500 points!</p>}
     </ResultCard>
@@ -486,7 +486,7 @@ export function LastCardGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         onSpotlight={setSpotlight}
         players={view.players.map((p, i) => ({
           id: p.id,
-          name: who(p.id),
+          name: nameFor(p.id),
           you: p.id === meId,
           color: lcSeatColor(i),
           detail: p.out ? 'Left the game' : p.bust ? `Out of the hand: ${MERCY} cards` : `${p.handCount} ${p.handCount === 1 ? 'card' : 'cards'}${view.exposed === p.id ? " · didn't call!" : ''}`,

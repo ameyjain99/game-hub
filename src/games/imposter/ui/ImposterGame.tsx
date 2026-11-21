@@ -222,7 +222,7 @@ export function ImposterGame({ view: s, meId, nameFor, onAction, onExit, exitLab
               <span className="kit-token" aria-hidden="true">
                 {tokenLabel(nameFor(p.id))}
               </span>
-              <span className="im-tile-name">{who(p.id)}</span>
+              <span className="im-tile-name">{nameFor(p.id)}</span>
               {isImposter ? (
                 <span className="im-tag is-imposter">
                   <MaskIcon size={14} /> <span className="im-tag-text">Imposter</span>
@@ -390,7 +390,7 @@ export function ImposterGame({ view: s, meId, nameFor, onAction, onExit, exitLab
       <ol className="im-standings">
         {ranked.map((p) => (
           <li key={p.id}>
-            <span>{who(p.id)}</span> <b>{plural(p.score, 'point')}</b>
+            <span>{nameFor(p.id)}</span> <b>{plural(p.score, 'point')}</b>
           </li>
         ))}
       </ol>
@@ -423,7 +423,7 @@ export function ImposterGame({ view: s, meId, nameFor, onAction, onExit, exitLab
         onSpotlight={setSpotlight}
         players={s.players.map((p) => ({
           id: p.id,
-          name: who(p.id),
+          name: nameFor(p.id),
           you: p.id === meId,
           color: colorOf(p.id),
           detail: p.out

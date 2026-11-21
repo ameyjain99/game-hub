@@ -343,7 +343,7 @@ export function WordgridGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         {[...view.players]
           .filter((p) => !p.out)
           .sort((a, b) => b.score - a.score)
-          .map((p) => `${who(p.id)} ${p.score}${view.final?.[p.id] ? ` (${view.final[p.id] > 0 ? '+' : ''}${view.final[p.id]})` : ''}`)
+          .map((p) => `${nameFor(p.id)} ${p.score}${view.final?.[p.id] ? ` (${view.final[p.id] > 0 ? '+' : ''}${view.final[p.id]})` : ''}`)
           .join(' · ')}
       </p>
     </ResultCard>
@@ -443,7 +443,7 @@ export function WordgridGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         onSpotlight={setSpotlight}
         players={view.players.map((p, i) => ({
           id: p.id,
-          name: who(p.id),
+          name: nameFor(p.id),
           you: p.id === meId,
           color: wgSeatColor(i),
           detail: p.out ? 'Left the game' : `${p.rackCount} tiles${view.game > 1 ? ` · ${view.wins[p.id] ?? 0} won` : ''}`,

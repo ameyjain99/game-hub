@@ -130,7 +130,7 @@ export function TttGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
           const mark = markOf(view, p.id);
           return {
             id: p.id,
-            name: who(p.id),
+            name: nameFor(p.id),
             you: p.id === meId,
             color: MARK_COLOR[mark],
             badge: mark,

@@ -908,7 +908,7 @@ export function HexsteadGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         onSpotlight={setSpotlight}
         players={s.players.map((p, i) => ({
           id: p.id,
-          name: who(p.id),
+          name: nameFor(p.id),
           you: p.id === meId,
           color: hxSeatColor(i),
           detail: [
@@ -1046,7 +1046,7 @@ export function HexsteadGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           .sort((a, b) => victoryPoints(s, b.id) - victoryPoints(s, a.id))
           .map((p) => (
             <li key={p.id}>
-              <span>{victoryPoints(s, p.id)} pts</span> {who(p.id)}
+              <span>{victoryPoints(s, p.id)} pts</span> {nameFor(p.id)}
             </li>
           ))}
       </ol>
