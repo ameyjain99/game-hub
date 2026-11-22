@@ -6,8 +6,8 @@ a join link), and everyone is at the same table - no accounts, no installs.
 | Game | Players | Modes |
 |---|---|---|
 | **Ticket to Ride** (USA: classic, 1910, Mega, Big Cities; Europe) | 2-5 | Online, local vs bots, pass-and-play |
-| **Monopoly** (classic US board) | 2-6 | Online, local vs bots |
-| **Hexstead** (hex-island trading and building; a larger island for 5-6; Open Sea and Wardens expansions) | 3-6 | Online, local vs bots |
+| **Monopoly** (six boards: Hasbro, Classic, Neo, World, Nations, India) | 2-6 | Online, local vs bots |
+| **Catan** (hex-island trading and building; a larger island for 5-6; Seafarers and Cities & Knights expansions) | 3-6 | Online, local vs bots |
 | **Cluedo** (murder mystery on GameHub's own mansion board) | 3-6 | Online, local vs bots |
 | **Poker** (Texas Hold'em, Omaha, Short Deck, Seven-Card Stud, Razz) | 2-9 | Online, local vs bots; sit-and-go tournaments |
 | **Chess** | 2 | Online, local vs Stockfish (five strengths) |
@@ -15,10 +15,10 @@ a join link), and everyone is at the same table - no accounts, no installs.
 | **Tic-Tac-Toe** | 2 | Online, local vs bots (one never loses) |
 | **Ludo** | 2-4 | Online, local vs bots |
 | **Snakes & Ladders** | 2-6 | Online, local vs bots |
-| **Lineup** (five-in-a-row with cards and chips) | 2-12, in teams | Online, local vs bots (with a bot partner) |
-| **Last Card** (colour-matching card game: Classic and Flip) | 2-10 | Online, local vs bots |
-| **Wordgrid** (crossword tile game) | 2-4 | Online, local vs bots |
-| **Blockyard** (3D block-building sandbox) | 1-8 | Online (shared world), local (saved in the browser) |
+| **Sequence** (five-in-a-row with cards and chips) | 2-12, in teams | Online, local vs bots (with a bot partner) |
+| **Uno** (colour-matching card game: Classic, Flip and No Mercy, with house rules) | 2-10 | Online, local vs bots |
+| **Scrabble** (crossword tile game) | 2-4 | Online, local vs bots |
+| **Minecraft** (3D block-building sandbox) | 1-8 | Online (shared world), local (saved in the browser) |
 | **Solitaire** (Klondike) | 1 | Draw one or three, undo, hints |
 | **Sudoku** | 1 | Four levels, notes, hints |
 | **Minesweeper** | 1 | Four levels (Easy 9×9 to Expert 30×24), first click always safe, chording |
@@ -113,9 +113,9 @@ src/
     monopoly/       engine · ui
     kit/            the shared contract, screen, lobby wiring and boards for the
                     newer games (chess, checkers, tic-tac-toe, ludo,
-                    snakes-and-ladders, lineup, last-card, wordgrid,
-                    blockyard, solitaire, sudoku, minesweeper, poker,
-                    hexstead, cluedo, imposter - each engine.ts + ui/ +
+                    snakes-and-ladders, sequence, uno, scrabble,
+                    minecraft, solitaire, sudoku, minesweeper, poker,
+                    catan, cluedo, imposter - each engine.ts + ui/ +
                     rules.ts)
   online/           socket session hook, session storage, URL routing,
                     shared online UI (lobby, join gate, turn clock, ...)
@@ -155,16 +155,18 @@ npm start                               # PORT defaults to 3001
   friction-free; nothing persists beyond a running game.
 - **In-memory, single instance.** Simplest thing that works for game nights;
   see Deployment for the trade-off.
-- **Original games, not clones.** The newer games play in familiar styles but are
-  GameHub's own designs with their own names, boards and art: Lineup (its own
-  board arrangement), Last Card (its own cards and Flip deck), Wordgrid (its own
-  premium-square layout and tile values) and Blockyard (its own world and
-  textures, all drawn in code). A licence file covers code, not trademarks:
-  names such as Monopoly, Ticket to Ride, Cluedo and Catan belong to their owners.
+- **Real names, original art.** Every game is named, inside and out, after the
+  game it plays: titles, URLs, folders, files and the words used in play (Uno's
+  UNO call and No Mercy, Catan's robber, settlements and development cards,
+  Seafarers, Cities & Knights). Scrabble and Sequence use the standard boards
+  and Scrabble the standard 100 tiles. The drawings are GameHub's own: boards,
+  cards, pieces and Minecraft's textures are all drawn in code. A licence file
+  covers code, not trademarks: names such as Monopoly, Ticket to Ride, Cluedo,
+  Catan, Uno, Scrabble, Sequence and Minecraft belong to their owners.
 - **Original names and art.** Monopoly uses generic place names and Cluedo the
   classic character set; no trademarked board art is included.
 - **Kit games share one contract.** Chess, Checkers, Tic-Tac-Toe, Ludo,
-  Snakes & Ladders and Lineup each implement `GameKit` (`src/games/kit/engine.ts`):
+  Snakes & Ladders and Sequence each implement `GameKit` (`src/games/kit/engine.ts`):
   one server adapter, one local runner and one online wrapper serve them all.
   Their bots act one move at a time on the server too, so everyone watches each
   roll and move.
@@ -174,7 +176,7 @@ npm start                               # PORT defaults to 3001
   again, three 6s forfeit, captures and arrivals earn a bonus roll, stars and
   starts are safe, no blockades). Snakes & Ladders uses Milton Bradley's 1952
   board, a 6 rolls again, and 100 must be hit exactly (overshoot bounces back).
-  Lineup plays like the classic chips-and-cards five-in-a-row games on
+  Sequence plays like the classic chips-and-cards five-in-a-row games on
   GameHub's own board arrangement, in teams of two or three.
 - **Chess plays the computer with Stockfish.** The engine runs in the browser
   as a Web Worker (the 7 MB "lite single-threaded" Stockfish 18 build, GPLv3,
@@ -183,20 +185,27 @@ npm start                               # PORT defaults to 3001
   Burnett's set, used under its BSD-3 option (credited in
   `src/games/chess/ui/pieces.ts`). Online chess is between two
   people, untimed; a dropped opponent can be removed, which ends the game.
-- **Last Card.** Classic: 108 cards; match colour or symbol; Skip, Reverse, Draw 2,
+- **Uno.** Classic: 108 cards; match colour or symbol; Skip, Reverse, Draw 2,
   Wild and Wild Draw 4 (only with nothing of the colour in hand); draw one and
-  you may play it if it fits; call "Last card" at one card or be caught for two;
+  you may play it if it fits; call "UNO" at one card or be caught for two;
   going out scores the cards left in everyone's hands. Flip: 112 two-faced cards;
   a Flip card turns the whole table to the dark side (Draw 5, Skip Everyone, and
   a Wild that makes the next player draw until they find the colour); you see the
-  other face of everyone else's cards.
-- **Wordgrid.** 15×15, 100 tiles (two blanks), racks of seven, words checked
+  other face of everyone else's cards. No Mercy: 152 cards, endless stacking,
+  draw until you can play, and 25 cards puts you out of the hand.
+- **Uno house rules are opt-in toggles**, all off by default: stack draw cards
+  (answer with a draw card as big or bigger, in every mode), play same numbers
+  together, play a Wild Draw any time, draw until you can play, and sevens and
+  zeros (swap hands / pass hands on). No Mercy has all but "same numbers
+  together" built in. The rule book's House rules section lists what answers
+  what.
+- **Scrabble.** 15×15, 100 tiles (two blanks), racks of seven, words checked
   against ENABLE (public domain, `public/words/`); premiums only under new tiles;
   all seven tiles score 50 more; swap with seven or more in the bag; the game
   ends when someone goes out with the bag empty or after six scoreless turns. The
   bot generates every legal move (anchors, cross-checks and a trie) and picks by
   level.
-- **Blockyard.** A 96×40×96 world generated from a seed (hills, beaches, water,
+- **Minecraft.** A 96×40×96 world generated from a seed (hills, beaches, water,
   snow, trees); creative building with a hotbar and a palette of 21 blocks; fly
   mode. A room stores only the seed and the edited blocks; positions travel on a
   separate, throwaway presence relay ten times a second.
@@ -207,30 +216,31 @@ npm start                               # PORT defaults to 3001
   time on your turn. Bots reason from their own view at three depths (cards seen;
   plus passes; plus every clue and hand size). The notebook fills in your cards,
   cards shown to you and passes, and takes your own marks.
-- **Hexstead expansions.** 5-6 players get a 30-tile island, a 24-card bank, a
-  34-card charter deck and a special build phase after every turn. Open Sea
-  (3-4 players, 13 points) plays the New Shores map: the home island, a strait
-  and three outer islands with goldfields; ships (built and moved on sea sides,
-  joined to roads only at your own building), a corsair at sea, goldfield pay
-  of your choice, 2-point Landfall bonuses and a Longest Route of roads and ships.
-  Wardens (3-4 players, 13 points): towns on forest, pasture and mountains make
-  parchment, linen and silver; three guilds (5 levels, abilities at 3, a Capital
-  for the first to 4); wardens of strength 1-3 that muster, move, displace and
-  chase the raider; an omen die that sails the marauder fleet in (it lands on
-  space 7 against the mustered wardens) or draws edicts by guild level; walls;
-  no charters. The three edict decks hold the original's 54 progress cards (18
-  each, renamed where the name was the game's own), Alchemist, Inventor,
-  Deserter, Diplomat, Intrigue, Merchant and Commercial Harbour included. Every
-  choice the original gives a player is theirs here: which cards a Saboteur,
-  Wedding or Commercial Harbour costs them, what a Master Merchant or Spy takes
-  (shown only to that player), which town the marauders take, which deck a tied
-  defender draws from, which fifth edict goes back, and where a pushed warden
-  goes. Such a choice holds the table (one player acts at a time), and a roll
-  that lands the marauders pays out only after it. Commodities trade between
-  players. GameHub's calls where the rulebook is silent: a played edict goes
-  under its own deck; a Commercial Harbour offer to a player with no
-  commodities still uses up that player for the turn; the Deserter's free warden
-  can't act on the turn it arrives.
+- **Catan expansions.** 5-6 players get a 30-tile island, a 24-card bank, a
+  34-card development deck and a special build phase after every turn.
+  Seafarers (3-4 players, 13 points) plays Heading for New Shores: the home
+  island, a strait and three outer islands with gold fields; ships (built and
+  moved on sea sides, joined to roads only at your own building), a pirate at
+  sea, gold field pay of your choice, 2-point bonuses for a first settlement on
+  a new island, and a Longest Trade Route of roads and ships. Cities & Knights
+  (3-4 players, 13 points): cities on forest, pasture and mountains make paper,
+  cloth and coin; city improvements in three areas, Trade, Politics and Science
+  (5 levels, abilities at 3, a Metropolis for the first to 4); knights of
+  strength 1-3 (basic, strong, mighty) that are activated, move, displace and
+  chase the robber; an event die that sails the barbarian ship in (it attacks
+  on space 7 against the active knights) or draws progress cards by improvement
+  level; city walls; no development cards. The three decks hold the 54 progress
+  cards (18 each) under their own names. Every choice the game gives a player is
+  theirs here: which cards a Saboteur, Wedding or Commercial Harbor costs them,
+  what a Master Merchant or Spy takes (shown only to that player), which city
+  the barbarians pillage, which deck a tied defender draws from, which fifth
+  progress card goes back, and where a displaced knight goes. Such a choice
+  holds the table (one player acts at a time), and a roll that brings the
+  barbarians pays out only after it. Commodities trade between players.
+  GameHub's calls where the rulebook is silent: a played progress card goes
+  under its own deck; a Commercial Harbor offer to a player with no commodities
+  still uses up that player for the turn; the Deserter's free knight can't act
+  on the turn it arrives.
 - **Imposter.** Twelve categories of ten words, in close pairs (Lion and Tiger).
   Classic: the imposter sees only the category and, if voted out, can still score
   by naming the word. Decoy: the imposter gets the other word of the pair and isn't

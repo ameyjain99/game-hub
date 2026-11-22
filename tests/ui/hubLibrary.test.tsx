@@ -53,9 +53,9 @@ test('the current games keep their colours: TTR red, Monopoly green, Cluedo purp
   expect(color('ticket-to-ride')).toBe('#D93A3F');
   expect(color('monopoly')).toBe('#2F9E62');
   expect(color('cluedo')).toBe('#7C4DBA');
-  // Hexstead follows its category (strategy) instead of keeping its own colour.
-  expect(color('hexstead')).toBe(color('ticket-to-ride'));
-  expect(color('last-card')).toBe(color('poker'));
+  // Catan follows its category (strategy) instead of keeping its own colour.
+  expect(color('catan')).toBe(color('ticket-to-ride'));
+  expect(color('uno')).toBe(color('poker'));
 });
 
 test('each category pill counts the games on show; empty categories drop out', () => {

@@ -105,7 +105,7 @@ export function MonopolyCenter({
 
   // The card drawn on the current roll, until the viewer puts it away.
   const [putAway, setPutAway] = useState<string | null>(null);
-  const last = view.lastCard;
+  const last = view.uno;
   const lastKey = last ? `${last.atRoll}:${last.deck}:${last.text}` : null;
   const drawn =
     last && last.atRoll === view.rollSeq && lastKey !== putAway ? (

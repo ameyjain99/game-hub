@@ -55,7 +55,7 @@ describe('which sounds a change makes, for the viewer', () => {
 
   test('a drawn card, and a trip to jail', () => {
     const before = game();
-    const drawn = { ...before, lastCard: { deck: 'chance' as const, text: 'x', playerId: 'p1', atRoll: 0 } };
+    const drawn = { ...before, uno: { deck: 'chance' as const, text: 'x', playerId: 'p1', atRoll: 0 } };
     expect(soundCues(before, drawn, 'p0')).toEqual(['card']);
     const jailed = { ...before, players: before.players.map((p) => (p.id === 'p1' ? { ...p, inJail: true } : p)) };
     expect(soundCues(before, jailed, 'p0')).toEqual(['jail']);

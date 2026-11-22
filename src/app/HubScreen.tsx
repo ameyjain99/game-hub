@@ -67,7 +67,7 @@ export function HubScreen({ onSelect, onJoin }: Props) {
           one link away.
         </h1>
         <p className="hub-sub">
-          Ticket to Ride, Monopoly, chess, Ludo, Lineup and more in your browser. Open a room, send the code, and
+          Ticket to Ride, Monopoly, chess, Ludo, Sequence and more in your browser. Open a room, send the code, and
           everyone's at the same table.
         </p>
         <div className="hub-hero-actions">

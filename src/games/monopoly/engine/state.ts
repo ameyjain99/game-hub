@@ -119,7 +119,7 @@ export interface MonopolyState {
   rollSeq: number;
   /** The Chance/Community Chest card drawn most recently (public), and the roll
    *  it came from, so the UI can reveal it during that roll's turn. */
-  lastCard: DrawnCard | null;
+  uno: DrawnCard | null;
   /** Consecutive doubles this turn (3 → jail). */
   doubles: number;
   /** The space the current player just landed on and may buy, or null. */
@@ -199,7 +199,7 @@ export function createMonopolyGame(
     ownership,
     dice: null,
     rollSeq: 0,
-    lastCard: null,
+    uno: null,
     doubles: 0,
     pendingPurchase: null,
     chanceOrder: shuffled(CHANCE.length, rng),

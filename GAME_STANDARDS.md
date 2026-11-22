@@ -31,7 +31,7 @@ any of it.
 | Tests: engine rules, bots finishing whole games, the screen, the online room | `tests/` |
 
 Single-player games (Solitaire, Sudoku, Minesweeper) drop what needs other
-players: video seats, the players panel, the log. Blockyard, a sandbox, has no
+players: video seats, the players panel, the log. Minecraft, a sandbox, has no
 clock and no result.
 
 ## 2. Closeness to reality
@@ -56,10 +56,12 @@ clock and no result.
   possible answer may make itself.
 - **The physical game's feel stays**: dice are rolled and shown, cards are dealt
   and turned, tokens travel between squares, pieces go back to the supply.
-- **Commercial titles get original names and art** (Lineup, Last Card, Wordgrid,
-  Blockyard, Hexstead, Open Sea, Wardens). The mechanics stay faithful; the
-  names, boards and look are GameHub's own. Games already in the catalogue under
-  their own names (Ticket to Ride, Monopoly, Cluedo) keep them, with original art.
+- **Games carry the name of the game they play, with original art** (Ticket to
+  Ride, Monopoly, Cluedo, Catan with Seafarers and Cities & Knights, Uno,
+  Scrabble, Sequence, Minecraft). Names, terms, boards, tile sets and card
+  lists follow the original, in what players read and in the code (ids,
+  folders, files, type and function names). Only the drawings are GameHub's
+  own.
 
 ## 3. Aesthetic
 
@@ -67,7 +69,7 @@ clock and no result.
   the type is Inter. Shared pieces (`GameShell`, `PlayingCard`, `Die`,
   `ResultCard`, form fields) are reused, never restyled per game.
 - **Each board has its own material**, drawn in code: felt for cards, a wooden
-  frame for draughts, sea and terrain for Hexstead, a mansion floor plan for
+  frame for draughts, sea and terrain for Catan, a mansion floor plan for
   Cluedo. No stock images, no emoji, no clip art. (One known exception: Ticket
   to Ride, the first game, predates the kit and still has its own game screen
   and emoji avatars. Don't copy it; move it onto the kit when it is next

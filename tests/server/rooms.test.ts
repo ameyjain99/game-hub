@@ -369,7 +369,7 @@ test('a long name keeps its number inside the 20-character limit', () => {
 
 test('each bot sits down under its own name, never one a player holds', async () => {
   const { BOTS, nameKey } = await import('../../src/shared/botNames');
-  const { code, token: hostTok } = store.createRoom(6, BOTS[0].name, '', {}, 'last-card');
+  const { code, token: hostTok } = store.createRoom(6, BOTS[0].name, '', {}, 'uno');
   for (let i = 1; i < 6; i++) store.setSeatAi(code, hostTok, i, true, 'normal');
   const names = store.lobbyView(code).seats.map((s) => s.name!);
   expect(new Set(names.map(nameKey)).size).toBe(6);

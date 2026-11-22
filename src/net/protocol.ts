@@ -132,7 +132,7 @@ export interface VoiceSignal {
 
 /**
  * Fast-changing, throwaway updates for real-time games (a builder's position in
- * Blockyard), relayed to the rest of the room without touching game state.
+ * Minecraft), relayed to the rest of the room without touching game state.
  */
 export interface Presence {
   code: string;

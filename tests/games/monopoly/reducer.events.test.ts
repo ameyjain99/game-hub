@@ -31,7 +31,7 @@ describe('roll sequence', () => {
   test('a new game has rolled nothing and drawn nothing', () => {
     const g = mk();
     expect(g.rollSeq).toBe(0);
-    expect(g.lastCard).toBeNull();
+    expect(g.uno).toBeNull();
   });
 
   test('every roll bumps the sequence', () => {
@@ -61,7 +61,7 @@ describe('last card drawn', () => {
     g.chancePtr = 0;
     g.rollSeq = 4;
     const out = advanceToSpace(g, currentSeat(g), 7, false); // Chance
-    expect(out.lastCard).toEqual({
+    expect(out.uno).toEqual({
       deck: 'chance',
       text: 'Bank pays you a dividend of $50.',
       playerId: 'p0',
@@ -72,9 +72,9 @@ describe('last card drawn', () => {
   test('both event fields are public, so redaction keeps them', () => {
     const g = mk();
     g.rollSeq = 3;
-    g.lastCard = { deck: 'chest', text: 'x', playerId: 'p1', atRoll: 3 };
+    g.uno = { deck: 'chest', text: 'x', playerId: 'p1', atRoll: 3 };
     const view = redactFor(g, 'p0');
     expect(view.rollSeq).toBe(3);
-    expect(view.lastCard).toEqual(g.lastCard);
+    expect(view.uno).toEqual(g.uno);
   });
 });

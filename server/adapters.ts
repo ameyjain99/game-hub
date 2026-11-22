@@ -29,14 +29,14 @@ import { checkersKit } from '../src/games/checkers/engine';
 import { chessKit } from '../src/games/chess/engine';
 import { snlKit } from '../src/games/snakes-and-ladders/engine';
 import { ludoKit } from '../src/games/ludo/engine';
-import { lineupKit } from '../src/games/lineup/engine';
-import { blockyardKit } from '../src/games/blockyard/engine';
-import { lastCardKit } from '../src/games/last-card/engine';
+import { sequenceKit } from '../src/games/sequence/engine';
+import { minecraftKit } from '../src/games/minecraft/engine';
+import { unoKit } from '../src/games/uno/engine';
 import { pokerKit } from '../src/games/poker/engine';
 import { cluedoKit } from '../src/games/cluedo/engine';
 import { imposterKit } from '../src/games/imposter/engine';
-import { hexKit } from '../src/games/hexstead/engine';
-import { wordgridKit } from '../src/games/wordgrid/engine';
+import { catanKit } from '../src/games/catan/engine';
+import { scrabbleKit } from '../src/games/scrabble/engine';
 import { ensureDictionary } from './wordlist';
 
 interface TtrOptions {
@@ -210,13 +210,13 @@ const monopolyAdapter: GameAdapter = {
   },
 };
 
-/** Wordgrid checks words against the dictionary, loaded when the first room starts. */
-const wordgridBase = kitAdapter(wordgridKit);
-const wordgridAdapter: GameAdapter = {
-  ...wordgridBase,
+/** Scrabble checks words against the dictionary, loaded when the first room starts. */
+const scrabbleBase = kitAdapter(scrabbleKit);
+const scrabbleAdapter: GameAdapter = {
+  ...scrabbleBase,
   createGame(configs, seed, options) {
     ensureDictionary();
-    return wordgridBase.createGame(configs, seed, options);
+    return scrabbleBase.createGame(configs, seed, options);
   },
 };
 
@@ -229,13 +229,13 @@ const ADAPTERS: Record<string, GameAdapter> = {
   chess: kitAdapter(chessKit),
   'snakes-and-ladders': kitAdapter(snlKit),
   ludo: kitAdapter(ludoKit),
-  lineup: kitAdapter(lineupKit),
-  blockyard: kitAdapter(blockyardKit),
-  'last-card': kitAdapter(lastCardKit),
+  sequence: kitAdapter(sequenceKit),
+  minecraft: kitAdapter(minecraftKit),
+  'uno': kitAdapter(unoKit),
   poker: kitAdapter(pokerKit),
   imposter: kitAdapter(imposterKit),
-  hexstead: kitAdapter(hexKit),
-  wordgrid: wordgridAdapter,
+  catan: kitAdapter(catanKit),
+  scrabble: scrabbleAdapter,
 };
 
 /** The adapter for a game id; throws for an unknown game. */

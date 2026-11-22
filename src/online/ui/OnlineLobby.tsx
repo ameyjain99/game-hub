@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AddIcon, BackIcon, CloseIcon } from '../../shared/icons';
+import { gamePath } from '../../games/registry';
 import { Loader } from '../../shared/Loader';
 import { playerIdForSeat, type LobbyView } from '../../net/protocol';
 import { seatName } from '../seatNames';
@@ -54,7 +55,7 @@ export function OnlineLobby({ gameId, title, lobby, code, myPlayerId, difficulti
   const filled = lobby ? lobby.seats.filter((s) => s.isAI || s.name !== null).length : 0;
   const total = lobby?.seatCount ?? 0;
   const ready = !!lobby && filled === total;
-  const link = code ? `${window.location.origin}/${gameId}/join?room=${code}` : '';
+  const link = code ? `${window.location.origin}${gamePath(gameId)}/join?room=${code}` : '';
   const defaultDiff = difficulties.find((d) => d.value === 'normal')?.value ?? difficulties[0]?.value;
 
   // A sound when someone sits down or gets up, so a host doing something else notices.

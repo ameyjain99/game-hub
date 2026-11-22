@@ -2,8 +2,8 @@ import { expect, test } from 'vitest';
 import { freshEvents } from '../../src/shared/ui/TableMoment';
 import { createMonopolyGame } from '../../src/games/monopoly/engine/state';
 import { monopolyMoments } from '../../src/games/monopoly/ui/MonopolyGame';
-import { createLastCard, type LcState } from '../../src/games/last-card/engine';
-import { lcMoments } from '../../src/games/last-card/ui/LastCardGame';
+import { createUno, type UnoState } from '../../src/games/uno/engine';
+import { unoMoments } from '../../src/games/uno/ui/UnoGame';
 
 const who = (id: string) => (id === 'p0' ? 'You' : `Bot ${id.slice(1)}`);
 const color = () => '#fff';
@@ -37,18 +37,18 @@ test('Monopoly announces jail, a bankruptcy, a hotel and a heavy rent, and nothi
   expect(titles(monopolyMoments(base, bust, who, color))).toEqual(['You: are bankrupt']);
 });
 
-test('Last Card announces a colour choice, a call and a catch, but not an ordinary card', () => {
-  const base = createLastCard([{ name: 'A', isAI: false }, { name: 'B', isAI: false }], 3, { variant: 'classic' });
+test('Uno announces a colour choice, a call and a catch, but not an ordinary card', () => {
+  const base = createUno([{ name: 'A', isAI: false }, { name: 'B', isAI: false }], 3, { variant: 'classic' });
   const wild = { id: 900, light: { kind: 'wild' as const, color: null }, dark: null };
   const plain = { id: 901, light: { kind: 'number' as const, color: 'red' as const, value: 4 }, dark: null };
-  const after = (events: Omit<LcState['history'][number], 'seq'>[]): LcState => {
+  const after = (events: Omit<UnoState['history'][number], 'seq'>[]): UnoState => {
     const history = events.map((e, i) => ({ ...e, seq: (base.last?.seq ?? 0) + i + 1 })).reverse();
     return { ...base, history: [...history, ...base.history], last: history[0] };
   };
-  expect(lcMoments(base, after([{ player: 'p1', kind: 'play', card: plain }]), who, color)).toEqual([]);
+  expect(unoMoments(base, after([{ player: 'p1', kind: 'play', card: plain }]), who, color)).toEqual([]);
   expect(
     titles(
-      lcMoments(
+      unoMoments(
         base,
         after([
           { player: 'p1', kind: 'play', card: wild, color: 'blue' },
@@ -59,5 +59,5 @@ test('Last Card announces a colour choice, a call and a catch, but not an ordina
         color,
       ),
     ),
-  ).toEqual(['Bot 1: chose Blue', 'Bot 1: "Last card!"', "You caught Bot 1: Didn't call last card!"]);
+  ).toEqual(['Bot 1: chose Blue', 'Bot 1: "UNO!"', "You caught Bot 1: Didn't call UNO!"]);
 });

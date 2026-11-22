@@ -23,6 +23,7 @@ export const CATEGORIES: Category[] = [
 ];
 
 export interface GameEntry {
+  /** The game's id: its URL path, room tag and server adapter key. */
   id: string;
   title: string;
   tagline: string;
@@ -58,17 +59,17 @@ export const GAMES: GameEntry[] = [
     category: 'party',
   },
   {
-    id: 'hexstead',
-    title: 'Hexstead',
-    tagline: 'Settle a hex island, trade timber for stone, and build to ten points. With Open Sea and Wardens.',
+    id: 'catan',
+    title: 'Catan',
+    tagline: 'Settle a hex island, trade lumber for ore, and build to ten points. With Seafarers and Cities & Knights.',
     players: '3-6 · 45-120 min',
     status: 'live',
     category: 'strategy',
   },
   {
-    id: 'last-card',
-    title: 'Last Card',
-    tagline: 'Match the colour or the symbol, play the wilds, and shed every card. Classic or Flip.',
+    id: 'uno',
+    title: 'Uno',
+    tagline: 'Match the colour or the symbol, play the wilds, and shed every card. Classic, Flip or No Mercy.',
     players: '2-10 · 15-30 min',
     status: 'live',
     category: 'cards',
@@ -82,8 +83,8 @@ export const GAMES: GameEntry[] = [
     category: 'strategy',
   },
   {
-    id: 'wordgrid',
-    title: 'Wordgrid',
+    id: 'scrabble',
+    title: 'Scrabble',
     tagline: 'Lay letter tiles in crossword style and chase the premium squares.',
     players: '2-4 · 45-90 min',
     status: 'live',
@@ -138,8 +139,8 @@ export const GAMES: GameEntry[] = [
     category: 'cards',
   },
   {
-    id: 'blockyard',
-    title: 'Blockyard',
+    id: 'minecraft',
+    title: 'Minecraft',
     tagline: 'Break, place and build together in a blocky 3D world.',
     players: '1-8 · open-ended',
     status: 'live',
@@ -170,8 +171,8 @@ export const GAMES: GameEntry[] = [
     category: 'words',
   },
   {
-    id: 'lineup',
-    title: 'Lineup',
+    id: 'sequence',
+    title: 'Sequence',
     tagline: 'Play a card, place a chip and line up five in a row - in teams.',
     players: '2-12 · 20-30 min',
     status: 'live',
@@ -210,6 +211,9 @@ export const GAMES: GameEntry[] = [
   //   category: 'race',
   // },
 ];
+
+/** A game's URL path, e.g. `/uno`. */
+export const gamePath = (id: string): string => `/${id}`;
 
 /** The tile colour of a game: its category's colour. */
 export function gameColor(game: GameEntry): string {

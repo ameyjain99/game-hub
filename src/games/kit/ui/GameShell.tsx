@@ -25,7 +25,7 @@ interface Props {
   log?: ReactNode;
   /** A game-specific class on the screen root, for its palette and layout. */
   className?: string;
-  /** Which version's rules the Rules sheet opens on (Poker's variant, Last Card's mode). */
+  /** Which version's rules the Rules sheet opens on (Poker's variant, Uno's mode). */
   rulesVariant?: string;
 }
 

@@ -52,7 +52,7 @@ export {
   // Cluedo
   Search,
   DoorOpen,
-  // Last Card, Wordgrid
+  // Uno, Scrabble
   Ban,
   Repeat2,
   FlipVertical2,

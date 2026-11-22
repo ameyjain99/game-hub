@@ -49,9 +49,9 @@ export function soundCues(prev: MonopolyState, next: MonopolyState, meId: string
 
   if (next.rollSeq > prev.rollSeq) cues.push('dice');
 
-  const card = next.lastCard;
-  const lastCard = prev.lastCard;
-  if (card && (!lastCard || card.atRoll !== lastCard.atRoll || card.text !== lastCard.text)) cues.push('card');
+  const card = next.uno;
+  const uno = prev.uno;
+  if (card && (!uno || card.atRoll !== uno.atRoll || card.text !== uno.text)) cues.push('card');
 
   if (next.players.some((p) => p.inJail && !prev.players.find((q) => q.id === p.id)?.inJail)) cues.push('jail');
 

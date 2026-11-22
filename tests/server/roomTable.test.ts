@@ -102,7 +102,7 @@ test('if the player being waited for leaves, the others who asked get their rema
 });
 
 test('the host can change the rules in the lobby; a guest cannot, and bad rules are refused', () => {
-  const { code, token: host } = store.createRoom(4, 'Ann', '', { variant: 'classic' }, 'last-card');
+  const { code, token: host } = store.createRoom(4, 'Ann', '', { variant: 'classic' }, 'uno');
   const guest = tok(store.join(code, 'Bob', ''));
   expect(store.lobbyView(code).options).toEqual({ variant: 'classic' });
   expect(store.setOptions(code, guest, { variant: 'flip' })).toEqual({ error: expect.any(String) });
@@ -115,7 +115,7 @@ test('the host can change the rules in the lobby; a guest cannot, and bad rules 
 });
 
 test('the host can add a seat, and take away the last one only while it is empty or a bot', () => {
-  const { code, token: host } = store.createRoom(2, 'Ann', '', {}, 'last-card');
+  const { code, token: host } = store.createRoom(2, 'Ann', '', {}, 'uno');
   expect(store.setSeatCount(code, host, 4)).toEqual({ ok: true });
   expect(store.lobbyView(code).seats).toHaveLength(4);
   expect(store.lobbyView(code).seatCount).toBe(4);

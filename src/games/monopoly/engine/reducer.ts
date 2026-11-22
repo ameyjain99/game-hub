@@ -333,7 +333,7 @@ function drawCard(draft: MonopolyState, seat: number, deck: 'chance' | 'chest'):
   else draft.chestPtr = nextPtr;
 
   note(draft, `${tag(draft, seat)} drew ${deck === 'chance' ? 'Chance' : 'Community Chest'}: ${cardText(card, draft.settings.board)}`);
-  draft.lastCard = { deck, text: cardText(card, draft.settings.board), playerId: draft.players[seat].id, atRoll: draft.rollSeq };
+  draft.uno = { deck, text: cardText(card, draft.settings.board), playerId: draft.players[seat].id, atRoll: draft.rollSeq };
   applyCardEffect(draft, seat, deck, card.effect);
 }
 

@@ -46,6 +46,7 @@ export const MONOPOLY_RULES: GameRules = {
               'The bank holds all property, **32 houses** and **12 hotels**. The bank never runs out of money.',
               'Chance and Community Chest are each a shuffled deck of 16 cards.',
               'Turn order: online it is decided at random; on this device you go first, then the bots in order.',
+              'The host also picks the **board** (see Boards), the **game length** (see End of the game) and the house rules (see House rules). In an online room the host can change them in the lobby until the game starts.',
             ),
           ),
           section(
@@ -144,7 +145,12 @@ export const MONOPOLY_RULES: GameRules = {
           ),
           section(
             'Boards',
-            p('A game is played on one of four boards, chosen when it is set up. Every board has the same 40 squares, prices, rents and cards; only the places differ. On the Nations board each colour set is a country and the stations are airports. This book uses the Classic names; a card that sends you to a place names the one on your board.'),
+            p(`A game is played on one of ${BOARDS.length} boards, chosen when it is set up. Every board has the same 40 squares, prices, rents and cards; only the places differ. This book uses the Neo names; a card that sends you to a place names the one on your board.`),
+            list(
+              ...BOARDS.map((b) => `**${b.name}**: ${b.blurb}.`),
+              'On the Classic and Nations boards each colour set is one country, shown by its flag, and the stations are airports.',
+              'On the India board every amount is shown in rupees. The numbers are the same as on the other boards.',
+            ),
             table(BOARDS.map((b) => b.name), ...boardRows),
           ),
           section(
@@ -176,11 +182,12 @@ export const MONOPOLY_RULES: GameRules = {
               'When only one player is not bankrupt, that player wins.',
               'If every human player has left, the game ends and the remaining players are ranked by net worth: cash, plus property at its price (half if mortgaged), plus the cost of buildings.',
               'A game that reaches 2,000 turns also ends this way.',
+              '**Game length.** The host may set the game to 15, 25 or 40 rounds instead of playing until one player is left. A round is one turn for every player still in. When the last round ends, the game stops and the highest net worth wins.',
             ),
           ),
           section(
             'House rules',
-            p('The host chooses these before the game. Defaults are shown.'),
+            p('The host chooses these before the game. Defaults are shown; the defaults are the official rules. The lobby lists every rule that is switched on.'),
             table(
               ['Rule', 'Default', 'What it does'],
               ['Auctions', onOff(DEFAULT_SETTINGS.auctions), 'Off: a declined property simply stays with the bank.'],
@@ -190,6 +197,11 @@ export const MONOPOLY_RULES: GameRules = {
               ['Free Parking jackpot', onOff(DEFAULT_SETTINGS.freeParkingJackpot), 'On: Income Tax and Luxury Tax are paid into a pot instead of the bank; whoever lands on Free Parking takes the whole pot.'],
               ['Double salary on Go', onOff(DEFAULT_SETTINGS.doubleGoSalary), 'On: landing exactly on Go pays $400 instead of $200.'],
               ['No rent from jail', onOff(DEFAULT_SETTINGS.noRentInJail), 'On: owners in Jail collect no rent.'],
+            ),
+            list(
+              'With the Free Parking jackpot on, only the two tax squares feed the pot. Card fines, Jail fines and building costs still go to the bank. The pot starts empty and is emptied each time it is won.',
+              'With Auctions off, a property you decline can still be bought by the next player to land on it.',
+              'With Mortgaging off, the only way to raise cash is to sell buildings or trade.',
             ),
           ),
           section(
