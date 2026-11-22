@@ -71,7 +71,7 @@ test('Cities & Knights: a choice you owe opens its panel, and you pick the cards
 
 test('Cities & Knights: the Alchemist sets the red and yellow dice before the roll', () => {
   show(knights((s) => ({ ...s, phase: 'roll', turn: 0, players: s.players.map((p, i) => (i === 0 ? { ...p, progressCards: ['alchemist'] } : p)) })));
-  fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Play Alchemist' }));
   fireEvent.click(screen.getByRole('radio', { name: 'Red die: 2' }));
   fireEvent.click(screen.getByRole('radio', { name: 'Yellow die: 4' }));
   fireEvent.click(screen.getByRole('button', { name: /Set them: 2 \+ 4 = 6/ }));

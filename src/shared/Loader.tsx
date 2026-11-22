@@ -1,5 +1,5 @@
 /**
- * The GameHub loader (from docs/GameHub.html): the "GH" monogram drawing itself
+ * The GameHub loader: the "GH" monogram drawing itself
  * on repeat via a staggered stroke-dash animation, with an optional caption.
  * Shared across games for async waits. Pass `full` to centre it as a screen.
  */

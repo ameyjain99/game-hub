@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Socket } from 'socket.io-client';
-import { playTimeWarning } from '../../../shared/sound';
+import { playTimeLow, playTimeWarning } from '../../../shared/sound';
+import { SetupContext } from '../../../shared/ui/GameSetup';
 import { useOnlineSession, type OnlineIntent } from '../../../online/useOnlineSession';
 import { useMediaChat, type MediaChat } from '../../../online/useMediaChat';
 import { nameForPlayer } from '../../../online/seatNames';
@@ -147,6 +148,7 @@ export function KitOnline<S, A extends { type: string }>({ kit, gameId, title, i
             label={actor === myPlayerId ? 'Your turn' : nameFor(actor)}
             onGift={actor !== myPlayerId ? session.extendTime : undefined}
             onUrgent={actor === myPlayerId ? playTimeWarning : undefined}
+            onLow={actor !== myPlayerId ? playTimeLow : undefined}
           />
         )}
         {live && <PauseButton />}
@@ -168,6 +170,7 @@ export function KitOnline<S, A extends { type: string }>({ kit, gameId, title, i
     );
     return (
       <TableProvider value={table}>
+        <SetupContext.Provider value={lobby && rulesFor ? rulesFor(lobby.options, null).summary : []}>
         {render({
           view: state,
           meId: myPlayerId,
@@ -177,6 +180,7 @@ export function KitOnline<S, A extends { type: string }>({ kit, gameId, title, i
           exitLabel: 'Leave game',
           online: { clock, banner, media, socket: session.socket, code: session.code },
         })}
+        </SetupContext.Provider>
         {extras}
         <OpeningCall start={start} name={first ? nameFor(first.id) : null} isMe={first?.id === myPlayerId} color={first ? colorFor(kit.players(state).indexOf(first), kit.players(state).length) : undefined} />
       </TableProvider>

@@ -95,7 +95,7 @@ describe('ClaimDialog', () => {
       <ClaimDialog routeId="boston-new-york" hand={hand} onConfirm={onConfirm} onCancel={() => {}} />,
     );
     const buttons = screen.getAllByRole('button', { name: /locomotive|yellow/i });
-    // combos: {1 yellow + 1 loco}, {2 loco}? only 1 loco in hand, so {1 yellow +1 loco}
+    // With one locomotive in hand the only combo is 1 yellow + 1 locomotive.
     expect(buttons.length).toBe(expected.length);
     fireEvent.click(buttons[0]);
     expect(onConfirm).toHaveBeenCalledWith(expected[0]);

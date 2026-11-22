@@ -11,8 +11,8 @@ import { LeaveConfirm } from '../../../online/ui/LeaveConfirm';
 import { TOKEN_PIECES } from '../../../online/ui/tokenPieces';
 import type { RulesFor } from '../../../online/ui/LobbyRules';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/state';
-import { BoardField, HOUSE_RULES, HouseRuleSwitches, RoundLimitField, StartingCashField, cashForBoard, numberRuleSummary } from './MonopolyRules';
-import { BOARDS, boardOf, formatMoney } from '../engine/board';
+import { BoardField, HouseRuleSwitches, RoundLimitField, StartingCashField, cashForBoard, settingsSummary } from './MonopolyRules';
+import { boardOf } from '../engine/board';
 import { RoomError } from '../../../online/ui/RoomError';
 import { TurnClock } from '../../../online/ui/TurnClock';
 import { VideoTiles } from '../../../online/ui/VideoTiles';
@@ -21,7 +21,7 @@ import type { Action } from '../engine/actions';
 import { monopolyActor } from '../engine/bot';
 import { MonopolyGame } from './MonopolyGame';
 import { tokenColor, tokenLabel } from './board-layout';
-import { playTimeWarning } from './sound';
+import { playTimeLow, playTimeWarning } from './sound';
 
 const DIFFICULTIES = [
   { value: 'easy', label: 'Easy' },
@@ -32,9 +32,8 @@ const DIFFICULTIES = [
 /** The room's settings as the lobby shows them: a line each for guests, the same switches as the create screen for the host. */
 const lobbyRules: RulesFor = (options, onChange) => {
   const settings: Settings = { ...DEFAULT_SETTINGS, ...((options ?? {}) as Partial<Settings>) };
-  const on = HOUSE_RULES.filter((r) => settings[r.key]);
   return {
-    summary: [`Board: ${BOARDS.find((b) => b.id === boardOf(settings.board))!.name}`, `Starting cash ${formatMoney(settings.startingCash, boardOf(settings.board))}`, settings.roundLimit > 0 ? `${settings.roundLimit} rounds` : 'Until one player is left', ...on.map((r) => r.label), ...numberRuleSummary(settings)],
+    summary: settingsSummary(settings),
     editor: onChange ? (
       <>
         <BoardField value={boardOf(settings.board)} onChange={(board) => onChange({ ...settings, board, startingCash: cashForBoard(settings.startingCash, boardOf(settings.board), board) })} />
@@ -126,6 +125,7 @@ export function MonopolyOnlineGame({
                   label={actor === myPlayerId ? 'Your turn' : nameFor(actor)}
                   onGift={actor !== myPlayerId && actorIsHuman ? session.extendTime : undefined}
                   onUrgent={actor === myPlayerId ? playTimeWarning : undefined}
+                  onLow={actor !== myPlayerId && actorIsHuman ? playTimeLow : undefined}
                 />
               )}
               <PauseButton />

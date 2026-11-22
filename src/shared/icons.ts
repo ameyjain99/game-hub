@@ -21,6 +21,7 @@ export const CheckIcon = Check; // confirmed / copied
 // One-off icons re-exported so no other file imports lucide-react directly.
 export {
   BookOpen,
+  Eye,
   Volume2,
   VolumeX,
   Crown,

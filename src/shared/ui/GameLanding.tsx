@@ -20,9 +20,8 @@ interface Props {
 }
 
 /**
- * A game's front door, shared by Monopoly and Cluedo: play online (join with a
- * code, or start a room) and play on this device against bots - the same
- * join-first structure as Ticket to Ride's landing.
+ * A game's front door, shared by every game: play online (join with a code, or
+ * start a room) and play on this device against bots.
  */
 export function GameLanding({ title, meta, onBack, onJoin, onStart, onLocal, localOptions, localMore, online = true }: Props) {
   return (

@@ -6,6 +6,7 @@ import type { DifficultyOption } from '../../../online/ui/OnlineLobby';
 import { GameLanding } from '../../../shared/ui/GameLanding';
 import { GameForm } from '../../../shared/ui/GameForm';
 import { RulesContext, type GameRules } from '../../../shared/rules';
+import { SetupContext } from '../../../shared/ui/GameSetup';
 import { OnlineSeatsContext } from './KitOnline';
 
 interface LocalSetup {
@@ -47,6 +48,8 @@ interface Props {
   hostFields?: ReactNode;
   /** The options' current value, sent with a new room. */
   optionValue?: unknown;
+  /** A local game's options, a line per choice, for the setup button in the game's header. */
+  localSummary?: string[];
   /** The game's rules, offered on every screen; `rulesVariant` picks the version shown first. */
   rules?: GameRules;
   rulesVariant?: string;
@@ -68,7 +71,7 @@ export function KitApp({ rules, rulesVariant, ...props }: Props) {
   );
 }
 
-function KitScreens({ config, onBackToHub, renderLocal, renderOnline, localExtra, optionFields, hostFields, optionValue }: Omit<Props, 'rules' | 'rulesVariant'>) {
+function KitScreens({ config, onBackToHub, renderLocal, renderOnline, localExtra, optionFields, hostFields, optionValue, localSummary = [] }: Omit<Props, 'rules' | 'rulesVariant'>) {
   const { gameId, title } = config;
   const { step, navigate, syncCode, exit } = useGameRoute(gameId, onBackToHub);
   const [setup, setSetup] = useState<LocalSetup>({
@@ -82,8 +85,14 @@ function KitScreens({ config, onBackToHub, renderLocal, renderOnline, localExtra
   const seats = fitSeats(config.localSeats, setup.seats);
 
   switch (step.kind) {
-    case 'local':
-      return <>{renderLocal({ ...setup, seats }, exit)}</>;
+    case 'local': {
+      const level = config.difficulties.length > 1 && seats > 1 ? config.difficulties.find((d) => d.value === setup.difficulty) : undefined;
+      return (
+        <SetupContext.Provider value={level ? [...localSummary, `${config.difficultyLabel ?? 'Bot difficulty'}: ${level.label}`] : localSummary}>
+          {renderLocal({ ...setup, seats }, exit)}
+        </SetupContext.Provider>
+      );
+    }
     case 'online':
       return <OnlineSeatsContext.Provider value={config.onlineSeats}>{renderOnline(step.intent, exit, syncCode)}</OnlineSeatsContext.Provider>;
     case 'create':

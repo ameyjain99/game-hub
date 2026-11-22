@@ -17,7 +17,7 @@ export interface VideoSeat {
 }
 
 /**
- * The video table as a grid of tiles (Cluedo, Monopoly): a tile per human seat, built 
+ * The video table as a grid of tiles: a tile per human seat, built 
  * on the shared SeatMedia. Your own tile's mic / camera toggles show on hover.
  */
 export function VideoTiles({

@@ -54,7 +54,7 @@ export function createGame(
   }
 
   const rng = makeRng(seed);
-  // Same RNG order as always (train deck, then tickets) so seeds replay identically.
+  // The train deck is shuffled before the tickets: a seed's game depends on that order.
   const drawPile = buildDrawPile(rng, map.deck);
   const tickets = dealSetupTickets(mode, configs.length, rng);
 

@@ -13,6 +13,8 @@ import { MonopolySidebar } from './MonopolySidebar';
 import { TradeDialog } from './MonopolyTrade';
 import { momentLots, useSetMoments } from './SetMoment';
 import { RulesButton } from '../../../shared/ui/Rules';
+import { SetupButton } from '../../../shared/ui/GameSetup';
+import { settingsSummary } from './MonopolyRules';
 import { MONOPOLY_RULES } from '../rules';
 import { LogLine } from './LogLine';
 import { formatMoney, isMega, spaceByName, spaceName } from '../engine/board';
@@ -225,6 +227,7 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         )}
         <div className="mono-head-extra">
           {headerExtra}
+          <SetupButton lines={settingsSummary(view.settings, true)} />
           <RulesButton rules={MONOPOLY_RULES} variant={isMega(view.settings.board) ? 'mega' : 'standard'} />
           <button
             type="button"

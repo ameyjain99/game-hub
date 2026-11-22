@@ -5,7 +5,7 @@ import type { CardCombo, GameState, Hand as HandType, TrainCard } from '../engin
 import type { Action } from '../engine/actions';
 import { legalActions, getRoute } from '../engine/selectors';
 import { getMap, modeFor } from '../engine/maps';
-import { isMuted, setMuted, playClaim, playDraw, playLastRound, playTicketDone, playTicketsTaken, playTunnel, playTurn, playTimeWarning } from './sound';
+import { isMuted, setMuted, playClaim, playDraw, playLastRound, playTicketDone, playTicketsTaken, playTunnel, playTurn, playTimeLow, playTimeWarning } from './sound';
 import { trainsNeeded } from '../engine/reach';
 import { FinalCeremony } from './components/FinalCeremony';
 import { Board } from './components/Board';
@@ -22,6 +22,7 @@ import { LongestPathOutline, TicketRings } from './components/ResultOverlays';
 import { areConnected, longestPathThrough } from '../engine/graph';
 import { routePoints } from '../engine/scoring';
 import { RulesSheet } from '../../../shared/ui/Rules';
+import { SetupButton } from '../../../shared/ui/GameSetup';
 import { TTR_RULES } from '../rules';
 import { playerColor } from './colors';
 import { cleanName } from './displayName';
@@ -195,6 +196,15 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
       }
     }
   }, [myClock, remainingSec, turnDeadline]);
+
+  // A softer cue for everyone else as the offer of more time appears - once per deadline value.
+  const lowDeadlineRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (showExtendPopup && lowDeadlineRef.current !== turnDeadline) {
+      lowDeadlineRef.current = turnDeadline ?? null;
+      playTimeLow();
+    }
+  }, [showExtendPopup, turnDeadline]);
 
   // Blink "IT'S YOUR TURN!!" the moment this device's player gains the turn.
   useEffect(() => {
@@ -578,12 +588,13 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
       <header className="top-bar">
         <div className="top-content">{sidePane}</div>
         <div className="game-tools">
-          {/* Mic/cam now live on each player's video frame in the right pane. */}
+          {/* The mic and camera switches are on each player's video frame in the right pane. */}
           <button type="button" className="tool-btn" title="Rules" onClick={() => setRulesOpen(true)}>
             <BookOpen size={16} />Rules
           </button>
           {rulesOpen && <RulesSheet rules={TTR_RULES} variant={`${state.mapId}:${mode.id}`} onClose={() => setRulesOpen(false)} />}
           <div className="tools-row">
+            <SetupButton className="tool-btn" size={18} lines={[`Map: ${getMap(state.mapId).name}`, `Mode: ${mode.name}`]} />
             {!gameOver && <PauseButton />}
             <button
               type="button"

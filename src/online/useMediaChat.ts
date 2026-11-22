@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { EVT, type VoiceSignal, type MediaState } from '../net/protocol';
 
-// Public STUN only. Most home/mobile networks connect peer-to-peer with just
-// this; players behind strict/symmetric NATs will need a TURN relay added here.
+// Public STUN only: most home and mobile networks connect peer-to-peer with it.
+// A player behind a strict or symmetric NAT cannot be reached without a TURN
+// relay, and none is configured.
 const ICE_SERVERS: RTCIceServer[] = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
 
 /** A connection 'disconnected' this long gets an ICE restart (most blips heal sooner on their own). */

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { BackIcon, Volume2, VolumeX } from '../../../shared/icons';
 import { useMuted } from '../../../shared/sound';
 import { RulesButton } from '../../../shared/ui/Rules';
+import { SetupButton } from '../../../shared/ui/GameSetup';
 import { FacesStrip } from '../../../online/ui/SeatFace';
 import { PausedOverlay } from '../../../online/ui/Pause';
 
@@ -31,7 +32,7 @@ interface Props {
 
 /**
  * The screen every kit game shares, laid out like Monopoly: a header (back,
- * title, status, clock, mute), the board filling the stage, and a sidebar;
+ * title, status, clock, the game's setup, rules, mute), the board filling the stage, and a sidebar;
  * a game may add its log as a column on the board's left.
  */
 export function GameShell({ title, exitLabel, onExit, status, headerExtra, banner, board, overlay, side, log, className, rulesVariant }: Props) {
@@ -51,6 +52,7 @@ export function GameShell({ title, exitLabel, onExit, status, headerExtra, banne
         )}
         <div className="kit-head-extra">
           {headerExtra}
+          <SetupButton />
           <RulesButton variant={rulesVariant} />
           <button
             type="button"

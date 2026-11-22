@@ -1,4 +1,4 @@
-// The boards a game can be played on: the same squares and prices, other places.
+// The boards a game can be played on: their order, names, money and square names.
 import { expect, test } from 'vitest';
 import { BOARD, BOARDS, MONOPOLY_MONEY, OWNABLE_IDS, boardCurrency, boardOf, isMega, ownableIds, spaceFlag, spaceName, stationWord } from '../../../src/games/monopoly/engine/board';
 import { CHANCE, cardText } from '../../../src/games/monopoly/engine/cards';

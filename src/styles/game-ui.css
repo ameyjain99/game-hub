@@ -1,6 +1,6 @@
 /*
  * Shared game UI: the landing / create / join / lobby frames and the controls
- * Monopoly and Cluedo build their screens from. Everything here draws from the
+ * every game builds its screens from. Everything here draws from the
  * tokens (spacing scale, radius hierarchy, line weights) so screens line up.
  */
 
@@ -581,6 +581,19 @@
   border: 0;
   border-radius: var(--radius-pill);
   cursor: pointer;
+}
+
+/* The offer only lasts ten seconds, so it draws the eye while it is there. */
+@media (prefers-reduced-motion: no-preference) {
+  .g-clock-gift {
+    animation: g-clock-gift 1s ease-in-out infinite;
+  }
+}
+
+@keyframes g-clock-gift {
+  50% {
+    box-shadow: 0 0 0 5px #ffffff38;
+  }
 }
 
 .g-clock-gift:focus-visible {

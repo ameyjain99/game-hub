@@ -1,6 +1,6 @@
 import { DEFAULT_SETTINGS, SETTING_CHOICES, type Settings } from '../engine/state';
 import { formatMoney } from '../engine/board';
-import { BOARDS, isMega, type BoardId } from '../engine/board';
+import { BOARDS, boardOf, isMega, type BoardId } from '../engine/board';
 import { MEGA } from '../engine/mega';
 
 /** House rules, in display order. Defaults follow the official rulebook. */
@@ -28,9 +28,24 @@ const NUMBER_RULES: { key: NumberKey; label: string; money?: boolean; text: (n: 
 ];
 
 /** A line for each amount that differs from the standard rules, for the lobby's summary. */
-export function numberRuleSummary(settings: Settings): string[] {
+function numberRuleSummary(settings: Settings): string[] {
   const money = (n: number) => formatMoney(n, settings.board);
   return NUMBER_RULES.filter((r) => settings[r.key] !== DEFAULT_SETTINGS[r.key]).map((r) => `${r.label}: ${r.text(settings[r.key], money)}`);
+}
+
+/**
+ * A game's settings, a line each: the board, the cash, when it ends, the house rules and any amount that differs from the standard rules.
+ * The lobby lists only the house rules that are on; `everyRule` lists them all as on or off, for a game under way.
+ */
+export function settingsSummary(settings: Settings, everyRule = false): string[] {
+  const board = boardOf(settings.board);
+  return [
+    `Board: ${BOARDS.find((b) => b.id === board)!.name}`,
+    `Starting cash${everyRule ? ':' : ''} ${formatMoney(settings.startingCash, board)}`,
+    `${everyRule ? 'Game ends: ' : ''}${settings.roundLimit > 0 ? `${everyRule ? 'After ' : ''}${settings.roundLimit} rounds` : `${everyRule ? 'When' : 'Until'} one player is left`}`,
+    ...(everyRule ? HOUSE_RULES.map((r) => `${r.label}: ${settings[r.key] ? 'On' : 'Off'}`) : HOUSE_RULES.filter((r) => settings[r.key]).map((r) => r.label)),
+    ...numberRuleSummary(settings),
+  ];
 }
 
 const STARTING_CASH = [500, 1000, 1500, 2000, 2500, 3000];
@@ -58,7 +73,7 @@ export function StartingCashField({ value, onChange, board = 'neo' }: { value: n
   );
 }
 
-/** Which places are on the board. The squares, prices and rents are the same on all. */
+/** The board the game is played on. */
 export function BoardField({ value, onChange }: { value: BoardId; onChange: (board: BoardId) => void }) {
   return (
     <label className="g-field">

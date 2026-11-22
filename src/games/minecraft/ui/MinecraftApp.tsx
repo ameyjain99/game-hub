@@ -34,7 +34,7 @@ export function loadWorld(): SavedWorld | null {
     const w = JSON.parse(raw);
     if (typeof w?.seed !== 'number' || !w.edits || typeof w.edits !== 'object') return null;
     if (typeof w.placed === 'number' && typeof w.broken === 'number') return { seed: w.seed, edits: w.edits, placed: w.placed, broken: w.broken };
-    // Saved before tallies were kept: count each changed block as placed (a block) or broken (air).
+    // A saved world with no tally: count each changed block as placed (a block) or broken (air).
     const changed = Object.values(w.edits as Record<number, number>);
     return { seed: w.seed, edits: w.edits, placed: changed.filter((b) => b !== 0).length, broken: changed.filter((b) => b === 0).length };
   } catch {

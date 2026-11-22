@@ -30,7 +30,7 @@ export function clearSession(): void {
   localStorage.removeItem(KEY);
 }
 
-/** Sessions saved before gameId existed are Ticket to Ride's. */
+/** A session with no gameId is Ticket to Ride's. */
 const gameOf = (s: StoredSession): string => s.gameId ?? 'ticket-to-ride';
 
 /** The stored session only if it belongs to `gameId` - a game must never resume

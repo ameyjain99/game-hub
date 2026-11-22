@@ -8,6 +8,7 @@ import { afterEach, expect, test } from 'vitest';
 import { io as ioClient, type Socket } from 'socket.io-client';
 import { createServer } from '../../server/index';
 import { RoomStore } from '../../server/rooms';
+import { RateLimiter, clientAddress } from '../../server/guard';
 import { EVT, type Joined } from '../../src/net/protocol';
 import { createMonopolyGame } from '../../src/games/monopoly/engine/state';
 
@@ -148,4 +149,68 @@ test('Monopoly settings from a client fall back to the standard rule when they a
   expect(g.players.map((p) => p.cash)).toEqual([1500, 1500]);
   expect(createMonopolyGame(seats, 1, { board: 'megaUs', startingCash: Number.NaN }).settings.startingCash).toBe(2500);
   expect(createMonopolyGame(seats, 1, { startingCash: 2000, roundLimit: 6 }).settings).toMatchObject({ startingCash: 2000, roundLimit: 6 });
+});
+
+test('guessing room codes is cut off after 20 wrong ones a minute, by lookup and by socket, for that address only', async () => {
+  const port = await start();
+  const { code } = await room(port);
+  const lookup = (c: string, from?: string) => fetch(`http://127.0.0.1:${port}/api/room-exists?code=${c}`, from ? { headers: { 'x-forwarded-for': from } } : undefined);
+  for (let i = 0; i < 20; i++) expect((await lookup('ZZZZ')).status).toBe(200);
+  const blocked = await lookup(code);
+  expect([blocked.status, blocked.headers.get('retry-after')]).toEqual([429, '60']);
+  // The same address is refused on the socket too, even with a real code.
+  const guesser = await client(port);
+  const refused = next<{ message: string }>(guesser, EVT.errorMsg);
+  guesser.emit(EVT.joinRoom, { code, name: 'Guest', avatar: '' });
+  expect((await refused).message).toBe('too many tries, wait a minute');
+  // Someone at another address is not affected.
+  expect(await (await lookup(code, '203.0.113.9, 10.0.0.1')).json()).toMatchObject({ exists: true });
+});
+
+test('wrong codes sent over the socket count too', async () => {
+  const port = await start();
+  const guesser = await client(port);
+  for (let i = 0; i < 20; i++) {
+    const answer = next<{ message: string }>(guesser, EVT.errorMsg);
+    guesser.emit(EVT.joinRoom, { code: 'ZZZZ', name: 'x', avatar: '' });
+    expect((await answer).message).toBe('no such room');
+  }
+  const answer = next<{ message: string }>(guesser, EVT.errorMsg);
+  guesser.emit(EVT.joinRoom, { code: 'ZZZZ', name: 'x', avatar: '' });
+  expect((await answer).message).toBe('too many tries, wait a minute');
+});
+
+test('a page on another site cannot open a game socket; this site and listed origins can', async () => {
+  srv = createServer({ port: 0, allowedOrigins: ['https://friend.example'] });
+  await once(srv.httpServer, 'listening');
+  const port = (srv.httpServer.address() as AddressInfo).port;
+  const from = (origin: string) =>
+    new Promise<string>((resolve) => {
+      const s = ioClient(`http://localhost:${port}`, { transports: ['websocket'], forceNew: true, reconnection: false, extraHeaders: { origin } });
+      socks.push(s);
+      s.on('connect', () => resolve('connected'));
+      s.on('connect_error', () => resolve('refused'));
+    });
+  expect(await from('https://evil.example')).toBe('refused');
+  expect(await from(`http://localhost:${port}`)).toBe('connected');
+  expect(await from('https://friend.example')).toBe('connected');
+});
+
+test('every response carries a Content-Security-Policy that keeps scripts and frames to this site', async () => {
+  const port = await start();
+  const policy = (await fetch(`http://127.0.0.1:${port}/api/room-exists?code=ZZZZ`)).headers.get('content-security-policy') ?? '';
+  for (const part of ["default-src 'self'", "script-src 'self' 'wasm-unsafe-eval'", "object-src 'none'", "frame-ancestors 'self'", `connect-src 'self' ws://127.0.0.1:${port} wss://127.0.0.1:${port}`]) expect(policy).toContain(part);
+  expect(policy).not.toContain("'unsafe-eval'");
+  expect(policy).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+});
+
+test('a rate limiter counts per key and starts again when its window has passed', () => {
+  const limiter = new RateLimiter(2, 1000);
+  expect([limiter.hit('a', 0), limiter.hit('a', 10), limiter.hit('a', 20), limiter.hit('b', 20)]).toEqual([true, true, false, true]);
+  expect([limiter.blocked('a', 500), limiter.blocked('b', 500), limiter.blocked('a', 1000)]).toEqual([true, false, false]);
+  expect(limiter.hit('a', 1000)).toBe(true);
+  limiter.sweep(5000);
+  expect(limiter.blocked('a', 5000)).toBe(false);
+  expect(clientAddress({ 'x-forwarded-for': '203.0.113.9, 10.0.0.1' }, '10.0.0.1')).toBe('203.0.113.9');
+  expect(clientAddress({}, '10.0.0.7')).toBe('10.0.0.7');
 });

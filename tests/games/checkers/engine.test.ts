@@ -149,7 +149,7 @@ describe('bot', () => {
   });
 
   test('takes a free piece and avoids hanging its own', () => {
-    // Black to move: 15 can take 18→22? Set up: White man on 18 is capturable from 14.
+    // Black to move, with White's man on 18 open to a jump from 14.
     const s = { ...position({ b: [14, 3], w: [18, 30] }), players: [{ id: 'p0', name: 'B', isAI: true, difficulty: 'hard' }, { id: 'p1', name: 'W', isAI: false }] };
     const hop = checkersKit.bot(s, () => 0.5);
     expect(hop).toEqual({ type: 'MOVE', from: sq(14), to: sq(23) });

@@ -114,7 +114,7 @@ export interface SetSeatCount {
 }
 
 /**
- * WebRTC voice-chat signaling. Relayed verbatim by the server to the rest of the
+ * WebRTC voice-chat signaling. Relayed by the server to the rest of the sender's
  * room; `to` null means broadcast (a "hello"/"bye" announcement), otherwise it
  * targets one peer. Audio itself is peer-to-peer and never touches the server.
  */

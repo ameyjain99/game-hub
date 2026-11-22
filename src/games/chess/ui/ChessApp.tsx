@@ -52,6 +52,7 @@ export function ChessApp({ onBackToHub }: { onBackToHub: () => void }) {
       config={CONFIG}
       onBackToHub={onBackToHub}
       optionValue={{ clockMin }}
+      localSummary={[`You play: ${playAs.charAt(0).toUpperCase()}${playAs.slice(1)}`]}
       hostFields={
         <label className="g-field">
           <span className="g-field-label">{CLOCK.label}</span>

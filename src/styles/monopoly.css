@@ -1890,7 +1890,7 @@ button.mono-cell.is-owned:hover {
   opacity: 0.45;
 }
 
-/* A lot's flag on a board that has them (Nations). */
+/* A lot's flag, on a board whose colour sets are countries. */
 .mono-cell-flag {
   font-size: 1.25em;
   line-height: 1;

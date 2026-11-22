@@ -47,7 +47,7 @@ export interface LobbyPiece {
   node: ReactNode;
 }
 
-/** The pre-game room shared by Monopoly and Cluedo: invite code + link, the
+/** The pre-game room every online game shares: invite code + link, the
  *  seats (host fills empties with bots), then Start. */
 export function OnlineLobby({ gameId, title, lobby, code, myPlayerId, difficulties, colorFor, onSetSeatAi, onStart, onLeave, media, rules, pieces, onPickPiece, seatCounts, onSeatCount }: Props) {
   const [chosen, setChosen] = useState<Record<number, string>>({});

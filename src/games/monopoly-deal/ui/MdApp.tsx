@@ -54,6 +54,7 @@ export function MdApp({ onBackToHub }: { onBackToHub: () => void }) {
       config={CONFIG}
       onBackToHub={onBackToHub}
       optionValue={options}
+      localSummary={LOBBY_RULES(options, null).summary}
       optionFields={
         <details className="g-disclosure">
           <summary>

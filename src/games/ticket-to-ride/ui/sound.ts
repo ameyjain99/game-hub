@@ -3,7 +3,7 @@
 
 import { tone, withAudio } from '../../../shared/sound';
 
-export { isMuted, setMuted, playTurn, playTimeWarning } from '../../../shared/sound';
+export { isMuted, setMuted, playTurn, playTimeLow, playTimeWarning } from '../../../shared/sound';
 
 /** Short wooden "thunk" when a train route is claimed. */
 export function playClaim(): void {

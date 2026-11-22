@@ -58,7 +58,7 @@ describe('final results (game over)', () => {
     expect(screen.getByTestId('final-scores')).toBeTruthy();
     expect(row('p1').getAttribute('aria-pressed')).toBe('true');
     expect(row('p0').getAttribute('aria-pressed')).toBe('false');
-    // The result line now sits in the top bar beside the score chips.
+    // The result line sits in the top bar beside the score chips.
     expect(screen.getByTestId('final-scores').textContent).toMatch(/Game over.*Bot wins/);
   });
 

@@ -1,6 +1,5 @@
 /*
- * Kit games (Tic-Tac-Toe, Checkers, Chess, Snakes & Ladders, Ludo, Sequence,
- * Solitaire, Sudoku) share one screen, laid out like Monopoly: a header, the
+ * Kit games share one screen, laid out like Monopoly: a header, the
  * board filling the stage, and a sidebar. Each game adds its own board styles
  * in its own file.
  */

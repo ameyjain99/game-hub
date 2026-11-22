@@ -2,7 +2,7 @@
 import type { CSSProperties } from 'react';
 import { PIPS, RESOURCES, YIELD, type Terrain } from '../board';
 import { GLYPH, House, MerchantPiece, TERRAIN_COLOR } from './Island';
-import { RES_COLOR, RES_NAME } from './cards';
+import { RES_COLOR, RES_NAME, ResIcon } from './cards';
 
 const U = 60;
 const HEX = Array.from({ length: 6 }, (_, i) => {
@@ -51,6 +51,7 @@ export const ResourceCards = () => (
   <div className="catan-hand">
     {RESOURCES.map((r) => (
       <span key={r} className="catan-card" style={{ '--rc': RES_COLOR[r] } as CSSProperties}>
+        <ResIcon of={r} />
         <b>1</b>
         <span>{RES_NAME[r]}</span>
       </span>
@@ -111,7 +112,7 @@ export const Odds = () => (
   </div>
 );
 
-/** Seafarers' new pieces: sea, gold field, a ship. */
+/** Seafarers' own pieces: sea, gold field, a ship. */
 export const SeaPieces = () => (
   <div className="rf-row">
     <span className="rf-col">
@@ -143,7 +144,7 @@ export const SeaPieces = () => (
   </div>
 );
 
-/** Cities & Knights' new pieces: commodity cards, knights of each strength, a wall and a Metropolis. */
+/** Cities & Knights' own pieces: commodity cards, knights of each strength, a wall and a Metropolis. */
 export const CitiesKnightsPieces = () => (
   <>
     <div className="catan-hand">

@@ -95,7 +95,7 @@ test('the short game deals each player deeds at their printed price before the f
     expect(p.cash).toBe(1500 - mine.reduce((n, id) => n + BOARD[id].price!, 0));
   }
   expect(g.log).toHaveLength(4);
-  // The same seed with nothing dealt is the same game as before.
+  // The same seed with nothing dealt gives the game a table without the setting gets.
   const plain = mk({}, 7, 4);
   expect([plain.chanceOrder, plain.turnOrder]).toEqual([mk({ dealtProperties: 0 }, 7, 4).chanceOrder, plain.turnOrder]);
   expect(OWNABLE_IDS.every((id) => plain.ownership[id].owner === null)).toBe(true);
