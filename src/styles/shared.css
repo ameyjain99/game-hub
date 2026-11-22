@@ -11,7 +11,6 @@
   box-shadow: 0 20px 60px #0008;
 }
 
-
 .corner-exit {
   position: absolute;
   top: 16px;
@@ -25,12 +24,10 @@
   font-weight: 600;
 }
 
-
 .corner-exit:hover {
   color: var(--danger);
   border-color: var(--danger);
 }
-
 
 .setup-screen h1 {
   margin: 0;
@@ -38,12 +35,10 @@
   letter-spacing: 0.5px;
 }
 
-
 .tagline {
   color: var(--muted);
   margin-top: 4px;
 }
-
 
 .setup-rows {
   display: flex;
@@ -51,7 +46,6 @@
   gap: 10px;
   margin: 22px 0;
 }
-
 
 .setup-row {
   display: flex;
@@ -63,9 +57,7 @@
   border-left: 5px solid #666;
 }
 
-
 .seat-token,
-.player-token,
 .pass-token {
   width: 16px;
   height: 16px;
@@ -74,7 +66,6 @@
   box-shadow: 0 0 0 2px #fff3;
   flex: none;
 }
-
 
 .name-input {
   flex: 1;
@@ -86,14 +77,12 @@
   min-width: 0;
 }
 
-
 .type-toggle {
   display: flex;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #2a2c31;
 }
-
 
 .type-toggle button {
   background: #0e0e12;
@@ -102,16 +91,15 @@
   padding: 8px 12px;
 }
 
-
 .type-toggle button.active {
   background: var(--accent);
   color: #0b0b0f;
   font-weight: 700;
 }
 
-
 .difficulty,
 select {
+  font-family: inherit;
   background-color: #0e0e12;
   color: var(--ink);
   border: 1px solid #2a2c31;
@@ -127,14 +115,12 @@ select {
   background-size: 12px;
 }
 
-
 .remove-row {
   background: transparent;
   border: none;
   color: var(--muted);
   font-size: 16px;
 }
-
 
 .add-ai-btn {
   background: #22232a;
@@ -147,12 +133,10 @@ select {
   transition: background 0.12s ease;
 }
 
-
 .add-ai-btn:hover {
   background: #26272e;
   border-color: var(--accent);
 }
-
 
 .setup-actions {
   display: flex;
@@ -162,7 +146,6 @@ select {
   margin-top: 24px;
 }
 
-
 .setup-actions > button:not(.primary) {
   background: transparent;
   color: var(--muted);
@@ -171,14 +154,7 @@ select {
   padding: 10px 16px;
 }
 
-
-
 /* ---------------- Landing screen ---------------- */
-.landing-screen {
-  max-width: 720px;
-}
-
-
 .setup-map {
   display: inline-flex;
   align-items: center;
@@ -188,7 +164,6 @@ select {
   font-size: 14px;
   flex-wrap: wrap;
 }
-
 
 /* ---------------- Avatars ---------------- */
 .player-avatar {
@@ -205,20 +180,17 @@ select {
   flex: none;
 }
 
-
 .avatar-label {
   color: var(--muted);
   font-size: 13px;
   margin: 16px 0 6px;
 }
 
-
 .avatar-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-
 
 .avatar-choice {
   width: 46px;
@@ -233,12 +205,10 @@ select {
   justify-content: center;
 }
 
-
 .avatar-choice.selected {
   border-color: var(--accent);
   background: #22232a;
 }
-
 
 .avatar-choice.taken {
   opacity: 0.3;
@@ -246,16 +216,13 @@ select {
   filter: grayscale(0.8);
 }
 
-
 .avatar-picker {
   margin-top: 18px;
 }
 
-
 .profile-submit {
   margin-top: 20px;
 }
-
 
 .setup-back {
   background: transparent;
@@ -266,17 +233,14 @@ select {
   font-size: 14px;
 }
 
-
 .setup-back:hover {
   color: var(--ink);
 }
-
 
 .landing-name {
   display: block;
   margin-top: 22px;
 }
-
 
 .landing-name > span,
 .landing-field > span {
@@ -286,25 +250,11 @@ select {
   margin-bottom: 6px;
 }
 
-
 .landing-name .name-input {
   width: 100%;
   font-size: 16px;
   padding: 12px 14px;
 }
-
-
-/* Single-column landing: Join is the primary box, then an "or" divider, then a
-   lighter Start-a-game group with the board picker. */
-.landing-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  max-width: 380px;
-  margin: 22px auto 6px;
-  text-align: left;
-}
-
 
 .landing-or {
   display: flex;
@@ -314,7 +264,6 @@ select {
   font-size: 13px;
 }
 
-
 .landing-or::before,
 .landing-or::after {
   content: '';
@@ -323,55 +272,14 @@ select {
   background: #ffffff1a;
 }
 
-
-.landing-start {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-
-.landing-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: var(--panel-2);
-  border: 1px solid #ffffff10;
-  border-radius: 14px;
-  padding: 18px;
-}
-
-
-.landing-panel h2 {
-  margin: 0;
-  font-size: 20px;
-}
-
-
-.landing-sub {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-
 .landing-field {
   display: block;
 }
-
 
 .landing-field select,
 .landing-field .name-input {
   width: 100%;
 }
-
-
-/* Match the Board dropdown to the taller Room code field across the two cards. */
-.landing-panel .landing-field select,
-.landing-panel .landing-field .name-input {
-  min-height: 48px;
-}
-
 
 /* On the profile screen the fields stack in normal flow (no flex gap), so give
    each one room above its label. */
@@ -379,38 +287,12 @@ select {
   margin-top: 16px;
 }
 
-
-.code-input {
-  letter-spacing: 6px;
-  font-weight: 700;
-  font-size: 18px;
-  text-align: center;
-}
-
-
-.landing-panel .primary {
-  margin-top: auto;
-  width: 100%;
-}
-
-
-.landing-start .primary {
-  width: 100%;
-}
-
-
-.landing-start .landing-field select {
-  min-height: 48px;
-}
-
-
 .landing-hint {
   margin: 0;
   font-size: 12px;
   color: var(--muted);
   text-align: center;
 }
-
 
 .landing-local {
   display: block;
@@ -423,11 +305,9 @@ select {
   font-size: 14px;
 }
 
-
 .landing-local:hover {
   color: var(--ink);
 }
-
 
 /* Left-aligned "← Back to games" link, sits at the top of a screen. */
 .back-link {
@@ -440,12 +320,9 @@ select {
   cursor: pointer;
 }
 
-
 .back-link:hover {
   color: var(--ink);
 }
-
-
 
 /* ---------------- Confirm modal ---------------- */
 .modal-backdrop {
@@ -459,7 +336,6 @@ select {
   backdrop-filter: blur(2px);
 }
 
-
 .modal-card {
   max-width: 360px;
   margin: 16px;
@@ -470,12 +346,10 @@ select {
   box-shadow: 0 20px 60px #000a;
 }
 
-
 .modal-card h2 {
   margin: 0 0 8px;
   font-size: 20px;
 }
-
 
 .modal-card p {
   margin: 0 0 20px;
@@ -484,13 +358,11 @@ select {
   line-height: 1.5;
 }
 
-
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
-
 
 .modal-actions button {
   border-radius: 10px;
@@ -499,18 +371,15 @@ select {
   font-size: 14px;
 }
 
-
 .modal-actions .secondary {
   background: transparent;
   color: var(--muted);
   border: 1px solid #2a2c31;
 }
 
-
 .modal-actions .secondary:hover {
   color: var(--ink);
 }
-
 
 .modal-actions .danger {
   background: var(--danger);

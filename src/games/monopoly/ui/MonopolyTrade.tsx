@@ -1,24 +1,23 @@
 import { useState } from 'react';
-import { BOARD, OWNABLE_IDS } from '../engine/board';
-import { useSpaceName } from './boardNames';
+import { isMega, ownableIds } from '../engine/board';
+import { useMoney, useSpaceName, useSwatch } from './boardNames';
 import type { MonopolyState, PendingTrade, TradeBundle } from '../engine/state';
 import type { Action } from '../engine/actions';
-import { GROUP_COLOR } from './board-layout';
-
-/** A lot's swatch colour: its group, or neutral for stations and utilities. */
-const swatch = (id: number) => (BOARD[id].group ? GROUP_COLOR[BOARD[id].group!] : '#8a8f98');
 
 /** Lots a player could put in a trade (no buildings on them). */
 const tradableOf = (view: MonopolyState, ownerId: string): number[] =>
-  OWNABLE_IDS.filter((id) => view.ownership[id].owner === ownerId && view.ownership[id].houses === 0);
+  ownableIds(view.settings.board).filter((id) => view.ownership[id].owner === ownerId && view.ownership[id].houses === 0 && !view.ownership[id].depot);
 
 export function Bundle({ bundle }: { bundle: TradeBundle }) {
   const nameOf = useSpaceName();
-  const empty = bundle.cash === 0 && bundle.properties.length === 0 && bundle.getOutCards === 0;
+  const money = useMoney();
+  const swatch = useSwatch();
+  const tickets = bundle.busTickets ?? 0;
+  const empty = bundle.cash === 0 && bundle.properties.length === 0 && bundle.getOutCards === 0 && tickets === 0;
   return (
     <ul className="mono-chips">
       {empty && <li className="mono-chip is-empty">Nothing</li>}
-      {bundle.cash > 0 && <li className="mono-chip is-cash">${bundle.cash}</li>}
+      {bundle.cash > 0 && <li className="mono-chip is-cash">{money(bundle.cash)}</li>}
       {bundle.properties.map((id) => (
         <li key={id} className="mono-chip">
           <span className="mono-swatch" style={{ background: swatch(id) }} />
@@ -26,6 +25,7 @@ export function Bundle({ bundle }: { bundle: TradeBundle }) {
         </li>
       ))}
       {bundle.getOutCards > 0 && <li className="mono-chip">Get Out of Jail Free ×{bundle.getOutCards}</li>}
+      {tickets > 0 && <li className="mono-chip">Bus Ticket ×{tickets}</li>}
     </ul>
   );
 }
@@ -77,6 +77,9 @@ function Side({
   picked,
   toggle,
   cashLabel,
+  tickets,
+  maxTickets,
+  setTickets,
 }: {
   title: string;
   view: MonopolyState;
@@ -87,14 +90,20 @@ function Side({
   picked: number[];
   toggle: (id: number) => void;
   cashLabel: string;
+  /** Mega: Bus Tickets on this side of the trade. */
+  tickets: number;
+  maxTickets: number;
+  setTickets: (n: number) => void;
 }) {
   const nameOf = useSpaceName();
+  const money = useMoney();
+  const swatch = useSwatch();
   const lots = tradableOf(view, ownerId);
   return (
     <section className="mono-trade-side">
       <h4>{title}</h4>
       <label className="g-field">
-        <span className="g-field-label">Cash · up to ${maxCash.toLocaleString()}</span>
+        <span className="g-field-label">Cash · up to {money(maxCash)}</span>
         <span className="g-money">
           <input
             className="g-input"
@@ -108,6 +117,18 @@ function Side({
           />
         </span>
       </label>
+      {maxTickets > 0 && (
+        <label className="g-field">
+          <span className="g-field-label">Bus Tickets · up to {maxTickets}</span>
+          <select aria-label={`${title}: Bus Tickets`} value={tickets} onChange={(e) => setTickets(Number(e.target.value))}>
+            {Array.from({ length: maxTickets + 1 }, (_, n) => (
+              <option key={n} value={n}>
+                {n === 0 ? 'None' : n}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="mono-pick-list">
         {lots.length === 0 && <p className="mono-muted">No tradable property.</p>}
         {lots.map((id) => (
@@ -149,17 +170,20 @@ export function TradeDialog({
   const [get, setGet] = useState<number[]>([]);
   const [giveCash, setGiveCash] = useState(0);
   const [getCash, setGetCash] = useState(0);
+  const [giveTickets, setGiveTickets] = useState(0);
+  const [getTickets, setGetTickets] = useState(0);
+  const mega = isMega(view.settings.board);
   const partner = view.players.find((p) => p.id === to);
   const toggle = (list: number[], set: (x: number[]) => void) => (id: number) =>
     set(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
-  const empty = give.length + get.length === 0 && giveCash === 0 && getCash === 0;
+  const empty = give.length + get.length === 0 && giveCash === 0 && getCash === 0 && giveTickets === 0 && getTickets === 0;
 
   const send = () => {
     const trade: PendingTrade = {
       from: meId,
       to,
-      give: { cash: giveCash, properties: give, getOutCards: 0 },
-      receive: { cash: getCash, properties: get, getOutCards: 0 },
+      give: { cash: giveCash, properties: give, getOutCards: 0, ...(giveTickets ? { busTickets: giveTickets } : {}) },
+      receive: { cash: getCash, properties: get, getOutCards: 0, ...(getTickets ? { busTickets: getTickets } : {}) },
     };
     onAction({ type: 'PROPOSE_TRADE', trade });
     onClose();
@@ -179,6 +203,7 @@ export function TradeDialog({
                 setTo(e.target.value);
                 setGet([]);
                 setGetCash(0);
+                setGetTickets(0);
               }}
             >
               {partners.map((p) => (
@@ -200,6 +225,9 @@ export function TradeDialog({
             picked={give}
             toggle={toggle(give, setGive)}
             cashLabel="Cash you give"
+            tickets={giveTickets}
+            maxTickets={mega ? (me.busTickets ?? 0) : 0}
+            setTickets={setGiveTickets}
           />
           <Side
             title={`You get from ${partner ? nameFor(partner.id) : '...'}`}
@@ -211,6 +239,9 @@ export function TradeDialog({
             picked={get}
             toggle={toggle(get, setGet)}
             cashLabel="Cash you receive"
+            tickets={getTickets}
+            maxTickets={mega ? (partner?.busTickets ?? 0) : 0}
+            setTickets={setGetTickets}
           />
         </div>
         <div className="modal-actions">

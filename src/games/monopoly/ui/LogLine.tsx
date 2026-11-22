@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { logParts } from './logText';
+import { useMoneyText } from './boardNames';
 
 /** One log line, each player named with a dot in their token colour */
 export function LogLine({
@@ -11,9 +12,10 @@ export function LogLine({
   nameFor: (id: string) => string;
   colorFor: (id: string) => string;
 }) {
+  const asMoney = useMoneyText();
   return (
     <>
-      {logParts(line).map((part, i) =>
+      {logParts(line, asMoney).map((part, i) =>
         'player' in part ? (
           <span key={i} className="mono-log-name">
             <span className="mono-log-dot" style={{ '--tc': colorFor(part.player) } as CSSProperties} aria-hidden />

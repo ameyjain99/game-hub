@@ -10,6 +10,8 @@ export interface SeatMediaState {
   micOn: boolean;
   /** A peer whose call is being re-established (never set for your own seat). */
   reconnecting?: boolean;
+  /** No route was found between your network and theirs: the call to this one peer gave up. */
+  failed?: boolean;
   /** Their camera is on but paused towards you, or yours towards someone: the
    *  link is too weak for video, and voices come first. */
   held?: boolean;
@@ -30,6 +32,7 @@ export function seatMediaState(media: MediaChat, id: string, meId: string): Seat
     camOn: isMe ? !media.camOff : (announced?.camOn ?? false) && !announced?.videoHeld,
     micOn: isMe ? !media.micMuted : announced?.micOn ?? true,
     reconnecting: !isMe && media.peerStatus?.get(id) === 'reconnecting',
+    failed: !isMe && media.peerStatus?.get(id) === 'failed',
   };
 }
 
@@ -76,6 +79,11 @@ export function SeatMedia({
       {seat?.reconnecting && (
         <div className="g-vstatus" role="status">
           Reconnecting...
+        </div>
+      )}
+      {seat?.failed && (
+        <div className="g-vstatus" role="status" title="Your network and theirs could not connect directly. Others may still see and hear them.">
+          Can't connect to you
         </div>
       )}
       {seat?.isMe && media && (

@@ -1,5 +1,7 @@
-import type { Settings } from '../engine/state';
-import { BOARDS, type BoardId } from '../engine/board';
+import { DEFAULT_SETTINGS, SETTING_CHOICES, type Settings } from '../engine/state';
+import { formatMoney } from '../engine/board';
+import { BOARDS, isMega, type BoardId } from '../engine/board';
+import { MEGA } from '../engine/mega';
 
 /** House rules, in display order. Defaults follow the official rulebook. */
 export const HOUSE_RULES: { key: keyof Settings; label: string; desc: string }[] = [
@@ -8,22 +10,47 @@ export const HOUSE_RULES: { key: keyof Settings; label: string; desc: string }[]
   { key: 'mortgaging', label: 'Mortgaging', desc: "Raise half a lot's price from the bank" },
   { key: 'evenBuild', label: 'Even building', desc: 'Houses go up evenly across a set' },
   { key: 'freeParkingJackpot', label: 'Free Parking jackpot', desc: 'Taxes collect there for whoever lands' },
-  { key: 'doubleGoSalary', label: 'Double salary on Go', desc: '$400 for landing exactly on Go' },
+  { key: 'doubleGoSalary', label: 'Double salary on Go', desc: 'Twice the salary for landing exactly on Go' },
   { key: 'noRentInJail', label: 'No rent from jail', desc: "Jailed owners can't collect" },
+  { key: 'firstLapBuy', label: 'Buy only after a first lap', desc: 'No buying or auction until you have passed Go once' },
+  { key: 'incomeTaxTenPercent', label: 'Income Tax: 10% if lower', desc: 'Pay 10% of your net worth when that is less than the printed tax' },
 ];
+
+type NumberKey = keyof typeof SETTING_CHOICES;
+/** Settings with a few amounts to choose from. `money` ones are shown in the board's currency. */
+const NUMBER_RULES: { key: NumberKey; label: string; money?: boolean; text: (n: number, money: (n: number) => string) => string }[] = [
+  { key: 'goSalary', label: 'Salary for passing Go', money: true, text: (n, money) => money(n) },
+  { key: 'jailFine', label: 'Fine to leave Jail', money: true, text: (n, money) => money(n) },
+  { key: 'jailTurns', label: 'Rolls for doubles in Jail', text: (n) => (n === 1 ? '1 turn, then you pay' : `${n} turns, then you pay`) },
+  { key: 'freeParkingPrize', label: 'Free Parking prize', money: true, text: (n, money) => (n === 0 ? 'None' : `${money(n)} from the bank`) },
+  { key: 'dealtProperties', label: 'Properties dealt at the start', text: (n) => (n === 0 ? 'None' : `${n} each, paid for (short game)`) },
+  { key: 'turnSeconds', label: 'Turn clock (online)', text: (n) => `${n} seconds` },
+];
+
+/** A line for each amount that differs from the standard rules, for the lobby's summary. */
+export function numberRuleSummary(settings: Settings): string[] {
+  const money = (n: number) => formatMoney(n, settings.board);
+  return NUMBER_RULES.filter((r) => settings[r.key] !== DEFAULT_SETTINGS[r.key]).map((r) => `${r.label}: ${r.text(settings[r.key], money)}`);
+}
 
 const STARTING_CASH = [500, 1000, 1500, 2000, 2500, 3000];
 
+/** What the rules give each player at the start on this board. */
+const standardCash = (board: BoardId): number => (isMega(board) ? MEGA.startingCash : DEFAULT_SETTINGS.startingCash);
+
+/** Starting cash after a change of board: the new board's standard amount, unless the host had picked their own. */
+export const cashForBoard = (cash: number, from: BoardId, to: BoardId): number => (cash === standardCash(from) ? standardCash(to) : cash);
+
 /** The starting-cash picker, as a `.g-field`. */
-export function StartingCashField({ value, onChange }: { value: number; onChange: (cash: number) => void }) {
+export function StartingCashField({ value, onChange, board = 'neo' }: { value: number; onChange: (cash: number) => void; board?: BoardId }) {
   return (
     <label className="g-field">
       <span className="g-field-label">Starting cash</span>
       <select aria-label="Starting cash" value={value} onChange={(e) => onChange(Number(e.target.value))}>
         {STARTING_CASH.map((c) => (
           <option key={c} value={c}>
-            ${c.toLocaleString()}
-            {c === 1500 ? ' (standard)' : ''}
+            {formatMoney(c, board)}
+            {c === standardCash(board) ? ' (standard)' : ''}
           </option>
         ))}
       </select>
@@ -82,6 +109,19 @@ export function HouseRuleSwitches({ value, onChange }: { value: Settings; onChan
             checked={value[r.key] as boolean}
             onChange={() => onChange({ ...value, [r.key]: !value[r.key] })}
           />
+        </label>
+      ))}
+      {NUMBER_RULES.map((r) => (
+        <label key={r.key} className="g-field">
+          <span className="g-field-label">{r.label}</span>
+          <select aria-label={r.label} value={value[r.key]} onChange={(e) => onChange({ ...value, [r.key]: Number(e.target.value) })}>
+            {SETTING_CHOICES[r.key].map((n) => (
+              <option key={n} value={n}>
+                {r.text(n, (amount) => formatMoney(amount, value.board))}
+                {n === DEFAULT_SETTINGS[r.key] ? ' (standard)' : ''}
+              </option>
+            ))}
+          </select>
         </label>
       ))}
     </div>

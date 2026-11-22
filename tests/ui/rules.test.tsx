@@ -12,16 +12,18 @@ import { CHECKERS_RULES } from '../../src/games/checkers/rules';
 import { TIC_TAC_TOE_RULES } from '../../src/games/tic-tac-toe/rules';
 import { SNAKES_AND_LADDERS_RULES } from '../../src/games/snakes-and-ladders/rules';
 import { LUDO_RULES } from '../../src/games/ludo/rules';
-import { LINEUP_RULES } from '../../src/games/lineup/rules';
-import { LAST_CARD_RULES } from '../../src/games/last-card/rules';
-import { WORDGRID_RULES } from '../../src/games/wordgrid/rules';
-import { BLOCKYARD_RULES } from '../../src/games/blockyard/rules';
+import { SEQUENCE_RULES } from '../../src/games/sequence/rules';
+import { UNO_RULES } from '../../src/games/uno/rules';
+import { SCRABBLE_RULES } from '../../src/games/scrabble/rules';
+import { MINECRAFT_RULES } from '../../src/games/minecraft/rules';
 import { SOLITAIRE_RULES } from '../../src/games/solitaire/rules';
 import { SUDOKU_RULES } from '../../src/games/sudoku/rules';
 import { MINESWEEPER_RULES } from '../../src/games/minesweeper/rules';
 import { POKER_RULES } from '../../src/games/poker/rules';
-import { HEXSTEAD_RULES } from '../../src/games/hexstead/rules';
+import { CATAN_RULES } from '../../src/games/catan/rules';
 import { IMPOSTER_RULES } from '../../src/games/imposter/rules';
+import { EK_RULES } from '../../src/games/exploding-kittens/rules';
+import { MD_RULES } from '../../src/games/monopoly-deal/rules';
 
 afterEach(cleanup);
 
@@ -34,15 +36,17 @@ const BOOKS: Record<string, GameRules> = {
   'tic-tac-toe': TIC_TAC_TOE_RULES,
   'snakes-and-ladders': SNAKES_AND_LADDERS_RULES,
   ludo: LUDO_RULES,
-  lineup: LINEUP_RULES,
-  'last-card': LAST_CARD_RULES,
-  wordgrid: WORDGRID_RULES,
-  blockyard: BLOCKYARD_RULES,
+  sequence: SEQUENCE_RULES,
+  'uno': UNO_RULES,
+  'exploding-kittens': EK_RULES,
+  'monopoly-deal': MD_RULES,
+  scrabble: SCRABBLE_RULES,
+  minecraft: MINECRAFT_RULES,
   solitaire: SOLITAIRE_RULES,
   sudoku: SUDOKU_RULES,
   minesweeper: MINESWEEPER_RULES,
   poker: POKER_RULES,
-  hexstead: HEXSTEAD_RULES,
+  catan: CATAN_RULES,
   imposter: IMPOSTER_RULES,
 };
 

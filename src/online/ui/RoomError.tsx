@@ -1,4 +1,5 @@
 import { BackIcon } from '../../shared/icons';
+import { gamePath } from '../../games/registry';
 
 /** What went wrong opening a room, in words a player can act on. */
 export function roomErrorText(error: string): string {
@@ -44,7 +45,7 @@ export function RoomError({
         <p className="tagline">{roomErrorText(error)}</p>
       </header>
       {error === 'unknown token' && code && (
-        <a className="g-btn primary" href={`/${gameId}/join?room=${code}`}>
+        <a className="g-btn primary" href={`${gamePath(gameId)}/join?room=${code}`}>
           Rejoin room {code}
         </a>
       )}

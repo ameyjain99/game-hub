@@ -24,7 +24,7 @@ export interface PlayedMove {
   color: Color;
 }
 
-export type ChessResult = 'checkmate' | 'stalemate' | 'threefold' | 'insufficient' | 'fifty-moves' | 'resigned' | 'agreed' | 'abandoned' | 'time';
+type ChessResult = 'checkmate' | 'stalemate' | 'threefold' | 'insufficient' | 'fifty-moves' | 'resigned' | 'agreed' | 'abandoned' | 'time';
 
 export interface ChessState {
   players: KitPlayer[];
@@ -94,7 +94,7 @@ export interface ChessOptions {
 export const CLOCK_MINUTES = [0, 3, 5, 10, 15, 30] as const;
 
 /** The time each player gets under these options, or null for no clock. */
-export function bankMs(options: unknown): number | null {
+function bankMs(options: unknown): number | null {
   const min = Number((options as { clockMin?: unknown } | null)?.clockMin ?? 0);
   return (CLOCK_MINUTES as readonly number[]).includes(min) && min > 0 ? min * 60_000 : null;
 }

@@ -6,7 +6,7 @@ import { io as ioClient, type Socket } from 'socket.io-client';
 import { createServer } from '../../server/index';
 import { EVT, type Joined } from '../../src/net/protocol';
 import type { SnlState } from '../../src/games/snakes-and-ladders/engine';
-import type { SeqState } from '../../src/games/lineup/engine';
+import type { SeqState } from '../../src/games/sequence/engine';
 
 const connect = (url: string): Socket => ioClient(url, { transports: ['websocket'], forceNew: true });
 const waitFor = <T>(sock: Socket, evt: string): Promise<T> => new Promise((resolve) => sock.once(evt, resolve as (v: T) => void));
@@ -54,12 +54,12 @@ test('online Snakes & Ladders: the bot rolls on its own, one broadcast per move'
   await srv.close();
 }, 10_000);
 
-test('online Lineup: each player sees only their own hand', async () => {
+test('online Sequence: each player sees only their own hand', async () => {
   const { srv, url } = await serve();
   const host = connect(url);
   const guest = connect(url);
   await Promise.all([connected(host), connected(guest)]);
-  host.emit(EVT.createRoom, { seatCount: 2, name: 'Ann', avatar: '', gameId: 'lineup' });
+  host.emit(EVT.createRoom, { seatCount: 2, name: 'Ann', avatar: '', gameId: 'sequence' });
   const { code } = await waitFor<Joined>(host, EVT.joined);
   guest.emit(EVT.joinRoom, { code, name: 'Ben', avatar: '' });
   await waitFor<Joined>(guest, EVT.joined);
@@ -121,9 +121,9 @@ async function pair(url: string, gameId: string, options?: unknown) {
   return { host, guest, code, hostState, guestState };
 }
 
-test('online Blockyard: a block one builder sets reaches the other; positions relay', async () => {
+test('online Minecraft: a block one builder sets reaches the other; positions relay', async () => {
   const { srv, url } = await serve();
-  const { host, guest, code } = await pair(url, 'blockyard');
+  const { host, guest, code } = await pair(url, 'minecraft');
   const next = waitFor<{ edits: Record<string, number> }>(guest, EVT.state);
   host.emit(EVT.action, { code, action: { type: 'SET', i: 12345, b: 10 } });
   expect((await next).edits).toEqual({ 12345: 10 });
@@ -135,12 +135,54 @@ test('online Blockyard: a block one builder sets reaches the other; positions re
   await srv.close();
 });
 
-test("online Last Card (Flip): each player sees the face in play of their own cards and the back of the other's", async () => {
+test("online Uno (Flip): each player sees the face in play of their own cards and the back of the other's", async () => {
   const { srv, url } = await serve();
-  const { host, guest, hostState } = await pair(url, 'last-card', { variant: 'flip' });
+  const { host, guest, hostState } = await pair(url, 'uno', { variant: 'flip' });
   expect(hostState.variant).toBe('flip');
   expect(hostState.players[0].hand.every((c: { light: unknown; dark: unknown }) => c.light && !c.dark)).toBe(true);
   expect(hostState.players[1].hand.every((c: { light: unknown; dark: unknown }) => !c.light && c.dark)).toBe(true);
+  host.close();
+  guest.close();
+  await srv.close();
+});
+
+test('online Exploding Kittens: hands and the draw pile stay hidden, and a draw passes the turn', async () => {
+  const { srv, url } = await serve();
+  const { host, guest, code, hostState } = await pair(url, 'exploding-kittens', { handSize: 5 });
+  expect(hostState.players.map((p: { hand: unknown[] }) => p.hand.length)).toEqual([6, 0]);
+  expect(hostState.players.map((p: { handCount: number }) => p.handCount)).toEqual([6, 6]);
+  expect([hostState.deck.length, hostState.deckCount > 0, hostState.seed]).toEqual([0, true, 0]);
+  const mover = hostState.turn === 0 ? host : guest;
+  const next = waitFor<{ turn: number; defusing: string | null; deckCount: number }>(host, EVT.state);
+  mover.emit(EVT.action, { code, action: { type: 'DRAW' } });
+  const after = await next;
+  expect(after.deckCount).toBe(hostState.deckCount - 1);
+  expect(after.defusing !== null || after.turn !== hostState.turn).toBe(true);
+  host.close();
+  guest.close();
+  await srv.close();
+});
+
+test('online Monopoly Deal: hands stay hidden, and a card banked is seen by both', async () => {
+  const { srv, url } = await serve();
+  const { host, guest, code, hostState } = await pair(url, 'monopoly-deal', { setsToWin: 2 });
+  expect(hostState.players.map((p: { hand: unknown[] }) => p.hand.length)).toEqual([5, 0]);
+  expect([hostState.deck.length, hostState.deckCount, hostState.setsToWin]).toEqual([0, 96, 2]);
+  const mover = hostState.turn === 0 ? host : guest;
+  const watcher = hostState.turn === 0 ? guest : host;
+  const drew = waitFor<{ players: { hand: { id: number; kind: string }[]; handCount: number }[]; turn: number }>(mover, EVT.state);
+  const watched = waitFor(watcher, EVT.state);
+  mover.emit(EVT.action, { code, action: { type: 'DRAW' } });
+  const mine = (await drew).players[hostState.turn];
+  await watched;
+  expect(mine.hand).toHaveLength(7);
+  const card = mine.hand.find((c) => c.kind !== 'property' && c.kind !== 'wild');
+  if (card) {
+    const seen = waitFor<{ players: { bank: { id: number }[]; hand: unknown[] }[] }>(watcher, EVT.state);
+    mover.emit(EVT.action, { code, action: { type: 'BANK', card: card.id } });
+    const theirs = (await seen).players[hostState.turn];
+    expect([theirs.bank.map((c) => c.id), theirs.hand]).toEqual([[card.id], []]);
+  }
   host.close();
   guest.close();
   await srv.close();
@@ -170,12 +212,12 @@ test('online Poker (Omaha): hole cards stay hidden, and the dealer deals the flo
   await srv.close();
 }, 10_000);
 
-test('online Hexstead: the bots take their setup placements on the server, one at a time', async () => {
+test('online Catan: the bots take their setup placements on the server, one at a time', async () => {
   const { srv, url } = await serve();
-  const { legalHomesteadSpots, legalRoadSpots } = await import('../../src/games/hexstead/engine');
+  const { legalSettlementSpots, legalRoadSpots } = await import('../../src/games/catan/engine');
   const host = connect(url);
   await connected(host);
-  host.emit(EVT.createRoom, { seatCount: 3, name: 'Ann', avatar: '', gameId: 'hexstead' });
+  host.emit(EVT.createRoom, { seatCount: 3, name: 'Ann', avatar: '', gameId: 'catan' });
   const { code } = await waitFor<Joined>(host, EVT.joined);
   for (const index of [1, 2]) {
     host.emit(EVT.setSeatAi, { code, index, isAI: true, difficulty: 'normal' });
@@ -185,7 +227,7 @@ test('online Hexstead: the bots take their setup placements on the server, one a
   host.on(EVT.state, (s) => (latest = s));
   host.emit(EVT.startGame, { code });
   while (!latest) await new Promise((r) => setTimeout(r, 20));
-  host.emit(EVT.action, { code, action: { type: 'BUILD_HOMESTEAD', vertex: legalHomesteadSpots(latest, 'p0')[0] } });
+  host.emit(EVT.action, { code, action: { type: 'BUILD_SETTLEMENT', vertex: legalSettlementSpots(latest, 'p0')[0] } });
   await new Promise((r) => setTimeout(r, 100));
   host.emit(EVT.action, { code, action: { type: 'BUILD_ROAD', edge: legalRoadSpots(latest, 'p0')[0] } });
   // Both bots place twice (snake order), then it's the host's second placement.

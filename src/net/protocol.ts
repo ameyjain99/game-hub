@@ -39,7 +39,7 @@ export interface CreateRoom {
   gameId?: string;
   /** Game-specific options, opaque to the server (passed to the game adapter). */
   options?: unknown;
-  /** Ticket to Ride board (kept for back-compat; folded into `options` server-side). */
+  /** Ticket to Ride board, read when `options` is not sent (the server folds it into the options). */
   mapId?: string;
   /** Optional play mode (e.g. USA '1910' or 'mega'); default mode if omitted. */
   modeId?: string;
@@ -132,7 +132,7 @@ export interface VoiceSignal {
 
 /**
  * Fast-changing, throwaway updates for real-time games (a builder's position in
- * Blockyard), relayed to the rest of the room without touching game state.
+ * Minecraft), relayed to the rest of the room without touching game state.
  */
 export interface Presence {
   code: string;

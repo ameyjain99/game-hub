@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { clearSessionFor, loadSessionFor } from './session-storage';
+import { gamePath } from '../games/registry';
 import type { OnlineIntent } from './useOnlineSession';
 
 /** A step in a game's flow below the hub, each with its own URL:
@@ -56,7 +57,7 @@ function stepFromUrl(gameId: string): GameStep {
  * Cluedo (same contract as Ticket to Ride's routing).
  */
 export function useGameRoute(gameId: string, onBackToHub: () => void) {
-  const base = `/${gameId}`;
+  const base = gamePath(gameId);
   const [step, setStep] = useState<GameStep>(() => stepFromUrl(gameId));
 
   const navigate = useCallback(

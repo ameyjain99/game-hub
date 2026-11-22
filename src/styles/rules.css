@@ -426,17 +426,17 @@
   }
 }
 
-/* Hexstead's pieces drawn small in a rule book. */
+/* Catan's pieces drawn small in a rule book. */
 .rf-hx {
   flex: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'GameHub Money', 'Inter', system-ui, sans-serif;
 }
 
-/* Wordgrid tiles at a fixed size in a rule book (on the board they scale with it). */
-.rf-wg .wg-tile b {
+/* Scrabble tiles at a fixed size in a rule book (on the board they scale with it). */
+.rf-wg .scrabble-tile b {
   font-size: 20px;
 }
 
-.rf-wg .wg-tile i {
+.rf-wg .scrabble-tile i {
   font-size: 9px;
 }

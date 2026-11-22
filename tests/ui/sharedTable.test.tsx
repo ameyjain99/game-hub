@@ -89,15 +89,16 @@ test('no gift while there is plenty of time, or without a way to give it', () =>
 
 test('a local game starts with the chosen starting cash', () => {
   render(<MonopolyLocalGame playerCount={2} difficulty="normal" seed={5} settings={{ startingCash: 2000 }} onBackToHub={() => {}} />);
-  expect(screen.getAllByText('$2,000')).toHaveLength(2);
+  expect(screen.getAllByText('₥2,000')).toHaveLength(2);
 });
 
 test('the local setup offers starting cash and house rules, and uses them', () => {
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: /play monopoly/i }));
+  fireEvent.click(screen.getByRole('button', { name: /play monopoly$/i }));
   fireEvent.click(screen.getByText(/house rules/i));
   expect(screen.getByLabelText(/free parking jackpot/i)).toBeTruthy();
   fireEvent.change(screen.getByRole('combobox', { name: /starting cash/i }), { target: { value: '2000' } });
   fireEvent.click(screen.getByRole('button', { name: /start local game/i }));
-  expect(screen.getAllByText('$2,000').length).toBeGreaterThan(0);
+  // The first board, World 2008, plays in millions: 2,000 is printed as 20M in Monopoly money.
+  expect(screen.getAllByText('₥20M').length).toBeGreaterThan(0);
 });

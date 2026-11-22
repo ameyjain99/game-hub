@@ -31,7 +31,7 @@ export interface ClPlayer extends KitPlayer {
 
 /** turn: before moving (roll, passage, stay, accuse). move: dice rolled, pick where to go.
  *  suggest: in a room you just entered (suggest once, accuse, or end). disprove: waiting on a card. */
-export type Phase = 'turn' | 'move' | 'suggest' | 'disprove' | 'over';
+type Phase = 'turn' | 'move' | 'suggest' | 'disprove' | 'over';
 
 export interface Suggestion {
   player: string;
@@ -91,7 +91,7 @@ export type ClAction =
 const BLANK: Triple = { suspect: '' as Suspect, weapon: '' as Weapon, room: '' as Room };
 
 const active = (p: ClPlayer) => !p.out && !p.left;
-export const currentPlayer = (s: ClState) => s.players[s.current];
+const currentPlayer = (s: ClState) => s.players[s.current];
 const by = (s: ClState, id: string) => s.players.find((p) => p.id === id);
 
 function note(s: ClState, e: DistributiveOmit<ClEvent, 'seq'>) {

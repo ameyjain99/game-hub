@@ -8,7 +8,7 @@ import { PassScreen } from './PassScreen';
 import { playerColor } from './colors';
 import { cleanName } from './displayName';
 
-export const AI_DELAY_MS = 750;
+const AI_DELAY_MS = 750;
 
 /** The human, if any, who must act right now (for the hotseat pass gate). */
 function humanActor(state: GameState): string | null {

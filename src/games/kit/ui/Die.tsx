@@ -82,6 +82,3 @@ export function Die({
     </span>
   );
 }
-
-/** Whether a die rolled `rollKey` is still tumbling (for holding back what it reveals). */
-export const DIE_TUMBLE_MS = TUMBLE_MS;

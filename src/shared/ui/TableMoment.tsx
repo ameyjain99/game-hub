@@ -3,7 +3,7 @@ import { useTable } from '../../online/TableContext';
 
 /** Something the whole table should notice: who did what, said large. */
 export interface TableMoment {
-  /** The headline ("Last card!", "chose Blue"). */
+  /** The headline ("UNO!", "chose Blue"). */
   title: ReactNode;
   /** Who it's about, above the headline. */
   kicker?: ReactNode;

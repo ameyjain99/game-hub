@@ -5,7 +5,7 @@
  */
 
 /** A square's grid cell: column 0-9 from the left, row 0-9 from the top. */
-export function cellOf(n: number): { col: number; row: number } {
+function cellOf(n: number): { col: number; row: number } {
   const i = n - 1;
   const band = Math.floor(i / 10);
   const col = band % 2 === 0 ? i % 10 : 9 - (i % 10);

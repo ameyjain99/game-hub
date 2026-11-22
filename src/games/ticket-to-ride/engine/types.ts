@@ -85,7 +85,7 @@ export interface PlayerState {
 
 export type Difficulty = 'easy' | 'normal' | 'hard';
 
-export type Phase =
+type Phase =
   | 'setup-tickets'
   | 'turn'
   | 'draw-tickets'

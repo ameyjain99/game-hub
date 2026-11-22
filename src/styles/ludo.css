@@ -218,3 +218,80 @@
 .ludo-die {
   --die: clamp(30px, 7.4cqw, 62px);
 }
+
+/* The star board (5-8 players): a polygon centre with an arm for each player and
+   a round yard in each gap. It fills the same square as the cross board; `--k`
+   is how much smaller one of its squares is than a square of the cross. */
+.ludo-star-board {
+  position: absolute;
+  inset: clamp(6px, 1.4cqmin, 14px);
+}
+
+.ludo-star-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ludo-star-art .is-empty {
+  filter: saturate(0.35) brightness(1.05);
+}
+
+.ludo-star-yard.is-turn {
+  stroke: #fff;
+  stroke-width: 0.24;
+  paint-order: stroke;
+  filter: drop-shadow(0 0 0.25px #0008);
+}
+
+/* The star on each arm's safe square, and on each start square. */
+.ludo-star-mark {
+  position: absolute;
+  aspect-ratio: 1;
+  color: #b3a88f;
+  translate: -50% -50%;
+  scale: 0.62;
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.ludo-star-mark.is-start {
+  color: #fff;
+}
+
+.ludo-star-who {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  gap: 0.6cqw;
+  align-items: center;
+  max-width: 24%;
+  padding: 0 1cqw;
+  background: var(--lc);
+  border-radius: 999px;
+  box-shadow: 0 0.3cqw 0.8cqw #0005;
+  translate: -50% -50%;
+  --face: clamp(22px, 3.4cqw, 36px);
+}
+
+.ludo-star-who.is-out {
+  filter: saturate(0.3);
+  opacity: 0.6;
+}
+
+.ludo-star-die {
+  position: absolute;
+  z-index: 7;
+}
+
+.ludo-board.is-star .ludo-die {
+  --die: clamp(24px, 5.2cqw, 46px);
+}
+
+.ludo-board.is-star .ludo-token {
+  width: calc(4.9% * var(--k));
+}
+
+.ludo-board.is-star .ludo-ghost {
+  width: calc(5.6% * var(--k));
+}

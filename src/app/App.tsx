@@ -4,7 +4,7 @@ import { TicketToRideApp } from '../games/ticket-to-ride/ui/TicketToRideApp';
 import { CluedoApp } from '../games/cluedo/ui/CluedoApp';
 import { MonopolyApp } from '../games/monopoly/ui/MonopolyApp';
 import { loadSession } from '../online/session-storage';
-import { GAMES } from '../games/registry';
+import { GAMES, gamePath } from '../games/registry';
 import { Loader } from '../shared/Loader';
 
 /** The top-level location: the hub, or a specific game by id. */
@@ -22,16 +22,18 @@ const GAME_APPS: Record<string, GameApp> = {
   'tic-tac-toe': lazy(() => import('../games/tic-tac-toe/ui/TicTacToeApp').then((m) => ({ default: m.TicTacToeApp }))),
   checkers: lazy(() => import('../games/checkers/ui/CheckersApp').then((m) => ({ default: m.CheckersApp }))),
   chess: lazy(() => import('../games/chess/ui/ChessApp').then((m) => ({ default: m.ChessApp }))),
-  wordgrid: lazy(() => import('../games/wordgrid/ui/WordgridApp').then((m) => ({ default: m.WordgridApp }))),
-  'last-card': lazy(() => import('../games/last-card/ui/LastCardApp').then((m) => ({ default: m.LastCardApp }))),
+  scrabble: lazy(() => import('../games/scrabble/ui/ScrabbleApp').then((m) => ({ default: m.ScrabbleApp }))),
+  'uno': lazy(() => import('../games/uno/ui/UnoApp').then((m) => ({ default: m.UnoApp }))),
+  'monopoly-deal': lazy(() => import('../games/monopoly-deal/ui/MdApp').then((m) => ({ default: m.MdApp }))),
+  'exploding-kittens': lazy(() => import('../games/exploding-kittens/ui/EkApp').then((m) => ({ default: m.EkApp }))),
   poker: lazy(() => import('../games/poker/ui/PokerApp').then((m) => ({ default: m.PokerApp }))),
   imposter: lazy(() => import('../games/imposter/ui/ImposterApp').then((m) => ({ default: m.ImposterApp }))),
-  hexstead: lazy(() => import('../games/hexstead/ui/HexsteadApp').then((m) => ({ default: m.HexsteadApp }))),
-  blockyard: lazy(() => import('../games/blockyard/ui/BlockyardApp').then((m) => ({ default: m.BlockyardApp }))),
+  catan: lazy(() => import('../games/catan/ui/CatanApp').then((m) => ({ default: m.CatanApp }))),
+  minecraft: lazy(() => import('../games/minecraft/ui/MinecraftApp').then((m) => ({ default: m.MinecraftApp }))),
   minesweeper: lazy(() => import('../games/minesweeper/ui/MinesweeperApp').then((m) => ({ default: m.MinesweeperApp }))),
   sudoku: lazy(() => import('../games/sudoku/ui/SudokuApp').then((m) => ({ default: m.SudokuApp }))),
   solitaire: lazy(() => import('../games/solitaire/ui/SolitaireApp').then((m) => ({ default: m.SolitaireApp }))),
-  lineup: lazy(() => import('../games/lineup/ui/LineupApp').then((m) => ({ default: m.LineupApp }))),
+  sequence: lazy(() => import('../games/sequence/ui/SequenceApp').then((m) => ({ default: m.SequenceApp }))),
   ludo: lazy(() => import('../games/ludo/ui/LudoApp').then((m) => ({ default: m.LudoApp }))),
   'snakes-and-ladders': lazy(() =>
     import('../games/snakes-and-ladders/ui/SnakesAndLaddersApp').then((m) => ({ default: m.SnakesAndLaddersApp })),
@@ -91,8 +93,8 @@ export function App() {
   // The hub - and the fallback for any game without a flow wired up yet.
   return (
     <HubScreen
-      onSelect={(id) => navigate({ kind: 'game', gameId: id }, `/${id}`)}
-      onJoin={(id, code) => navigate({ kind: 'game', gameId: id }, `/${id}/join?room=${code}`)}
+      onSelect={(id) => navigate({ kind: 'game', gameId: id }, gamePath(id))}
+      onJoin={(id, code) => navigate({ kind: 'game', gameId: id }, `${gamePath(id)}/join?room=${code}`)}
     />
   );
 }

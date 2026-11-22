@@ -41,7 +41,7 @@ test('Monopoly: a jailed player gets roll / pay choices, pay disabled when broke
   g.players[0].inJail = true;
   g.players[0].cash = 30;
   const onAction = center(g);
-  expect((screen.getByRole('button', { name: /pay \$50/i }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: /pay ₥50/i }) as HTMLButtonElement).disabled).toBe(true);
   fireEvent.click(screen.getByRole('button', { name: /roll for doubles/i }));
   expect(onAction).toHaveBeenCalledWith({ type: 'ROLL_JAIL' });
 });
@@ -52,7 +52,7 @@ test('Monopoly: a shortfall offers bankruptcy and explains how to raise cash', (
   g.players[0].cash = -40;
   g.pendingDebt = { debtor: 0, creditor: 1 };
   center(g);
-  expect(screen.getByText(/you owe \$40 more/i)).toBeTruthy();
+  expect(screen.getByText(/you owe ₥40 more/i)).toBeTruthy();
   expect(screen.getByRole('button', { name: /declare bankruptcy/i })).toBeTruthy();
 });
 

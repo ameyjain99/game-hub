@@ -468,7 +468,7 @@ export function CluedoGame({ view: s, meId, nameFor, onAction, onExit, exitLabel
       />
       {me && me.hand.length > 0 && (
         <SideSection title="Your cards">
-          <CluedoHand hand={me.hand} />
+          <CluedoHand hand={me.hand} dealing={s.log.length === 0 && !s.over} />
         </SideSection>
       )}
     </>

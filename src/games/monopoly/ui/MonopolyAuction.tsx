@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useMoney } from './boardNames';
 import type { MonopolyState } from '../engine/state';
 import type { Action } from '../engine/actions';
 import { legalBid } from '../engine/selectors';
@@ -17,6 +18,7 @@ export function MonopolyAuction({
   onAction: (a: Action) => void;
   nameFor: (id: string) => string;
 }) {
+  const money = useMoney();
   const a = view.pendingAuction!;
   const bidderId = view.players[a.turn]?.id;
   const myTurn = bidderId === meId;
@@ -34,7 +36,7 @@ export function MonopolyAuction({
           'No bids yet'
         ) : (
           <>
-            High bid <strong>${a.highBid}</strong> · {nameFor(view.players[a.highBidder].id)}
+            High bid <strong>{money(a.highBid)}</strong> · {nameFor(view.players[a.highBidder].id)}
           </>
         )}
       </p>
@@ -45,7 +47,7 @@ export function MonopolyAuction({
           return (
             <li key={p.id} className={`${out ? 'is-out' : ''}${a.highBidder === seat ? ' is-high' : ''}${a.turn === seat && !out ? ' is-up' : ''}`}>
               <span>{nameFor(p.id)}{p.id === meId && nameFor(p.id) !== 'You' && <span className="g-tag">You</span>}</span>
-              <b key={a.highBidder === seat ? a.highBid : 'x'}>{out ? 'passed' : a.highBidder === seat ? `$${a.highBid}` : a.turn === seat ? 'bidding...' : ''}</b>
+              <b key={a.highBidder === seat ? a.highBid : 'x'}>{out ? 'passed' : a.highBidder === seat ? money(a.highBid) : a.turn === seat ? 'bidding...' : ''}</b>
             </li>
           );
         })}

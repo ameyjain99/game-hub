@@ -1,12 +1,14 @@
 import type { ColorGroup } from '../engine/board';
 
-/** Grid cell (1-indexed row/col in an 11×11 board) for a space index. The ring
- *  runs clockwise from Go at the bottom-right corner. */
-export function cellPos(i: number): { row: number; col: number } {
-  if (i <= 10) return { row: 11, col: 11 - i };
-  if (i <= 20) return { row: 21 - i, col: 1 };
-  if (i <= 30) return { row: 1, col: i - 19 };
-  return { row: i - 29, col: 11 };
+/** Grid cell (1-indexed row/col) for a space index, on a board with `side`
+ *  squares to a side (10 on the standard board's 11×11 grid, 13 on Mega's
+ *  14×14). The ring runs clockwise from Go at the bottom-right corner. */
+export function cellPos(i: number, side = 10): { row: number; col: number } {
+  const last = side + 1;
+  if (i <= side) return { row: last, col: last - i };
+  if (i <= side * 2) return { row: side * 2 + 1 - i, col: 1 };
+  if (i <= side * 3) return { row: 1, col: i - side * 2 + 1 };
+  return { row: i - side * 3 + 1, col: last };
 }
 
 /** The strip colour for a property group. */
@@ -36,32 +38,37 @@ export const GROUP_LABEL: Record<ColorGroup, string> = {
 /** Which edge of the board a space sits on (corners are their own kind). */
 export type Side = 'bottom' | 'left' | 'top' | 'right' | 'corner';
 
-export function sideOf(i: number): Side {
-  if (i % 10 === 0) return 'corner';
-  if (i < 10) return 'bottom';
-  if (i < 20) return 'left';
-  if (i < 30) return 'top';
+export function sideOf(i: number, side = 10): Side {
+  if (i % side === 0) return 'corner';
+  if (i < side) return 'bottom';
+  if (i < side * 2) return 'left';
+  if (i < side * 3) return 'top';
   return 'right';
 }
 
-/* The board grid is `1.55fr repeat(9, 1fr) 1.55fr` in both directions (see
-   monopoly.css), so a track's position can be computed without measuring. */
+/* The board grid is `1.55fr repeat(side - 1, 1fr) 1.55fr` in both directions
+   (see monopoly.css), so a track's position can be computed without measuring. */
 const CORNER = 1.55;
-const TRACK = CORNER * 2 + 9;
-const trackStart = (n: number) => (n === 1 ? 0 : CORNER + (n - 2));
-const trackSize = (n: number) => (n === 1 || n === 11 ? CORNER : 1);
-const centre = (n: number) => (trackStart(n) + trackSize(n) / 2) / TRACK;
-/** A point `f` of the way across track `n` (0 = its start edge, 1 = its end). */
-const along = (n: number, f: number) => (trackStart(n) + trackSize(n) * f) / TRACK;
+function tracks(side: number) {
+  const total = CORNER * 2 + (side - 1);
+  const start = (n: number) => (n === 1 ? 0 : CORNER + (n - 2));
+  const size = (n: number) => (n === 1 || n === side + 1 ? CORNER : 1);
+  return {
+    centre: (n: number) => (start(n) + size(n) / 2) / total,
+    /** A point `f` of the way across track `n` (0 = its start edge, 1 = its end). */
+    along: (n: number, f: number) => (start(n) + size(n) * f) / total,
+  };
+}
 
 /**
  * Where a token stands on a square, as fractions of the board (0-1), and the
  * axis several tokens on that square fan out along. Tokens keep to the outer
  * edge, away from the colour strip, as on a printed board.
  */
-export function tokenAnchor(i: number): { x: number; y: number; axis: 'x' | 'y' } {
-  const { row, col } = cellPos(i);
-  switch (sideOf(i)) {
+export function tokenAnchor(i: number, side = 10): { x: number; y: number; axis: 'x' | 'y' } {
+  const { row, col } = cellPos(i, side);
+  const { centre, along } = tracks(side);
+  switch (sideOf(i, side)) {
     case 'corner':
       return { x: centre(col), y: along(row, 0.78), axis: 'x' };
     case 'bottom':
@@ -75,19 +82,20 @@ export function tokenAnchor(i: number): { x: number; y: number; axis: 'x' | 'y' 
   }
 }
 
-/** The longest move a roll makes; anything longer is a jump, not a walk. */
-const MAX_ROLL = 12;
+/** The longest move a roll makes (two dice, or three with Mega's speed die); anything longer is a jump, not a walk. */
+const maxRoll = (side: number) => (side > 10 ? 15 : 12);
 
 /**
  * The squares a token visits moving `from` → `to`. A dice-length forward move
  * walks every square (wrapping past Go); a backward move, a long card jump, or a
  * `direct` move (sent to jail) goes straight to the destination.
  */
-export function movePath(from: number, to: number, direct = false): number[] {
+export function movePath(from: number, to: number, direct = false, side = 10): number[] {
   if (from === to) return [];
-  const steps = (to - from + 40) % 40;
-  if (direct || steps > MAX_ROLL) return [to];
-  return Array.from({ length: steps }, (_, k) => (from + k + 1) % 40);
+  const size = side * 4;
+  const steps = (to - from + size) % size;
+  if (direct || steps > maxRoll(side)) return [to];
+  return Array.from({ length: steps }, (_, k) => (from + k + 1) % size);
 }
 
 /** A token's label: a bot's number ("Bot 2" → "2"), else the name's initial. */

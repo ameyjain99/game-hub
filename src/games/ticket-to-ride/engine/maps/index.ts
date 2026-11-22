@@ -8,7 +8,7 @@ import { INDIA_MAP } from './india';
 export type { BonusId, GameMap, GameMode, MapRules };
 
 /** All playable maps, keyed by id. New maps register here. */
-export const MAPS: Record<MapId, GameMap> = {
+const MAPS: Record<MapId, GameMap> = {
   usa: USA_MAP,
   europe: EUROPE_MAP,
   nordic: NORDIC_MAP,

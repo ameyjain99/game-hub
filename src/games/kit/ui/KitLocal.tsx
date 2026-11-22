@@ -5,6 +5,7 @@ import { LOCAL_ME, useLocalKit } from './useLocalKit';
 import { TableProvider, useTableState } from '../../../online/TableContext';
 import { pickBotNames } from '../../../shared/botNames';
 import { ActionToast } from '../../../online/ui/ActionToast';
+import { OpeningCall, useGameStart } from '../../../shared/ui/OpeningCall';
 
 /** A local game against bots, rendered with the game's shared screen. */
 export function KitLocal<S, A extends { type: string }>({
@@ -23,6 +24,9 @@ export function KitLocal<S, A extends { type: string }>({
   const { state, dispatch, refused, clearRefused } = useLocalKit(kit, init, { asyncBot });
   const nameFor = (id: string) => kit.players(state).find((p) => p.id === id)?.name ?? id;
   const table = useTableState({ meId: LOCAL_ME, nameFor, players: kit.players(state) });
+  // Who goes first, said once as the game (or a rematch) starts. Not for a game of one.
+  const start = useGameStart(true, kit.isOver(state), true);
+  const first = kit.players(state).length > 1 ? kit.players(state).find((p) => p.id === kit.actor(state)) : undefined;
   return (
     <TableProvider value={table}>
       {render({
@@ -34,6 +38,7 @@ export function KitLocal<S, A extends { type: string }>({
         exitLabel: 'Back to games',
       })}
       <ActionToast message={refused} onDone={clearRefused} />
+      <OpeningCall start={start} name={first ? nameFor(first.id) : null} isMe={first?.id === LOCAL_ME} />
     </TableProvider>
   );
 }

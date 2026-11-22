@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { adapterFor } from '../../server/adapters';
 import { RoomStore } from '../../server/rooms';
 import type { TttState } from '../../src/games/tic-tac-toe/engine';
-import type { WgState } from '../../src/games/wordgrid/engine';
+import type { ScrabbleState } from '../../src/games/scrabble/engine';
 
 const adapter = adapterFor('tic-tac-toe');
 const configs = (botSecond: boolean) => [
@@ -74,10 +74,10 @@ describe('RoomStore stepped bots', () => {
   });
 });
 
-describe('Wordgrid adapter', () => {
+describe('Scrabble adapter', () => {
   test('loads the word list itself and refuses words that are not in it', () => {
-    const a = adapterFor('wordgrid');
-    const g = a.createGame(configs(false), 1, {}) as WgState;
+    const a = adapterFor('scrabble');
+    const g = a.createGame(configs(false), 1, {}) as ScrabbleState;
     const rack = ['Q', 'X', 'A', 'T', 'E', 'E', 'E'].map((letter, i) => ({ id: 900 + i, letter }));
     const s = { ...g, players: g.players.map((p, i) => (i === 0 ? { ...p, rack, rackCount: 7 } : p)) };
     const centre = 112;
@@ -91,8 +91,8 @@ describe('Wordgrid adapter', () => {
 describe('a returning player takes the seat back from the bot that covered it', () => {
   // Every kit game the room store serves.
   const games: [string, number][] = [
-    ['tic-tac-toe', 2], ['checkers', 2], ['chess', 2], ['snakes-and-ladders', 2], ['ludo', 2], ['lineup', 2],
-    ['last-card', 2], ['poker', 2], ['cluedo', 3], ['imposter', 4], ['hexstead', 3], ['wordgrid', 2],
+    ['tic-tac-toe', 2], ['checkers', 2], ['chess', 2], ['snakes-and-ladders', 2], ['ludo', 2], ['sequence', 2],
+    ['uno', 2], ['poker', 2], ['cluedo', 3], ['imposter', 4], ['catan', 3], ['scrabble', 2], ['exploding-kittens', 3], ['monopoly-deal', 3],
   ];
   test.each(games)('%s', (gameId, seats) => {
     const a = adapterFor(gameId);

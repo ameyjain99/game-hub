@@ -10,7 +10,7 @@ import { IllegalMove, nextRandom, type GameKit, type KitCommonAction, type KitPl
 
 export type Mark = 'X' | 'O';
 export type Cell = Mark | null;
-export type TttDifficulty = 'easy' | 'normal' | 'hard';
+type TttDifficulty = 'easy' | 'normal' | 'hard';
 
 export interface TttState {
   players: KitPlayer[];
@@ -36,7 +36,7 @@ export interface TttState {
 
 export type TttAction = { type: 'PLACE'; cell: number };
 
-export const LINES: readonly [number, number, number][] = [
+const LINES: readonly [number, number, number][] = [
   [0, 1, 2],
   [3, 4, 5],
   [6, 7, 8],
@@ -123,7 +123,7 @@ function pick<T>(items: T[], rand: () => number): T {
 }
 
 /** The bot's cell for the player to move. */
-export function botCell(s: TttState, rand: () => number = Math.random): number {
+function botCell(s: TttState, rand: () => number = Math.random): number {
   const me = s.players.find((p) => p.id === s.turn)!;
   const mark = markOf(s, me.id);
   const open = empties(s.board);

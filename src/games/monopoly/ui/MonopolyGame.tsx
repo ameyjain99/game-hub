@@ -7,6 +7,7 @@ import { useMediaQuery } from '../../../shared/useMediaQuery';
 import { useMuted } from '../../../shared/sound';
 import { PLAY, soundCues } from './sound';
 import { MonopolyBoard } from './MonopolyBoard';
+import { megaPick } from './megaPick';
 import { MonopolyCenter } from './MonopolyCenter';
 import { MonopolySidebar } from './MonopolySidebar';
 import { TradeDialog } from './MonopolyTrade';
@@ -14,7 +15,7 @@ import { momentLots, useSetMoments } from './SetMoment';
 import { RulesButton } from '../../../shared/ui/Rules';
 import { MONOPOLY_RULES } from '../rules';
 import { LogLine } from './LogLine';
-import { spaceByName, spaceName } from '../engine/board';
+import { formatMoney, isMega, spaceByName, spaceName } from '../engine/board';
 import { BoardContext } from './boardNames';
 import { FacesStrip } from '../../../online/ui/SeatFace';
 import { Confetti } from '../../../shared/ui/Confetti';
@@ -22,6 +23,7 @@ import { fly, flyer, stamp } from '../../../shared/fly';
 import { PausedOverlay } from '../../../online/ui/Pause';
 import { TableMomentBanner, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
 import { tokenColor } from './board-layout';
+import { OpeningCall, useGameStart } from '../../../shared/ui/OpeningCall';
 
 interface Props {
   view: MonopolyState;
@@ -63,19 +65,21 @@ export function monopolyMoments(prev: MonopolyState, next: MonopolyState, who: (
     else if (p.inJail && !was.inJail) out.push({ kicker: who(p.id), title: `${verb(p.id, 'goes', 'go')} to jail`, color: colorOf(p.id), feels: { [p.id]: 'bad' } });
   });
   for (const [id, o] of Object.entries(next.ownership)) {
-    if (o.houses === 5 && prev.ownership[Number(id)]?.houses !== 5 && o.owner) {
-      out.push({ kicker: who(o.owner), title: `built a hotel on ${spaceName(Number(id), next.settings.board)}`, color: colorOf(o.owner), feels: { [o.owner]: 'good' } });
+    const before = prev.ownership[Number(id)]?.houses ?? 0;
+    // A hotel going up (not one left behind when a skyscraper is sold), or a skyscraper.
+    if (o.owner && ((o.houses === 5 && before < 5) || (o.houses === 6 && before < 6))) {
+      out.push({ kicker: who(o.owner), title: `built a ${o.houses === 6 ? 'skyscraper' : 'hotel'} on ${spaceName(Number(id), next.settings.board)}`, color: colorOf(o.owner), feels: { [o.owner]: 'good' } });
     }
   }
   for (const line of next.log.slice(prev.log.length)) {
     const m = line.match(/\{(p\d+)\} paid \$(\d+) rent to \{(p\d+)\}/);
     if (m && Number(m[2]) >= BIG_RENT) {
-      out.push({ kicker: who(m[1]), title: `${verb(m[1], 'pays', 'pay')} $${m[2]} rent`, detail: `To ${who(m[3]) === 'You' ? 'you' : who(m[3])}.`, color: colorOf(m[3]), feels: { [m[1]]: 'bad', [m[3]]: 'good' } });
+      out.push({ kicker: who(m[1]), title: `${verb(m[1], 'pays', 'pay')} ${formatMoney(Number(m[2]), next.settings.board)} rent`, detail: `To ${who(m[3]) === 'You' ? 'you' : who(m[3])}.`, color: colorOf(m[3]), feels: { [m[1]]: 'bad', [m[3]]: 'good' } });
     }
   }
   for (const line of next.log.slice(prev.log.length)) {
     const sold = line.match(/\{(p\d+)\} won (.+) at auction for \$(\d+)/);
-    if (sold) out.push({ kicker: who(sold[1]), title: `won ${sold[2]} for $${sold[3]}`, detail: 'Sold at auction.', color: colorOf(sold[1]), feels: { [sold[1]]: 'good' } });
+    if (sold) out.push({ kicker: who(sold[1]), title: `won ${sold[2]} for ${formatMoney(Number(sold[3]), next.settings.board)}`, detail: 'Sold at auction.', color: colorOf(sold[1]), feels: { [sold[1]]: 'good' } });
     const deal = line.match(/\{(p\d+)\} accepted \{(p\d+)\}'s trade/);
     if (deal) out.push({ kicker: `${who(deal[2])} and ${who(deal[1])}`, title: 'made a trade', color: colorOf(deal[2]) });
     const no = line.match(/\{(p\d+)\} turned down the trade/);
@@ -105,12 +109,12 @@ function useMoneyInMotion(view: MonopolyState, colorOf: (id: string) => string):
       const rent = line.match(/\{(p\d+)\} paid \$(\d+) rent to \{(p\d+)\}/);
       if (rent) {
         for (let i = 0; i < 4; i++) fly({ from: token(rent[1]), to: token(rent[3]), delay: LAND_MS + i * 70, ms: 620, make: flyer('mono-coin') });
-        fly({ from: token(rent[1]), to: token(rent[3]), delay: LAND_MS, ms: 760, make: flyer('mono-cash-fly', `$${rent[2]}`) });
+        fly({ from: token(rent[1]), to: token(rent[3]), delay: LAND_MS, ms: 760, make: flyer('mono-cash-fly', formatMoney(Number(rent[2]), view.settings.board)) });
         continue;
       }
       const go = line.match(/\{(p\d+)\} (?:passed Go and collected|landed right on Go: another) \$(\d+)/);
       if (go) {
-        fly({ from: document.querySelector('[data-space="0"]'), to: token(go[1]), delay: LAND_MS, ms: 700, make: flyer('mono-cash-fly is-gain', `+$${go[2]}`) });
+        fly({ from: document.querySelector('[data-space="0"]'), to: token(go[1]), delay: LAND_MS, ms: 700, make: flyer('mono-cash-fly is-gain', `+${formatMoney(Number(go[2]), view.settings.board)}`) });
         continue;
       }
       const sale = line.match(/\{(p\d+)\} (?:bought (.+) for|won (.+) at auction for) \$\d+/);
@@ -142,9 +146,29 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
   const moment = useTableMoments(view, (a, b) => monopolyMoments(a, b, (id) => (id === meId ? 'You' : nameFor(id)), colorFor));
   useMoneyInMotion(view, colorFor);
   const actor = monopolyActor(view);
+  const start = useGameStart(true, view.phase === 'over', view.turns === 0 && view.rollSeq === 0);
 
   // A new decision for the viewer (or a game event) closes an open deed.
-  useEffect(() => setInspected(null), [view.phase, view.pendingPurchase, actor]);
+  useEffect(() => setInspected(null), [view.phase, view.pendingPurchase, actor, view.choice?.kind]);
+
+  // Mega: the square the viewer is naming (a triples move, an auction, a Bus Ticket ride).
+  const [ticketing, setTicketing] = useState(false);
+  const [picked, setPicked] = useState<number | null>(null);
+  const pick = megaPick(view, meId, ticketing);
+  useEffect(() => {
+    setTicketing(false);
+    setPicked(null);
+  }, [view.phase, actor, view.choice?.kind, view.rollSeq]);
+  const pickSquare = (id: number) => {
+    setInspected(null);
+    setPicked(id);
+  };
+  const confirmPick = () => {
+    if (!pick || picked === null || !pick.targets.includes(picked)) return;
+    onAction(pick.kind === 'ticket' ? { type: 'USE_TICKET', space: picked } : { type: 'CHOOSE', space: picked });
+    setTicketing(false);
+    setPicked(null);
+  };
 
   // Escape closes an open deed.
   useEffect(() => {
@@ -171,6 +195,15 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
       onExit={onExit}
       moments={moments}
       onDismissMoments={dismiss}
+      pick={pick}
+      picked={picked}
+      onPicked={pickSquare}
+      onConfirmPick={confirmPick}
+      onTicketing={(on) => {
+        setTicketing(on);
+        setPicked(null);
+        setInspected(null);
+      }}
       part={part}
     />
   );
@@ -192,7 +225,7 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
         )}
         <div className="mono-head-extra">
           {headerExtra}
-          <RulesButton rules={MONOPOLY_RULES} />
+          <RulesButton rules={MONOPOLY_RULES} variant={isMega(view.settings.board) ? 'mega' : 'standard'} />
           <button
             type="button"
             className="g-icon-btn"
@@ -204,6 +237,7 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
           </button>
         </div>
       </header>
+      <OpeningCall start={start} name={actor ? nameFor(actor) : null} isMe={actor === meId} color={actor ? colorFor(actor) : undefined} />
       <main className="mono-stage">
         <FacesStrip colorOf={colorFor} />
         {banner}
@@ -216,7 +250,10 @@ export function MonopolyGame({ view, meId, nameFor, onAction, onExit, exitLabel,
             inspected={inspected}
             spotlight={spotlight}
             onSpotlight={setSpotlight}
-            flashIds={momentLots(moments)}
+            flashIds={momentLots(moments, view.settings.board)}
+            targets={pick ? new Set(pick.targets) : undefined}
+            picked={picked}
+            onPick={pickSquare}
           >
             {center(compact ? 'head' : 'all')}
           </MonopolyBoard>

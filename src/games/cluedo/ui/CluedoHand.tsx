@@ -27,10 +27,10 @@ export function CardFace({ card, onClick }: { card: Card; onClick?: () => void }
 }
 
 /** The viewer's own cards, characters first, then weapons, then rooms. */
-export function CluedoHand({ hand }: { hand: Card[] }) {
+export function CluedoHand({ hand, dealing = false }: { hand: Card[]; dealing?: boolean }) {
   const cards = [...hand].sort((a, b) => ORDER[kindOf(a)] - ORDER[kindOf(b)]);
   return (
-    <div className="cl-hand" aria-label="Your cards">
+    <div className={`cl-hand${dealing ? ' is-dealing' : ''}`} aria-label="Your cards">
       {cards.map((c) => (
         <CardFace key={c} card={c} />
       ))}

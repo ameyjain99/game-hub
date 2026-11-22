@@ -14,6 +14,7 @@ export function redactFor(state: MonopolyState, _playerId: string): MonopolyStat
     chestOrder: [],
     chancePtr: 0,
     chestPtr: 0,
+    ...(state.busDeck ? { busDeck: [] } : {}),
     rngState: 0,
   };
 }

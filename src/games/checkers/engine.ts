@@ -56,10 +56,10 @@ export interface FullMove {
   captures: number[];
 }
 
-export const DRAW_PLIES = 80;
+const DRAW_PLIES = 80;
 
-export const rowOf = (sq: number) => Math.floor(sq / 8);
-export const colOf = (sq: number) => sq % 8;
+const rowOf = (sq: number) => Math.floor(sq / 8);
+const colOf = (sq: number) => sq % 8;
 export const isDark = (sq: number) => (rowOf(sq) + colOf(sq)) % 2 === 1;
 /** Standard checkers numbering: 1-32 across the dark squares from Black's side. */
 export const squareNumber = (sq: number) => rowOf(sq) * 4 + Math.floor(colOf(sq) / 2) + 1;
@@ -376,7 +376,7 @@ export function bestMoves(board: Piece[], side: Side, moves: FullMove[], level: 
 }
 
 /** The bot's whole move for `side` (choices from `moves`). */
-export function chooseMove(board: Piece[], side: Side, moves: FullMove[], level: CheckersDifficulty, rand: () => number): FullMove {
+function chooseMove(board: Piece[], side: Side, moves: FullMove[], level: CheckersDifficulty, rand: () => number): FullMove {
   if (moves.length === 1) return moves[0];
   const cfg = BOT_LEVELS[level] ?? BOT_LEVELS.normal;
   if (rand() < cfg.noise) return moves[Math.floor(rand() * moves.length)];
@@ -385,7 +385,7 @@ export function chooseMove(board: Piece[], side: Side, moves: FullMove[], level:
 }
 
 /** The bot's next hop (its chosen move's first hop, or the next hop of a chain). */
-export function botHop(s: CheckersState, rand: () => number = Math.random): CheckersAction {
+function botHop(s: CheckersState, rand: () => number = Math.random): CheckersAction {
   const me = s.players.find((p) => p.id === idOf(s, s.turn))!;
   const moves = s.chain !== null ? captureSequences(s.board, s.chain) : legalMoves(s.board, s.turn);
   const m = chooseMove(s.board, s.turn, moves, (me.difficulty ?? 'normal') as CheckersDifficulty, rand);

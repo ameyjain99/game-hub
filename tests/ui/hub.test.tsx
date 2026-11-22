@@ -21,7 +21,7 @@ test('with every game playable there is no "Show all" switch and no Coming soon 
 test('Monopoly and Tic-Tac-Toe are live and playable from the hub', () => {
   const onSelect = vi.fn();
   render(<HubScreen onSelect={onSelect} onJoin={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: /play monopoly/i }));
+  fireEvent.click(screen.getByRole('button', { name: /play monopoly$/i }));
   fireEvent.click(screen.getByRole('button', { name: /play tic-tac-toe/i }));
   expect(onSelect.mock.calls).toEqual([['monopoly'], ['tic-tac-toe']]);
 });

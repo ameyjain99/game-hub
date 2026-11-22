@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { BOARD, groupIds, type ColorGroup } from '../engine/board';
+import { groupIds, isMega, spacesOf, type BoardId, type ColorGroup } from '../engine/board';
+import { useMoney } from './boardNames';
 import type { MonopolyState } from '../engine/state';
 import { completedSets } from '../engine/selectors';
 import { CloseIcon, Crown } from '../../../shared/icons';
@@ -45,8 +46,8 @@ export function useSetMoments(view: MonopolyState): { moments: SetMoment[]; dism
 }
 
 /** Every lot of the sets being announced (they flash on the board). */
-export function momentLots(moments: SetMoment[]): Set<number> {
-  return new Set(moments.flatMap((m) => groupIds(m.group)));
+export function momentLots(moments: SetMoment[], board: BoardId): Set<number> {
+  return new Set(moments.flatMap((m) => groupIds(m.group, board)));
 }
 
 /** The note for a completed set: who owns it, and what that unlocks now -
@@ -64,8 +65,10 @@ export function SetMomentNote({
   nameFor: (id: string) => string;
   onClose: () => void;
 }) {
-  const lots = groupIds(moment.group);
-  const houseCost = BOARD[lots[0]].houseCost!;
+  const money = useMoney();
+  const mega = isMega(view.settings.board);
+  const lots = groupIds(moment.group, view.settings.board);
+  const houseCost = spacesOf(view.settings.board)[lots[0]].houseCost!;
   const mortgaged = lots.some((id) => view.ownership[id].mortgaged);
   const who = moment.owner === meId ? 'You have' : `${nameFor(moment.owner)} has`;
   const color = tokenColor(view.players.findIndex((p) => p.id === moment.owner));
@@ -82,10 +85,10 @@ export function SetMomentNote({
         {who} every {GROUP_LABEL[moment.group]} lot
       </p>
       <ul className="mono-moment-list">
-        {view.settings.doubleRentFullSet && <li>Rent doubles on its unbuilt lots</li>}
+        {view.settings.doubleRentFullSet && <li>Rent {mega ? 'triples' : 'doubles'} on its unbuilt lots</li>}
         <li>
-          {mortgaged ? 'Once its mortgages are paid off, houses' : 'Houses'} can go up (${houseCost} each
-          {view.settings.evenBuild ? ', evenly across the set' : ''}); a hotel after 4
+          {mortgaged ? 'Once its mortgages are paid off, houses' : 'Houses'} can go up ({money(houseCost)} each
+          {view.settings.evenBuild ? ', evenly across the set' : ''}); a hotel after 4{mega ? ', then a skyscraper' : ''}
         </li>
       </ul>
     </div>

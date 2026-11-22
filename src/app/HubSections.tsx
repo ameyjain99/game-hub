@@ -176,7 +176,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How many people can play?',
-    a: "It depends on the game. Solitaire, Sudoku and Minesweeper are for one; Lineup seats up to twelve in teams. Each game's card shows its count.",
+    a: "It depends on the game. Solitaire, Sudoku and Minesweeper are for one; Sequence seats up to twelve in teams. Each game's card shows its count.",
   },
   {
     q: 'Can I play on my own?',

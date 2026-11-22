@@ -18,7 +18,7 @@ const BLUFF: Record<Level, number> = { easy: 0.02, normal: 0.05, hard: 0.09 };
 const CALL_SLACK: Record<Level, number> = { easy: 0.1, normal: 0.0, hard: -0.02 };
 
 /** How often `me` ends with the best hand (a share of ties counts) against everyone still in. */
-export function winChance(s: PokerState, me: PokerPlayer, deals: number, rand: () => number): number {
+function winChance(s: PokerState, me: PokerPlayer, deals: number, rand: () => number): number {
   const spec = VARIANTS[s.variant];
   const rivals = s.players.filter((p) => p !== me && !p.out && !p.folded);
   if (rivals.length === 0) return 1;

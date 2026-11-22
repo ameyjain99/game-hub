@@ -1,0 +1,886 @@
+/* Exploding Kittens: a scorched workbench edged with hazard tape. Opponents sit
+   round the top, the draw and discard piles in the middle, the card being
+   played (and any Nopes on it) below them, and your hand along the bottom. */
+
+.ek-table {
+  overflow: hidden;
+  border-radius: clamp(16px, 3cqmin, 28px);
+  box-shadow: 0 30px 80px #000c, inset 0 0 0 1px #ffffff1a;
+  container-type: inline-size;
+}
+
+.ek-bench {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 40% at 50% 42%, #3a2f2a 0%, transparent 100%),
+    radial-gradient(120% 90% at 50% 45%, #2a2d36 0%, #1a1c23 55%, #101116 100%);
+}
+
+/* Hazard tape along the top and bottom edges. */
+.ek-bench::before,
+.ek-bench::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1.4cqw;
+  background: repeating-linear-gradient(-45deg, #f2b705 0 2.2cqw, #17171b 2.2cqw 4.4cqw);
+  opacity: 0.85;
+}
+
+.ek-bench::before {
+  top: 0;
+}
+
+.ek-bench::after {
+  bottom: 0;
+}
+
+/* ---- Cards ---- */
+.ek-card {
+  --lw: 13cqw;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  width: var(--lw);
+  aspect-ratio: 5 / 7;
+  overflow: hidden;
+  color: #17171b;
+  background: #fbf7ee;
+  border-radius: calc(var(--lw) * 0.09);
+  box-shadow: 0 calc(var(--lw) * 0.05) calc(var(--lw) * 0.13) #0009, inset 0 0 0 calc(var(--lw) * 0.03) #fbf7ee;
+  user-select: none;
+}
+
+.ek-card-name {
+  padding: calc(var(--lw) * 0.06) calc(var(--lw) * 0.05) calc(var(--lw) * 0.045);
+  font-size: calc(var(--lw) * 0.105);
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  color: #fff;
+  text-align: center;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--cc) 72%, #000);
+}
+
+.ek-art {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: calc(var(--lw) * 0.07);
+  background: var(--cc);
+}
+
+.ek-card-text {
+  padding: calc(var(--lw) * 0.05) calc(var(--lw) * 0.06) calc(var(--lw) * 0.06);
+  font-size: calc(var(--lw) * 0.072);
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.ek-card.is-exploding .ek-card-text {
+  color: #fff;
+  background: #e5484d;
+}
+
+.ek-card.is-back {
+  display: grid;
+  grid-template-rows: 1fr;
+  place-items: center;
+  background: repeating-linear-gradient(45deg, #1f2026 0 calc(var(--lw) * 0.08), #17171b calc(var(--lw) * 0.08) calc(var(--lw) * 0.16));
+  box-shadow: 0 calc(var(--lw) * 0.05) calc(var(--lw) * 0.13) #0009, inset 0 0 0 calc(var(--lw) * 0.035) #e5484d;
+}
+
+.ek-card.is-back .ek-art {
+  width: 62%;
+  height: auto;
+  padding: 0;
+  background: none;
+}
+
+/* Small cards carry their name and picture only. */
+.ek-card.is-mini,
+.ek-card.is-small,
+.ek-card.is-moment {
+  grid-template-rows: auto 1fr;
+}
+
+.ek-card.is-mini .ek-card-text,
+.ek-card.is-small .ek-card-text,
+.ek-card.is-moment .ek-card-text {
+  display: none;
+}
+
+.ek-card.is-mini {
+  --lw: 4.4cqw;
+}
+
+.ek-card.is-small {
+  --lw: 9.5cqw;
+}
+
+.ek-card.is-moment {
+  --lw: 40px;
+}
+
+/* ---- Opponents ---- */
+.ek-opp {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6cqw;
+  translate: -50% -50%;
+  transition: opacity 0.3s, filter 0.3s;
+}
+
+.ek-opp-cards {
+  position: relative;
+  width: 20cqw;
+  height: 6.4cqw;
+}
+
+.ek-opp-cards .ek-card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateX(calc(var(--i) * 1.9cqw)) rotate(calc(var(--i) * 3deg));
+}
+
+.ek-opp-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7cqw;
+  max-width: 24cqw;
+  padding: 0.5cqw 1.2cqw;
+  font-size: clamp(10px, 1.75cqw, 15px);
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  background: #000000a6;
+  border: 0.25cqw solid transparent;
+  border-radius: 999px;
+}
+
+.ek-opp.is-turn .ek-opp-name,
+.ek-opp.is-spot .ek-opp-name {
+  border-color: var(--tc);
+  box-shadow: 0 0 0 0.4cqw color-mix(in srgb, var(--tc) 35%, transparent);
+}
+
+.ek-opp.is-out {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.ek-opp.is-out .ek-opp-cards {
+  visibility: hidden;
+}
+
+.ek-dot {
+  flex: none;
+  width: 0.7em;
+  height: 0.7em;
+  background: var(--tc);
+  border-radius: 50%;
+}
+
+.ek-seat-face {
+  width: 2.6cqw;
+  height: 2.6cqw;
+}
+
+.ek-count {
+  padding: 0 0.7cqw;
+  font-variant-numeric: tabular-nums;
+  color: #17171b;
+  background: #fff;
+  border-radius: 999px;
+}
+
+.ek-tag {
+  padding: 0.3cqw 1cqw;
+  font-size: clamp(9px, 1.5cqw, 13px);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+}
+
+.ek-tag.is-out {
+  color: #fff;
+  background: #3a3d47;
+}
+
+.ek-tag.is-turns {
+  color: #17171b;
+  background: #f2b705;
+}
+
+/* ---- The piles ---- */
+.ek-centre {
+  position: absolute;
+  top: 30%;
+  right: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 1cqw 5cqw;
+  justify-content: center;
+  justify-items: center;
+}
+
+.ek-pile {
+  position: relative;
+  width: 15cqw;
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.ek-pile .ek-card {
+  --lw: 15cqw;
+}
+
+.ek-deck-stack {
+  position: absolute;
+  inset: 0;
+  background: #0b0b0e;
+  border-radius: 1.2cqw;
+  box-shadow: 0.5cqw 0.5cqw 0 #23242b, 1cqw 1cqw 0 #1b1c22, 1.5cqw 1.5cqw 0 #14151a;
+}
+
+.ek-deck .ek-card {
+  position: absolute;
+  inset: 0;
+  transition: translate 0.15s, box-shadow 0.15s;
+}
+
+.ek-deck.is-live {
+  cursor: pointer;
+}
+
+.ek-deck.is-live .ek-card {
+  box-shadow: 0 0 0 0.5cqw #f2b705, 0 0 3cqw #f2b70588;
+  animation: ek-breathe 1.6s ease-in-out infinite;
+}
+
+.ek-deck.is-live:hover .ek-card {
+  translate: 0 -0.8cqw;
+}
+
+@keyframes ek-breathe {
+  50% {
+    box-shadow: 0 0 0 0.5cqw #f2b705, 0 0 5cqw #f2b705cc;
+  }
+}
+
+.ek-deck-count {
+  position: absolute;
+  right: -1.2cqw;
+  bottom: -1.2cqw;
+  min-width: 4.2cqw;
+  padding: 0.3cqw 0.8cqw;
+  font-size: clamp(11px, 2cqw, 17px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #17171b;
+  text-align: center;
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: 0 0.3cqw 1cqw #0008;
+}
+
+.ek-discard {
+  border: 0.3cqw dashed #ffffff33;
+  border-radius: 1.2cqw;
+}
+
+.ek-discard-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(10px, 1.6cqw, 14px);
+  font-weight: 700;
+  color: #ffffff66;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ek-discard .ek-card {
+  position: absolute;
+  inset: 0;
+  rotate: var(--r);
+}
+
+.ek-discard .ek-card.is-top {
+  animation: ek-play-in 0.36s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes ek-play-in {
+  from {
+    translate: var(--fx) var(--fy);
+    scale: 0.7;
+    rotate: 0deg;
+    opacity: 0.6;
+  }
+}
+
+.ek-odds {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4cqw 1.4cqw;
+  align-items: center;
+  justify-content: center;
+  margin: 1.2cqw 0 0;
+  font-size: clamp(10px, 1.7cqw, 14px);
+  color: #ffffffb3;
+}
+
+.ek-odds b {
+  color: #f2b705;
+}
+
+.ek-known {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.6cqw;
+  align-items: center;
+  justify-content: center;
+}
+
+.ek-known-card {
+  padding: 0.2cqw 1cqw;
+  font-weight: 700;
+  color: #17171b;
+  background: #fbf7ee;
+  border-radius: 0.6cqw;
+}
+
+.ek-known-card.is-kitten {
+  color: #fff;
+  background: #e5484d;
+}
+
+/* ---- The card being played, and the Nopes on it ---- */
+.ek-stage {
+  position: absolute;
+  top: 61%;
+  left: 50%;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8cqw;
+  align-items: center;
+  width: max-content;
+  max-width: 88cqw;
+  padding: 1.2cqw 2.2cqw;
+  color: #fff;
+  text-align: center;
+  background: #0b0b0ee6;
+  border: 0.3cqw solid var(--tc);
+  border-radius: 1.6cqw;
+  box-shadow: 0 1cqw 4cqw #000a;
+  translate: -50% 0;
+  animation: ek-pop 0.22s ease-out;
+}
+
+@keyframes ek-pop {
+  from {
+    scale: 0.85;
+    opacity: 0;
+  }
+}
+
+.ek-stage-text,
+.ek-stage-nopes {
+  margin: 0;
+  font-size: clamp(11px, 1.9cqw, 16px);
+}
+
+.ek-stage.is-noped .ek-stage-text {
+  text-decoration: line-through;
+  text-decoration-color: #e5484d;
+  text-decoration-thickness: 0.3cqw;
+  opacity: 0.75;
+}
+
+.ek-stage-nopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6cqw 1cqw;
+  align-items: center;
+  justify-content: center;
+}
+
+.ek-nope-stamp {
+  padding: 0.2cqw 1cqw;
+  font-weight: 800;
+  color: #fff;
+  background: #d6343c;
+  border: 0.25cqw solid var(--tc);
+  border-radius: 0.6cqw;
+  rotate: -3deg;
+}
+
+.ek-stage-verdict {
+  color: #ffffffb3;
+}
+
+.ek-stage-actions {
+  position: relative;
+  display: flex;
+  gap: 1.2cqw;
+  align-items: center;
+  padding-bottom: 1.2cqw;
+}
+
+.ek-nope-btn {
+  padding: 0.9cqw 3cqw;
+  font-size: clamp(14px, 2.6cqw, 22px);
+  font-weight: 900;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #d6343c;
+  border: 0;
+  border-radius: 1cqw;
+  box-shadow: 0 0.5cqw 0 #8f1f25;
+  transition: translate 0.08s, box-shadow 0.08s;
+}
+
+.ek-nope-btn:hover {
+  background: #e5484d;
+}
+
+.ek-nope-btn:active {
+  translate: 0 0.4cqw;
+  box-shadow: 0 0.1cqw 0 #8f1f25;
+}
+
+/* The time left to Nope, burning down like a fuse. */
+.ek-fuse {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 0.5cqw;
+  background: #f2b705;
+  border-radius: 999px;
+  transform-origin: left;
+  animation: ek-fuse var(--ms) linear forwards;
+}
+
+@keyframes ek-fuse {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* ---- Prompts ---- */
+.ek-picker {
+  position: absolute;
+  bottom: 22cqw;
+  left: 50%;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2cqw;
+  align-items: center;
+  width: max-content;
+  max-width: 92cqw;
+  padding: 1.8cqw 2.4cqw;
+  color: #fff;
+  text-align: center;
+  background: #0b0b0ef2;
+  border: 1px solid #ffffff26;
+  border-radius: 1.8cqw;
+  box-shadow: 0 1.5cqw 5cqw #000c;
+  translate: -50% 0;
+  animation: ek-pop 0.2s ease-out;
+}
+
+.ek-picker p {
+  margin: 0;
+  font-size: clamp(12px, 2cqw, 17px);
+  font-weight: 700;
+}
+
+.ek-picker .ek-note {
+  font-size: clamp(10px, 1.5cqw, 13px);
+  font-weight: 500;
+  color: #ffffff99;
+}
+
+.ek-future-cards,
+.ek-kinds,
+.ek-choices,
+.ek-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2cqw;
+  justify-content: center;
+}
+
+.ek-future-card,
+.ek-kind {
+  position: relative;
+  display: grid;
+  gap: 0.6cqw;
+  justify-items: center;
+  padding: 0;
+  font-size: clamp(10px, 1.6cqw, 14px);
+  color: #fff;
+  background: none;
+  border: 0;
+}
+
+.ek-future-card .ek-card {
+  --lw: 15cqw;
+}
+
+.ek-kind {
+  cursor: pointer;
+  transition: translate 0.12s;
+}
+
+.ek-kind:hover {
+  translate: 0 -0.8cqw;
+}
+
+.ek-kind b {
+  position: absolute;
+  top: -0.8cqw;
+  right: -0.8cqw;
+  padding: 0 0.8cqw;
+  color: #17171b;
+  background: #fff;
+  border-radius: 999px;
+}
+
+.ek-choice {
+  display: inline-flex;
+  gap: 1cqw;
+  align-items: center;
+  padding: 1cqw 1.8cqw;
+  font-size: clamp(12px, 1.9cqw, 16px);
+  font-weight: 700;
+  color: #fff;
+  background: #ffffff14;
+  border: 0.25cqw solid var(--tc);
+  border-radius: 1.2cqw;
+}
+
+.ek-choice:hover {
+  background: color-mix(in srgb, var(--tc) 30%, transparent);
+}
+
+.ek-choice b {
+  font-weight: 600;
+  color: #ffffffb3;
+}
+
+.ek-slot {
+  padding: 0.7cqw 1.6cqw;
+  font-size: clamp(11px, 1.8cqw, 15px);
+  font-weight: 700;
+  color: #fff;
+  background: #ffffff14;
+  border: 0.25cqw solid transparent;
+  border-radius: 999px;
+}
+
+.ek-slot.is-on {
+  color: #17171b;
+  background: #f2b705;
+}
+
+.ek-range {
+  display: grid;
+  gap: 0.6cqw;
+  width: min(60cqw, 420px);
+  font-size: clamp(11px, 1.7cqw, 14px);
+  color: #ffffffcc;
+}
+
+.ek-range input {
+  width: 100%;
+  accent-color: #f2b705;
+}
+
+.ek-cancel {
+  font-size: clamp(11px, 1.6cqw, 14px);
+  color: #ffffff99;
+  text-decoration: underline;
+  background: none;
+  border: 0;
+}
+
+/* ---- Your side of the table ---- */
+.ek-controls {
+  position: absolute;
+  right: 0;
+  bottom: 21cqw;
+  left: 0;
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2cqw;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2cqw;
+}
+
+.ek-hint {
+  padding: 0.7cqw 1.8cqw;
+  font-size: clamp(12px, 1.9cqw, 16px);
+  font-weight: 700;
+  color: #fff;
+  background: #000000b3;
+  border-radius: 999px;
+}
+
+.ek-hint.is-urgent {
+  color: #17171b;
+  background: #f2b705;
+}
+
+.ek-sort {
+  position: absolute;
+  right: 2cqw;
+  bottom: 21cqw;
+  z-index: 8;
+}
+
+.ek-hand {
+  --gap: min(12.6cqw, calc(86cqw / max(var(--n), 1)));
+  position: absolute;
+  right: 0;
+  bottom: 2.8cqw;
+  left: 0;
+  height: 16.8cqw;
+}
+
+.ek-hand-card {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  padding: 0;
+  background: none;
+  border: 0;
+  transform: translateX(-50%) translateX(calc(var(--i) * var(--gap))) rotate(calc(var(--i) * 1.2deg));
+  transform-origin: 50% 140%;
+  transition: translate 0.14s ease-out, scale 0.14s ease-out, filter 0.2s;
+}
+
+.ek-hand-card .ek-card {
+  --lw: 12cqw;
+}
+
+.ek-hand-card:disabled {
+  cursor: default;
+}
+
+.ek-hand-card.is-ok {
+  cursor: pointer;
+}
+
+.ek-hand-card:hover,
+.ek-hand-card:focus-visible {
+  z-index: 5;
+  translate: 0 -3.4cqw;
+  scale: 1.22;
+}
+
+.ek-hand-card.is-on {
+  z-index: 4;
+  translate: 0 -4.4cqw;
+}
+
+.ek-hand-card.is-on .ek-card {
+  box-shadow: 0 0 0 0.5cqw #f2b705, 0 1.2cqw 3cqw #000a;
+}
+
+.ek-table.is-dealing .ek-hand-card {
+  animation: ek-deal-in 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--k) * 70ms + 200ms);
+}
+
+@keyframes ek-deal-in {
+  from {
+    opacity: 0;
+    translate: 0 -30cqw;
+    scale: 0.6;
+  }
+}
+
+.ek-dead {
+  position: absolute;
+  right: 0;
+  bottom: 9cqw;
+  left: 0;
+  margin: 0;
+  font-size: clamp(13px, 2.2cqw, 18px);
+  font-weight: 700;
+  color: #ffffffb3;
+  text-align: center;
+}
+
+/* ---- A Kitten goes off ---- */
+.ek-table.is-booming {
+  animation: ek-shake 0.5s linear;
+}
+
+.ek-table.is-booming::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 42%, #f2b705cc 0%, #e5484d99 30%, transparent 70%);
+  animation: ek-flash 0.7s ease-out forwards;
+}
+
+@keyframes ek-shake {
+  10%,
+  50%,
+  90% {
+    translate: -1.2cqw 0.6cqw;
+  }
+
+  30%,
+  70% {
+    translate: 1.2cqw -0.6cqw;
+  }
+}
+
+@keyframes ek-flash {
+  to {
+    opacity: 0;
+  }
+}
+
+.ek-boom {
+  z-index: 16;
+  padding: 0.4cqw 1.6cqw;
+  font-size: clamp(14px, 3cqw, 26px);
+  font-weight: 900;
+  color: #17171b;
+  text-transform: uppercase;
+  background: #f2b705;
+  border-radius: 0.8cqw;
+  rotate: -8deg;
+  animation: ek-stamp 1.6s ease-out forwards;
+}
+
+.ek-boom.is-me {
+  position: absolute;
+  bottom: 12cqw;
+  left: 50%;
+  font-size: clamp(22px, 6cqw, 52px);
+  translate: -50% 0;
+}
+
+@keyframes ek-stamp {
+  0% {
+    scale: 2.4;
+    opacity: 0;
+  }
+
+  15% {
+    scale: 1;
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* A card in flight between the piles and the seats. */
+.ek-flyer {
+  width: clamp(26px, 5cqw, 44px);
+  aspect-ratio: 5 / 7;
+  background: repeating-linear-gradient(45deg, #1f2026 0 4px, #17171b 4px 8px);
+  border-radius: 12%;
+  box-shadow: 0 6px 16px #000a, inset 0 0 0 2px #e5484d;
+}
+
+.ek-flyer.is-kitten {
+  box-shadow: 0 6px 16px #000a, inset 0 0 0 2px #f2b705;
+}
+
+/* ---- Sidebar and result ---- */
+.ek-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--muted);
+  list-style: none;
+}
+
+.ek-facts b {
+  color: var(--ink);
+}
+
+.ek-standings {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ek-standings li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+}
+
+.ek-standings li b {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.ek-standings li.is-winner {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ek-table.is-booming,
+  .ek-table.is-dealing .ek-hand-card,
+  .ek-deck.is-live .ek-card,
+  .ek-discard .ek-card.is-top,
+  .ek-stage,
+  .ek-picker {
+    animation: none;
+  }
+}
+
+/* A phone-sized table: smaller buttons, and the sort control moves clear of them. */
+@container (max-width: 520px) {
+  .ek-controls .g-btn {
+    padding: 1.6cqw 3cqw;
+    font-size: clamp(11px, 3.2cqw, 15px);
+  }
+
+  .ek-sort {
+    top: 2.6cqw;
+    right: 2cqw;
+    bottom: auto;
+  }
+}

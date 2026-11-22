@@ -8,6 +8,8 @@
  * multipliers (×4 / ×10) computed in the selector, not `rent`.
  */
 
+import { MEGA_CARD_TARGETS, MEGA_UK, MEGA_US } from './mega';
+
 export type SpaceKind =
   | 'go'
   | 'property'
@@ -18,7 +20,11 @@ export type SpaceKind =
   | 'chest'
   | 'jail'
   | 'free-parking'
-  | 'go-to-jail';
+  | 'go-to-jail'
+  // Squares only the Mega Edition has.
+  | 'auction'
+  | 'bus-ticket'
+  | 'birthday';
 
 export type ColorGroup =
   | 'brown'
@@ -42,6 +48,8 @@ export interface Space {
   rent?: number[];
   /** Cost per house/hotel (property spaces only). */
   houseCost?: number;
+  /** Rent with a skyscraper (Mega Edition streets only). */
+  skyscraper?: number;
   /** Fixed amount owed (tax spaces only). */
   taxAmount?: number;
 }
@@ -89,37 +97,106 @@ export const BOARD: Space[] = [
   { id: 39, name: 'Tokyo', kind: 'property', group: 'darkblue', price: 400, houseCost: 200, rent: [50, 200, 600, 1400, 1700, 2000] },
 ];
 
-/** The boards a game can be played on. Every board has the same 40 squares,
- *  prices and rents; only the places differ. The Neo board uses the base BOARD
- *  names (Jakarta, Marrakesh, …) so it needs no PLACES entry. */
-export type BoardId = 'hasbro' | 'classic' | 'neo' | 'world' | 'nations' | 'india';
+/**
+ * The boards a game can be played on. The 40-square boards share their
+ * squares, prices and rents; only the places, the money and a few square names
+ * differ. The two Mega boards have 52 squares and their own rules (see mega.ts).
+ * The published editions come first, then GameHub's own four. The Neo board
+ * uses the base BOARD names (Jakarta, Marrakesh, ...) so it needs no PLACES entry.
+ */
+export type BoardId = 'world2008' | 'world2015' | 'us' | 'uk' | 'india' | 'europe' | 'megaUs' | 'megaUk' | 'classic' | 'neo' | 'world' | 'nations';
+export type MegaBoardId = 'megaUs' | 'megaUk';
 
 export const BOARDS: { id: BoardId; name: string; blurb: string }[] = [
-  { id: 'hasbro',  name: 'Hasbro',  blurb: 'The official World Edition: 22 cities voted by fans' },
+  { id: 'world2008', name: 'World 2008', blurb: 'Here & Now: The World Edition, 22 cities voted by fans, played in millions' },
+  { id: 'world2015', name: 'World 2015', blurb: 'Here & Now: World Edition of 2015, from Madrid to Lima' },
+  { id: 'us', name: 'US', blurb: 'The standard Atlantic City board, Mediterranean Avenue to Boardwalk' },
+  { id: 'uk', name: 'UK', blurb: 'The standard London board, Old Kent Road to Mayfair, in pounds' },
+  { id: 'india', name: 'India', blurb: 'The India Edition, Guwahati to Mumbai, in rupees' },
+  { id: 'europe', name: 'Europe 1991', blurb: 'The European Edition: streets of eight countries and four airports' },
+  { id: 'megaUs', name: 'Mega US', blurb: 'The Mega Edition: 52 squares, a speed die, bus tickets, skyscrapers and train depots' },
+  { id: 'megaUk', name: 'Mega UK', blurb: 'The Mega Edition on the London board, Old Kent Road to Knightsbridge' },
   { id: 'classic', name: 'Classic', blurb: 'Brazil to the USA, country by country' },
-  { id: 'neo',     name: 'Neo',     blurb: 'From Jakarta to Tokyo, by way of Europe' },
-  { id: 'world',   name: 'World',   blurb: 'Great cities, Nairobi to London and New York' },
+  { id: 'neo', name: 'Neo', blurb: 'From Jakarta to Tokyo, by way of Europe' },
+  { id: 'world', name: 'World', blurb: 'Great cities, Nairobi to London and New York' },
   { id: 'nations', name: 'Nations', blurb: 'Every colour set is a country, with its flag and airports' },
-  { id: 'india',   name: 'India',   blurb: 'Guwahati to New Delhi and Mumbai' },
 ];
 
 /** Places of every non-Neo board, keyed by square id. Squares not listed keep
- *  their base names (Go, taxes, utilities, …). */
-const PLACES: Record<Exclude<BoardId, 'neo'>, Record<number, string>> = {
-  // Hasbro Here and Now: The World Edition (2008) - 22 cities chosen by global vote.
-  hasbro: {
-    1: 'Gdynia',    3: 'Taipei',
-    5: 'World Rail',
-    6: 'Tokyo',     8: 'Barcelona', 9: 'Athens',
-    11: 'Istanbul', 13: 'Kyiv',     14: 'Toronto',
-    15: 'World Air',
-    16: 'Rome',     18: 'Shanghai', 19: 'Vancouver',
-    21: 'Sydney',   23: 'New York', 24: 'London',
-    25: 'World Cruise',
-    26: 'Beijing',  27: 'Hong Kong', 29: 'Jerusalem',
-    31: 'Paris',    32: 'Belgrade',  34: 'Cape Town',
-    35: 'World Space',
-    37: 'Riga',     39: 'Montreal',
+ *  their base names (Go, Chance, ...). The six published editions follow their
+ *  printed boards; World 2015's stations, utilities and tax names are World 2008's. */
+const PLACES: Record<Exclude<BoardId, 'neo' | MegaBoardId>, Record<number, string>> = {
+  world2008: {
+    1: 'Gdynia', 3: 'Taipei', 5: 'Monopoly Rail',
+    6: 'Tokyo', 8: 'Barcelona', 9: 'Athens',
+    11: 'Istanbul', 12: 'Solar Energy', 13: 'Kyiv',
+    14: 'Toronto', 15: 'Monopoly Air', 16: 'Rome',
+    18: 'Shanghai', 19: 'Vancouver', 21: 'Sydney',
+    23: 'New York', 24: 'London', 25: 'Monopoly Cruise',
+    26: 'Beijing', 27: 'Hong Kong', 28: 'Wind Energy',
+    29: 'Jerusalem', 31: 'Paris', 32: 'Belgrade',
+    34: 'Cape Town', 35: 'Monopoly Space', 37: 'Riga',
+    38: 'Super Tax', 39: 'Montreal',
+  },
+  world2015: {
+    1: 'Madrid', 3: 'Giethoorn', 5: 'Monopoly Rail',
+    6: 'Taipei', 8: 'Cape Town', 9: 'Queenstown',
+    11: 'Sydney', 12: 'Solar Energy', 13: 'Amsterdam',
+    14: 'New York', 15: 'Monopoly Air', 16: 'Tokyo',
+    18: 'Moscow', 19: 'London', 21: 'Belgrade',
+    23: 'Athens', 24: 'Belfast', 25: 'Monopoly Cruise',
+    26: 'Santiago', 27: 'Mexico City', 28: 'Wind Energy',
+    29: 'Warsaw', 31: 'Istanbul', 32: 'Lisbon',
+    34: 'Riga', 35: 'Monopoly Space', 37: 'Hong Kong',
+    38: 'Super Tax', 39: 'Lima',
+  },
+  us: {
+    1: 'Mediterranean Avenue', 3: 'Baltic Avenue', 5: 'Reading Railroad',
+    6: 'Oriental Avenue', 8: 'Vermont Avenue', 9: 'Connecticut Avenue',
+    11: 'St. Charles Place', 12: 'Electric Company', 13: 'States Avenue',
+    14: 'Virginia Avenue', 15: 'Pennsylvania Railroad', 16: 'St. James Place',
+    18: 'Tennessee Avenue', 19: 'New York Avenue', 21: 'Kentucky Avenue',
+    23: 'Indiana Avenue', 24: 'Illinois Avenue', 25: 'B. & O. Railroad',
+    26: 'Atlantic Avenue', 27: 'Ventnor Avenue', 28: 'Water Works',
+    29: 'Marvin Gardens', 31: 'Pacific Avenue', 32: 'North Carolina Avenue',
+    34: 'Pennsylvania Avenue', 35: 'Short Line', 37: 'Park Place',
+    39: 'Boardwalk',
+  },
+  uk: {
+    1: 'Old Kent Road', 3: 'Whitechapel Road', 5: 'King\'s Cross Station',
+    6: 'The Angel, Islington', 8: 'Euston Road', 9: 'Pentonville Road',
+    11: 'Pall Mall', 12: 'Electric Company', 13: 'Whitehall',
+    14: 'Northumberland Avenue', 15: 'Marylebone Station', 16: 'Bow Street',
+    18: 'Marlborough Street', 19: 'Vine Street', 21: 'Strand',
+    23: 'Fleet Street', 24: 'Trafalgar Square', 25: 'Fenchurch Street Station',
+    26: 'Leicester Square', 27: 'Coventry Street', 28: 'Water Works',
+    29: 'Piccadilly', 31: 'Regent Street', 32: 'Oxford Street',
+    34: 'Bond Street', 35: 'Liverpool Street Station', 37: 'Park Lane',
+    38: 'Super Tax', 39: 'Mayfair',
+  },
+  india: {
+    1: 'Guwahati', 3: 'Bhubaneshwar', 5: 'Chennai Central Railway Station',
+    6: 'Panaji (Goa)', 8: 'Agra', 9: 'Vadodara',
+    11: 'Ludhiana', 12: 'Electric Company', 13: 'Patna',
+    14: 'Bhopal', 15: 'Howrah Railway Station', 16: 'Indore',
+    18: 'Nagpur', 19: 'Kochi', 21: 'Lucknow',
+    23: 'Chandigarh', 24: 'Jaipur', 25: 'New Delhi Railway Station',
+    26: 'Pune', 27: 'Hyderabad', 28: 'Water Works',
+    29: 'Ahmedabad', 31: 'Kolkata', 32: 'Chennai',
+    34: 'Bengaluru', 35: 'Chhatrapati Shivaji Terminus', 37: 'Delhi',
+    38: 'Super Tax', 39: 'Mumbai',
+  },
+  europe: {
+    1: 'Strandvejen', 3: 'Slotsgade', 5: 'Luxembourg Airport',
+    6: 'Avenue Louise', 8: 'Rue des Bouchers', 9: 'Grand-Place',
+    11: 'Coolsingel', 12: 'Electric Company', 13: 'Lange Poten',
+    14: 'Kalverstraat', 15: 'Portugal Airport', 16: 'Paseo de la Castellana',
+    18: 'Gran Vía', 19: 'Las Ramblas', 21: 'Oxford Street',
+    23: 'Piccadilly', 24: 'Park Lane', 25: 'Athens Airport',
+    26: 'Via Veneto', 27: 'Via Condotti', 28: 'Water Works',
+    29: 'Via Monte Napoleone', 31: 'Avenue Foch', 32: 'Avenue des Champs-Élysées',
+    34: 'Rue de la Paix', 35: 'Dublin Airport', 37: 'Königsallee',
+    38: 'Super Tax', 39: 'Kurfürstendamm',
   },
   // Classic: each colour set is one country (Brazil, Israel, Italy, Germany, China, France, UK, USA).
   classic: {
@@ -150,7 +227,6 @@ const PLACES: Record<Exclude<BoardId, 'neo'>, Record<number, string>> = {
     35: 'Tokyo Station',
     37: 'London', 39: 'New York',
   },
-  // Each colour set is one country; the stations are its great airports.
   nations: {
     1: 'Luxor', 3: 'Cairo',
     5: 'DEL Airport',
@@ -164,20 +240,6 @@ const PLACES: Record<Exclude<BoardId, 'neo'>, Record<number, string>> = {
     31: 'Edinburgh', 32: 'Manchester', 34: 'London',
     35: 'JFK Airport',
     37: 'Chicago', 39: 'New York',
-  },
-  india: {
-    1: 'Guwahati', 3: 'Patna',
-    5: 'Howrah Junction',
-    6: 'Bhopal', 8: 'Indore', 9: 'Nagpur',
-    11: 'Lucknow', 13: 'Kanpur', 14: 'Varanasi',
-    15: 'Chennai Central',
-    16: 'Jaipur', 18: 'Udaipur', 19: 'Chandigarh',
-    21: 'Kochi', 23: 'Goa', 24: 'Mysuru',
-    25: 'Itarsi Junction',
-    26: 'Ahmedabad', 27: 'Pune', 29: 'Hyderabad',
-    31: 'Kolkata', 32: 'Chennai', 34: 'Bengaluru',
-    35: 'Victoria Terminus',
-    37: 'New Delhi', 39: 'Mumbai',
   },
 };
 
@@ -205,13 +267,38 @@ const CLASSIC_FLAGS: Record<ColorGroup, string> = {
   darkblue:  '\u{1F1FA}\u{1F1F8}', // USA
 };
 
-/** The flag a lot flies on the Classic or Nations board, else null. */
+/** Europe 1991: the streets of each colour set are in one member state. */
+const EUROPE_FLAGS: Record<ColorGroup, string> = {
+  brown:     '\u{1F1E9}\u{1F1F0}', // Denmark
+  lightblue: '\u{1F1E7}\u{1F1EA}', // Belgium
+  pink:      '\u{1F1F3}\u{1F1F1}', // Netherlands
+  orange:    '\u{1F1EA}\u{1F1F8}', // Spain
+  red:       '\u{1F1EC}\u{1F1E7}', // Great Britain
+  yellow:    '\u{1F1EE}\u{1F1F9}', // Italy
+  green:     '\u{1F1EB}\u{1F1F7}', // France
+  darkblue:  '\u{1F1E9}\u{1F1EA}', // Germany
+};
+
+const FLAGS: Partial<Record<BoardId, Record<ColorGroup, string>>> = { nations: NATION_FLAGS, classic: CLASSIC_FLAGS, europe: EUROPE_FLAGS };
+
+export const isMega = (board: BoardId): board is MegaBoardId => board === 'megaUs' || board === 'megaUk';
+
+/** The squares of a board: the standard 40, or a Mega board's 52. */
+export function spacesOf(board: BoardId): Space[] {
+  return board === 'megaUs' ? MEGA_US : board === 'megaUk' ? MEGA_UK : BOARD;
+}
+
+/** A board's shape: how many squares, how many to a side, and where Jail and Go To Jail are. */
+export function layoutOf(board: BoardId): { size: number; side: number; jail: number; goToJail: number } {
+  const size = spacesOf(board).length;
+  const side = size / 4;
+  return { size, side, jail: side, goToJail: side * 3 };
+}
+
+/** The flag a lot flies on a board whose colour sets are countries, else null. */
 export function spaceFlag(id: number, board: BoardId = 'neo'): string | null {
-  const group = BOARD[id].group;
-  if (!group) return null;
-  if (board === 'nations') return NATION_FLAGS[group];
-  if (board === 'classic') return CLASSIC_FLAGS[group];
-  return null;
+  const group = spacesOf(board)[id].group;
+  return (group && FLAGS[board]?.[group]) || null;
 }
 
 /** The board an option names, or Neo when it names none we know. */
@@ -219,29 +306,73 @@ export const boardOf = (id: unknown): BoardId => (BOARDS.some((b) => b.id === id
 
 /** What a square is called on a board. */
 export function spaceName(id: number, board: BoardId = 'neo'): string {
+  if (isMega(board)) return spacesOf(board)[id].name;
   return (board !== 'neo' && PLACES[board][id]) || BOARD[id].name;
 }
 
 /** The square with this name on a board, if any. */
 export function spaceByName(name: string, board: BoardId = 'neo'): Space | undefined {
-  return BOARD.find((sp) => spaceName(sp.id, board) === name);
+  return spacesOf(board).find((sp) => spaceName(sp.id, board) === name);
 }
 
-/** Currency symbol for a board. India uses rupees; everything else uses dollars. */
+/** The square a card written for the standard board means on this one. */
+export function cardSpace(standardId: number, board: BoardId): number {
+  return isMega(board) ? (MEGA_CARD_TARGETS[board][standardId] ?? standardId) : standardId;
+}
+
+/** What a board calls its four transport squares, in a sentence ("the nearest Railroad"). */
+export function stationWord(board: BoardId = 'neo'): string {
+  if (board === 'us' || board === 'megaUs') return 'Railroad';
+  if (board === 'europe') return 'Airport';
+  if (board === 'world2008' || board === 'world2015') return 'Transport';
+  return 'Station';
+}
+
+/** Monopoly money, for boards that mix countries. The app's font draws this character as an M with two bars (see tokens.css). */
+export const MONOPOLY_MONEY = '\u20A5';
+
+/** A board's currency symbol: rupees in India, pounds on the European boards, dollars on the US ones, Monopoly money where countries mix. */
 export function boardCurrency(board: BoardId = 'neo'): string {
-  return board === 'india' ? '₹' : '$';
+  if (board === 'india') return '\u20B9';
+  if (board === 'uk' || board === 'europe' || board === 'megaUk') return '\u00A3';
+  if (board === 'us' || board === 'megaUs') return '$';
+  return MONOPOLY_MONEY;
 }
 
-/** Space ids that can be owned (property, railroad, utility). */
-export const OWNABLE_IDS: number[] = BOARD.filter(
-  (s) => s.kind === 'property' || s.kind === 'railroad' || s.kind === 'utility',
-).map((s) => s.id);
+const trim = (n: number) => String(Math.round(n * 100) / 100);
 
-/** All property space ids in a colour group. */
-export function groupIds(group: ColorGroup): number[] {
-  return BOARD.filter((s) => s.kind === 'property' && s.group === group).map((s) => s.id);
+/**
+ * An amount as a board prints it. World 2008 plays in millions: every standard
+ * amount times 10,000, written 600K or 4M. The game's own sums stay the same.
+ */
+export function formatMoney(amount: number, board: BoardId = 'neo'): string {
+  const sign = amount < 0 ? '-' : '';
+  const n = Math.abs(amount);
+  if (board === 'world2008') {
+    const v = n * 10_000;
+    return `${sign}${MONOPOLY_MONEY}${v >= 1_000_000 ? `${trim(v / 1_000_000)}M` : v === 0 ? '0' : `${trim(v / 1_000)}K`}`;
+  }
+  return `${sign}${boardCurrency(board)}${n.toLocaleString('en-US')}`;
 }
 
-export const JAIL_ID = 10;
-export const GO_TO_JAIL_ID = 30;
-export const GO_SALARY = 200;
+/** Rewrite the dollar amounts in a line of text (a log line, a card) the way a board prints money. */
+export function moneyText(text: string, board: BoardId = 'neo'): string {
+  if (board !== 'world2008' && boardCurrency(board) === '$') return text;
+  return text.replace(/\$(\d[\d,]*)/g, (_, digits: string) => formatMoney(Number(digits.replace(/,/g, '')), board));
+}
+
+const isOwnable = (s: Space) => s.kind === 'property' || s.kind === 'railroad' || s.kind === 'utility';
+
+/** Standard-board space ids that can be owned (property, railroad, utility). */
+export const OWNABLE_IDS: number[] = BOARD.filter(isOwnable).map((s) => s.id);
+
+/** The space ids of a board that can be owned. */
+export function ownableIds(board: BoardId): number[] {
+  return isMega(board) ? spacesOf(board).filter(isOwnable).map((s) => s.id) : OWNABLE_IDS;
+}
+
+/** All property space ids in a colour group, on a board. */
+export function groupIds(group: ColorGroup, board: BoardId): number[] {
+  return spacesOf(board).filter((s) => s.kind === 'property' && s.group === group).map((s) => s.id);
+}
+

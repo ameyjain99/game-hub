@@ -8,7 +8,7 @@ import { GameForm } from '../../../shared/ui/GameForm';
 import { RulesContext, type GameRules } from '../../../shared/rules';
 import { OnlineSeatsContext } from './KitOnline';
 
-export interface LocalSetup {
+interface LocalSetup {
   /** Seats including yours (the rest are bots). */
   seats: number;
   difficulty: string;
@@ -41,7 +41,7 @@ interface Props {
   renderOnline: (intent: OnlineIntent, onExit: () => void, onCode: (code: string | null) => void) => ReactNode;
   /** More local options (Chess: which colour you play). */
   localExtra?: ReactNode;
-  /** Game options shown for a local game and when hosting a room (Last Card's mode). */
+  /** Game options shown for a local game and when hosting a room (Uno's mode). */
   optionFields?: ReactNode;
   /** Options only a room has (Chess: the clock), shown when hosting. */
   hostFields?: ReactNode;

@@ -1,0 +1,986 @@
+/* Catan: a hex island in a deep sea. Flat terrain colours with a white mark
+   each, cream number tokens (6 and 8 in red), dock markers for harbours, and
+   pieces outlined in near-black so they read on every terrain. Your cards,
+   dice and actions dock under the island; prompts float over it. */
+
+.kit-game.catan-game {
+  max-width: calc(112dvh + 340px);
+}
+
+.catan-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.kit-board.catan-board {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
+.catan-island {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  user-select: none;
+}
+
+/* ---- Sea and harbours ---- */
+.catan-waves ellipse {
+  stroke: #ffffff14;
+  stroke-width: 2;
+  stroke-dasharray: 10 16;
+}
+
+.catan-harbor line {
+  stroke: #e3d3ad;
+  stroke-width: 4;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+}
+
+.catan-dock {
+  fill: #f3ead3;
+  stroke: #0b2a44;
+  stroke-width: 2.5;
+}
+
+.catan-dock:not(.is-any) {
+  fill: var(--dock);
+}
+
+.catan-dock-label {
+  font-size: 15px;
+  font-weight: 800;
+  text-anchor: middle;
+  fill: #10131a;
+}
+
+.catan-dock:not(.is-any) + .catan-dock-label {
+  fill: #fff;
+}
+
+/* ---- Tiles ---- */
+.catan-hex {
+  stroke: #0b2a44;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  transition: filter 0.2s;
+}
+
+.catan-glyph {
+  fill: #ffffff1f;
+  stroke: #ffffff66;
+  stroke-width: 0.045;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.catan-token circle:first-child {
+  fill: #f7f1e1;
+  stroke: #0000004d;
+  stroke-width: 1.5;
+}
+
+.catan-token text {
+  font-size: 19px;
+  font-weight: 800;
+  text-anchor: middle;
+  fill: #1c1d22;
+}
+
+.catan-pip {
+  fill: #1c1d22;
+}
+
+.catan-token.is-hot text,
+.catan-token.is-hot .catan-pip {
+  fill: #c8343a;
+}
+
+.catan-tile.is-producing .catan-hex {
+  animation: catan-glow 1.6s ease-out;
+}
+
+.catan-tile.is-pick {
+  cursor: pointer;
+}
+
+.catan-tile.is-pick .catan-hex {
+  stroke: #ffd166;
+  stroke-width: 4;
+}
+
+.catan-tile.is-pick:hover .catan-hex {
+  filter: brightness(1.22);
+}
+
+/* The Inventor's first token, waiting for its partner. */
+.catan-tile.is-marked .catan-hex {
+  stroke: #fff;
+  stroke-width: 5;
+}
+
+.catan-tile.is-marked .catan-token circle:first-child {
+  stroke: #ffd166;
+  stroke-width: 4;
+}
+
+/* The merchant: a pawn in its holder's colour beside the tile's token. */
+.catan-merchant {
+  pointer-events: none;
+  transition: opacity 0.2s;
+  animation: catan-pop 0.3s ease-out;
+}
+
+.catan-merchant.is-dim {
+  opacity: 0.35;
+}
+
+/* ---- Pieces ---- */
+.catan-road-edge {
+  stroke: #10131a;
+  stroke-width: 13;
+  stroke-linecap: round;
+}
+
+.catan-road-fill {
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.catan-road,
+.catan-house {
+  transition: opacity 0.2s;
+  animation: catan-pop 0.3s ease-out;
+}
+
+.catan-road.is-dim,
+.catan-house.is-dim {
+  opacity: 0.35;
+}
+
+.catan-robber {
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1);
+  pointer-events: none;
+}
+
+.catan-robber path {
+  fill: #1a1c22;
+  stroke: #ffffffd9;
+  stroke-width: 2.5;
+}
+
+.catan-robber-shadow {
+  fill: #00000066;
+}
+
+/* ---- Where you can place ---- */
+.catan-pick-edge {
+  stroke: #ffd166;
+  stroke-width: 11;
+  stroke-linecap: round;
+  opacity: 0.5;
+  cursor: pointer;
+  animation: catan-breathe 1.3s ease-in-out infinite;
+}
+
+.catan-pick-edge:hover {
+  opacity: 1;
+  animation: none;
+}
+
+.catan-pick-vertex {
+  fill: #ffd166;
+  stroke: #10131a;
+  stroke-width: 2.5;
+  opacity: 0.7;
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.12s, opacity 0.12s;
+}
+
+.catan-pick-vertex:hover {
+  fill: #fff;
+  opacity: 1;
+  transform: scale(1.6);
+}
+
+/* ---- Prompts over the island ---- */
+.catan-panel {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(460px, 94%);
+  max-height: calc(100% - 24px);
+  padding: 16px;
+  overflow-y: auto;
+  background: #15161bf5;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px #000c;
+  transform: translateX(-50%);
+  animation: catan-rise 0.25s ease-out;
+}
+
+.catan-panel.is-small {
+  width: min(380px, 94%);
+}
+
+.catan-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.catan-panel-head h3,
+.catan-panel h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.catan-panel h4 {
+  margin-bottom: 6px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.catan-panel p {
+  margin: 0;
+}
+
+.catan-panel-close {
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+}
+
+.catan-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.catan-choice.is-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+}
+
+.catan-res-btn {
+  height: 40px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--rc);
+  border: 0;
+  border-radius: 10px;
+}
+
+.catan-res-btn:disabled {
+  opacity: 0.35;
+}
+
+/* The Alchemist's dice: a row of faces for each die. */
+.catan-dice-set {
+  display: grid;
+  grid-template-columns: 1fr repeat(6, 30px);
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.catan-dice-set button {
+  height: 30px;
+  font-weight: 800;
+  color: var(--dc-ink, #1c1d22);
+  background: var(--dc, #fff);
+  border: 0;
+  border-radius: 8px;
+  opacity: 0.5;
+}
+
+.catan-dice-set.is-red {
+  --dc: #c8343a;
+  --dc-ink: #fff;
+}
+
+.catan-dice-set.is-yellow {
+  --dc: #f2c94c;
+}
+
+.catan-dice-set button.is-on {
+  opacity: 1;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.catan-warn {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  color: #ffd166;
+}
+
+/* Cities & Knights: the red die (it also decides progressCard draws) and the yellow one. */
+.catan-game.is-cities-knights .catan-dice .kit-die:nth-child(1) {
+  background: #c8343a;
+}
+
+.catan-game.is-cities-knights .catan-dice .kit-die:nth-child(1) > .is-pip {
+  background: #fff;
+}
+
+.catan-game.is-cities-knights .catan-dice .kit-die:nth-child(2) {
+  background: #f2c94c;
+}
+
+.catan-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.catan-pick-row {
+  display: grid;
+  grid-template-columns: 1fr 30px 28px 30px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  border-left: 4px solid var(--rc);
+  border-radius: 6px;
+  background: #ffffff08;
+}
+
+.catan-pick-row button {
+  height: 28px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #ffffff14;
+  border: 0;
+  border-radius: 7px;
+}
+
+.catan-pick-row button:disabled {
+  opacity: 0.3;
+}
+
+.catan-pick-row b {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.catan-pick-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.catan-trade-bank,
+.catan-trade-offer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.catan-bank-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+
+.catan-bank-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.catan-offer-sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* The trade panel holds two pickers (eight rows each in Cities & Knights): tighter rows, and the offer button stays in view. */
+.catan-trade .catan-picker {
+  gap: 3px;
+}
+
+.catan-trade .catan-pick-row {
+  padding-block: 2px;
+}
+
+.catan-trade .catan-pick-row button {
+  height: 24px;
+}
+
+.catan-trade .catan-trade-offer > .primary {
+  position: sticky;
+  bottom: 0;
+  margin-top: 10px;
+  box-shadow: 0 -10px 16px #15161b;
+}
+
+.catan-side-label {
+  margin-bottom: 4px !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.catan-offer-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.catan-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.catan-answers li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* ---- Resource chips ---- */
+.catan-cards {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.catan-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--rc);
+  border-radius: 6px;
+  text-shadow: 0 1px 1px #0005;
+}
+
+.catan-cards.is-sm .catan-chip-name {
+  display: none;
+}
+
+/* Commodities are woven goods, not raw resources: a fine weave marks their cards and chips
+   (so coin never reads as ore). */
+.catan-chip.is-good,
+.catan-card.is-good {
+  background-image: repeating-linear-gradient(135deg, #ffffff2e 0 2px, transparent 2px 6px);
+}
+
+/* ---- The dock ---- */
+.catan-dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  width: 100%;
+}
+
+.catan-dice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.catan-roll {
+  padding: 10px 18px;
+}
+
+.catan-hand {
+  display: flex;
+  gap: 6px;
+}
+
+.catan-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 64px;
+  color: #fff;
+  background: var(--rc);
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 2px #ffffff33, 0 4px 10px #0007;
+  text-shadow: 0 1px 2px #0006;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.catan-card b {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.catan-card span {
+  margin-top: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.catan-card.is-empty {
+  opacity: 0.32;
+}
+
+/* Cities & Knights commodities: inline with the resources on wide screens, their own row on phones. */
+.catan-goods {
+  display: contents;
+}
+
+.catan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.catan-setup-hint {
+  max-width: 460px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  text-align: center;
+}
+
+.catan-build {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink);
+  background: #ffffff10;
+  border: 1px solid #ffffff26;
+  border-radius: 10px;
+}
+
+.catan-build:hover:not(:disabled) {
+  background: #ffffff1c;
+}
+
+.catan-build.is-on {
+  color: #0b0b0f;
+  background: #fff;
+}
+
+.catan-build:disabled {
+  opacity: 0.38;
+}
+
+/* ---- Sidebar ---- */
+.catan-dev-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.catan-dev-cards li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.catan-dev-cards li > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.catan-dice-stats {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  align-items: end;
+  gap: 4px;
+  height: 92px;
+}
+
+.catan-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  height: 100%;
+}
+
+.catan-stat-bar {
+  width: 100%;
+  min-height: 2px;
+  background: #ffffff2e;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.3s;
+}
+
+.catan-stat.is-last .catan-stat-bar {
+  background: #ffd166;
+}
+
+.catan-stat-n {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Motion ---- */
+@keyframes catan-glow {
+  0% {
+    filter: brightness(1.7) saturate(1.2);
+  }
+}
+
+@keyframes catan-pop {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes catan-breathe {
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes catan-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+}
+
+/* A panel's main button stays in view while its rows scroll. */
+.catan-panel > .primary.g-block:last-child {
+  position: sticky;
+  bottom: 0;
+  flex: none;
+  box-shadow: 0 -10px 16px #15161b;
+}
+
+@keyframes catan-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (max-width: 1100px) {
+  .catan-stage {
+    height: auto;
+  }
+
+  .kit-board.catan-board {
+    flex: none;
+    height: min(88vw, 66dvh);
+  }
+}
+
+@media (max-width: 720px) {
+  .catan-card {
+    width: 42px;
+    height: 54px;
+  }
+
+  .catan-hand:has(.catan-goods) {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .catan-goods {
+    display: flex;
+    flex-basis: 100%;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .catan-goods .catan-card {
+    width: 58px;
+  }
+
+  .catan-offer-sides {
+    grid-template-columns: 1fr;
+  }
+
+  /* On a phone the board is short: prompts become a sheet along the bottom of the screen. */
+  .catan-panel,
+  .catan-panel.is-small {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    max-height: 78dvh;
+    border-radius: 18px 18px 0 0;
+    transform: none;
+    animation-name: catan-sheet;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catan-robber,
+  .catan-pick-edge,
+  .catan-pick-vertex,
+  .catan-tile.is-producing .catan-hex,
+  .catan-panel {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ---- Seafarers ---- */
+.catan-tile.is-sea .catan-hex {
+  stroke: #0e3654;
+  stroke-width: 1.5;
+}
+
+.catan-tile.is-sea .catan-glyph {
+  stroke: #ffffff2e;
+}
+
+.catan-ship path {
+  stroke: #10131a;
+  stroke-width: 0.025;
+  stroke-linejoin: round;
+}
+
+.catan-ship {
+  transition: opacity 0.2s;
+  animation: catan-pop 0.3s ease-out;
+}
+
+.catan-ship.is-dim {
+  opacity: 0.35;
+}
+
+.catan-pirate {
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1);
+  pointer-events: none;
+}
+
+.catan-pick-edge.is-sea {
+  stroke: #7fd3ff;
+}
+
+.catan-pick-vertex.is-ship {
+  fill: #7fd3ff;
+}
+
+.catan-free-pick {
+  display: flex;
+  gap: 6px;
+  padding-right: 8px;
+  border-right: 1px solid var(--line-strong);
+}
+
+/* ---- Cities & Knights ---- */
+.catan-knight path {
+  stroke-width: 0.05;
+  stroke-linejoin: round;
+}
+
+.catan-knight.is-active path {
+  stroke: #10131a;
+  filter: drop-shadow(0 0 4px #ffd16699);
+}
+
+.catan-knight-pip {
+  fill: #fff;
+}
+
+.catan-knight:not(.is-active) .catan-knight-pip {
+  fill: #ffffffb3;
+}
+
+.catan-knight.is-dim {
+  opacity: 0.35;
+}
+
+.catan-wall {
+  fill: none;
+  stroke-width: 5;
+  stroke-dasharray: 6 4;
+  opacity: 0.9;
+}
+
+.catan-metropolis {
+  fill: #ffd166;
+  stroke: #10131a;
+  stroke-width: 0.025;
+}
+
+.catan-card.is-good {
+  border: 0;
+}
+
+.catan-barbarians {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.catan-barbarians li {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  background: #1a557b55;
+  border-radius: 6px;
+}
+
+.catan-barbarians li.is-shore {
+  background: #c8343a33;
+  box-shadow: inset 0 0 0 1px #c8343a99;
+}
+
+.catan-barbarians li svg {
+  width: 28px;
+  height: 22px;
+}
+
+.catan-barbarians-odds {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.catan-barbarians-odds b {
+  color: var(--ink);
+}
+
+.catan-areas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.catan-areas li {
+  padding-left: 10px;
+  border-left: 3px solid var(--gc);
+}
+
+.catan-areas p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+}
+
+.catan-area-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.catan-area-pips {
+  display: flex;
+  gap: 3px;
+}
+
+.catan-area-pips i {
+  width: 10px;
+  height: 10px;
+  background: #ffffff1f;
+  border-radius: 50%;
+}
+
+.catan-area-pips i.is-on {
+  background: var(--gc);
+}
+
+.catan-area-pips i.is-metropolis {
+  box-shadow: 0 0 0 1.5px #ffd166;
+}
+
+.catan-area-head .g-btn {
+  margin-left: auto;
+}
+
+.catan-event-die {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  padding: 0 6px;
+  height: 40px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  background: var(--oc, #1a557b);
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 2px #ffffff33;
+}
+
+.catan-card.is-good span {
+  font-size: 8px;
+  letter-spacing: 0;
+}
+
+/* A counter-offer: its terms, and the button to take it. */
+.catan-counter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.catan-counter-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* A resource card on its way from the tile that paid to the player who got it. */
+.catan-flyer {
+  width: 20px;
+  height: 28px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  box-shadow: 0 6px 14px #0009;
+}

@@ -90,7 +90,7 @@ describe('which sounds a change makes, for the viewer', () => {
 
   test('completing a colour set', () => {
     const before = game();
-    const [a, b] = groupIds('brown');
+    const [a, b] = groupIds('brown', before.settings.board);
     before.ownership[a].owner = 'p1';
     const after = { ...before, ownership: { ...before.ownership, [b]: { ...before.ownership[b], owner: 'p1' } } };
     expect(soundCues(before, after, 'p0')).toContain('set');

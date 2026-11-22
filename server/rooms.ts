@@ -49,10 +49,29 @@ interface Room {
   paused: { by: string; at: number; remaining: number | null } | null;
   /** Players who have asked for a rematch since the game ended. */
   rematch: Set<string>;
+  /** Epoch ms since which no human has been connected, or null while someone is. */
+  emptySince: number | null;
 }
 
 /** How long a player's turn is before it times out and gets skipped. */
 const TURN_MS = 45_000;
+
+/** A room nobody is connected to is closed after this long (a dropped player can come back until then). */
+const ROOM_IDLE_MS = 2 * 60 * 60_000;
+/** Rooms open at once. Past this, no new room is opened until some close. */
+const MAX_ROOMS = 5000;
+/** The most a room's options may weigh as JSON: every game's real options are far smaller. */
+const MAX_OPTIONS_CHARS = 4000;
+
+/** A refusal that is safe to show the player who caused it. */
+export class RoomError extends Error {}
+
+/** Options as a client sent them: refused when they are not a plain, small object. */
+function checkOptions(options: unknown): void {
+  if (options === undefined || options === null) return;
+  if (typeof options !== 'object' || Array.isArray(options)) throw new RoomError('invalid options');
+  if (JSON.stringify(options).length > MAX_OPTIONS_CHARS) throw new RoomError('invalid options');
+}
 
 type Ok = { ok: true };
 type Err = { error: string };
@@ -118,9 +137,12 @@ export class RoomStore {
     options: unknown = {},
     gameId: string = DEFAULT_GAME_ID,
   ): { code: string; token: string; playerId: string } {
-    const adapter = adapterFor(gameId);
+    if (this.rooms.size >= MAX_ROOMS) throw new RoomError('the server is full, try again in a few minutes');
+    checkOptions(options);
+    if (!Number.isInteger(seatCount) || seatCount < 1 || seatCount > 12) throw new RoomError('invalid seat count');
+    const adapter = adapterFor(String(gameId));
     const err = adapter.validateSeatCount(seatCount, options); // may throw on invalid options
-    if (err) throw new Error(err);
+    if (err) throw new RoomError(err);
 
     const code = this.freshCode();
     const hostToken = randomUUID();
@@ -142,6 +164,7 @@ export class RoomStore {
       removed: new Set(),
       paused: null,
       rematch: new Set(),
+      emptySince: null,
     });
     return { code, token: hostToken, playerId: playerIdForSeat(0) };
   }
@@ -159,7 +182,7 @@ export class RoomStore {
     if (!room) return { error: 'no such room' };
     if (room.started) {
       const open = this.openSeats(room);
-      const wanted = name.trim().toLowerCase();
+      const wanted = String(name ?? '').trim().toLowerCase();
       const back =
         open.find((s) => s.index === seatIndex) ??
         open.find((s) => s.name?.trim().toLowerCase() === wanted) ??
@@ -267,6 +290,7 @@ export class RoomStore {
     if (!seat) return { error: 'unknown token' };
 
     const actorId = playerIdForSeat(seat.index);
+    if (typeof action !== 'object' || action === null || typeof (action as { type?: unknown }).type !== 'string') return { error: 'malformed action' };
     if (room.paused) return { error: 'the game is paused' };
     if (room.adapter.rematchByVote && (action as { type?: string } | null)?.type === 'REMATCH') {
       // Checked now (the game must be over), applied once everyone has asked.
@@ -340,10 +364,11 @@ export class RoomStore {
     if (room.hostToken !== hostToken) return { error: 'only the host can change the rules' };
     if (room.started) return { error: 'game already started' };
     try {
+      checkOptions(options);
       const err = room.adapter.validateSeatCount(room.seatCount, options);
       if (err) return { error: err };
-    } catch (e) {
-      return { error: (e as Error).message };
+    } catch {
+      return { error: 'invalid options' };
     }
     room.options = options;
     return { ok: true };
@@ -356,13 +381,13 @@ export class RoomStore {
     if (!room) return { error: 'no such room' };
     if (room.hostToken !== hostToken) return { error: 'only the host can change the seats' };
     if (room.started) return { error: 'game already started' };
-    if (!Number.isInteger(seatCount) || seatCount < 1) return { error: 'invalid seat count' };
+    if (!Number.isInteger(seatCount) || seatCount < 1 || seatCount > 12) return { error: 'invalid seat count' };
     if (room.seats.slice(seatCount).some((s) => s.token !== null)) return { error: 'a player is sitting there' };
     try {
       const err = room.adapter.validateSeatCount(seatCount, room.options);
       if (err) return { error: err };
-    } catch (e) {
-      return { error: (e as Error).message };
+    } catch {
+      return { error: 'invalid seat count' };
     }
     room.seats = Array.from({ length: seatCount }, (_, i) => room.seats[i] ?? emptySeat(i));
     room.seatCount = seatCount;
@@ -426,6 +451,20 @@ export class RoomStore {
     return expired;
   }
 
+  /** Close every room no human has been connected to for ROOM_IDLE_MS, returning their codes. */
+  sweep(now: number): string[] {
+    const closed: string[] = [];
+    for (const [code, room] of this.rooms) {
+      if (this.hasConnectedHuman(room)) room.emptySince = null;
+      else if (room.emptySince === null) room.emptySince = now;
+      else if (now - room.emptySince >= ROOM_IDLE_MS) {
+        this.rooms.delete(code);
+        closed.push(code);
+      }
+    }
+    return closed;
+  }
+
   /** For games whose bots act one move at a time: the pause before this room's
    *  next bot move, or null when no bot is to act (or nobody is left to watch). */
   botDelay(code: string): number | null {
@@ -449,7 +488,6 @@ export class RoomStore {
     return room.seats.some((s) => !s.isAI && s.connected && s.name !== null);
   }
 
-  /** Start (or clear) the current player's turn clock based on whose turn it is. */
   /** Whoever the running clock belongs to: the player to move under a chess
    *  clock, otherwise the human whose turn can time out. */
   private onClock(room: Room): string | null {
@@ -486,7 +524,7 @@ export class RoomStore {
     }
     const actor = room.adapter.turnActorId(room.game);
     const seat = actor ? room.seats[Number(actor.slice(1))] : undefined;
-    const due = seat && !seat.isAI ? (room.adapter.turnMs ?? TURN_MS) : null;
+    const due = seat && !seat.isAI ? (room.adapter.turnMsFor?.(room.game) ?? room.adapter.turnMs ?? TURN_MS) : null;
     if (room.paused) room.paused.remaining = due; // the clock starts when the game carries on
     else room.turnDeadline = due === null ? null : Date.now() + due;
   }
@@ -540,7 +578,7 @@ export class RoomStore {
 
     if (!room.started) {
       if (token === room.hostToken) {
-        this.rooms.delete(code); // host cancels the lobby → free the server
+        this.rooms.delete(code); // the host cancelled the lobby
         return { code, deleted: true };
       }
       room.seats[seat.index] = emptySeat(seat.index); // open the seat back up

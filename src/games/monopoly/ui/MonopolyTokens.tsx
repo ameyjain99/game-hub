@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useSpaceName } from './boardNames';
+import { layoutOf } from '../engine/board';
 import type { MonopolyPlayer, MonopolyState } from '../engine/state';
 import { useMediaQuery } from '../../../shared/useMediaQuery';
 import { movePath, tokenAnchor, tokenColor, tokenLabel } from './board-layout';
@@ -23,7 +24,7 @@ interface Shown {
 }
 
 /** Each player's drawn square, walking a square at a time toward the real one. */
-function useShownSquares(players: MonopolyPlayer[], instant: boolean): Record<string, Shown> {
+function useShownSquares(players: MonopolyPlayer[], instant: boolean, side: number): Record<string, Shown> {
   const [shown, setShown] = useState<Record<string, Shown>>(() =>
     Object.fromEntries(players.map((p) => [p.id, { sq: p.position, glide: false, jailed: p.inJail }])),
   );
@@ -36,9 +37,9 @@ function useShownSquares(players: MonopolyPlayer[], instant: boolean): Record<st
     for (const p of players) {
       const was = shownRef.current[p.id] ?? { sq: p.position, glide: false, jailed: p.inJail };
       const toJail = p.inJail && !was.jailed;
-      const path = movePath(was.sq, p.position, toJail || instant);
-      const steps = (p.position - was.sq + 40) % 40;
-      const glide = !instant && path.length === 1 && (toJail || steps > 12);
+      const path = movePath(was.sq, p.position, toJail || instant, side);
+      const steps = (p.position - was.sq + side * 4) % (side * 4);
+      const glide = !instant && path.length === 1 && (toJail || steps > (side > 10 ? 15 : 12));
       const walking = !glide && !instant;
       path.forEach((sq, k) =>
         timers.push(
@@ -80,7 +81,8 @@ export function MonopolyTokens({
   const nameOf = useSpaceName();
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
   const players = view.players.filter((p) => !p.bankrupt);
-  const shown = useShownSquares(players, reduced);
+  const side = layoutOf(view.settings.board).side;
+  const shown = useShownSquares(players, reduced, side);
   const sqOf = (p: MonopolyPlayer) => shown[p.id]?.sq ?? p.position;
 
   const bySquare = new Map<number, string[]>();
@@ -93,7 +95,7 @@ export function MonopolyTokens({
         const group = bySquare.get(sq)!;
         const step = Math.min(FAN, FAN_SPAN / Math.max(1, group.length - 1));
         const spread = (group.indexOf(p.id) - (group.length - 1) / 2) * step;
-        const a = tokenAnchor(sq);
+        const a = tokenAnchor(sq, side);
         const x = a.x + (a.axis === 'x' ? spread : 0);
         const y = a.y + (a.axis === 'y' ? spread : 0);
         const jailed = p.inJail && sq === p.position;

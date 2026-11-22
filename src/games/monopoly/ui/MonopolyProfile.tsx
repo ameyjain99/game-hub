@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { GameForm } from '../../../shared/ui/GameForm';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/state';
-import { BoardField, HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
+import { BOARDS } from '../engine/board';
+import { BoardField, HouseRuleSwitches, RoundLimitField, StartingCashField, cashForBoard } from './MonopolyRules';
 
 interface Props {
   action: 'start' | 'join';
@@ -16,7 +17,7 @@ export function MonopolyProfile({ action, code, onBack, onSubmit }: Props) {
   const [name, setName] = useState('');
   const [seatCount, setSeatCount] = useState(4);
   const [startingCash, setStartingCash] = useState(1500);
-  const [rules, setRules] = useState<Settings>(DEFAULT_SETTINGS);
+  const [rules, setRules] = useState<Settings>({ ...DEFAULT_SETTINGS, board: BOARDS[0].id });
   const hosting = action === 'start';
 
   return (
@@ -38,7 +39,10 @@ export function MonopolyProfile({ action, code, onBack, onSubmit }: Props) {
       {hosting && (
         <>
           <div className="g-field-row">
-            <BoardField value={rules.board} onChange={(board) => setRules((r) => ({ ...r, board }))} />
+            <BoardField value={rules.board} onChange={(board) => {
+                setStartingCash((c) => cashForBoard(c, rules.board, board));
+                setRules((r) => ({ ...r, board }));
+              }} />
             <label className="g-field">
               <span className="g-field-label">Players</span>
               <select aria-label="Number of players" value={seatCount} onChange={(e) => setSeatCount(Number(e.target.value))}>
@@ -50,7 +54,7 @@ export function MonopolyProfile({ action, code, onBack, onSubmit }: Props) {
               </select>
             </label>
           </div>
-          <StartingCashField value={startingCash} onChange={setStartingCash} />
+          <StartingCashField board={rules.board} value={startingCash} onChange={setStartingCash} />
           <RoundLimitField value={rules.roundLimit} onChange={(roundLimit) => setRules((r) => ({ ...r, roundLimit }))} />
           <div className="g-field">
             <span className="g-field-label">House rules</span>

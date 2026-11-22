@@ -11,7 +11,7 @@ import { threatMap } from './opponents';
  * Tunable weights, tuned against Normal with `npm run bench:ai` (2p, seats
  * alternated). Each value's comment notes what the measurements showed.
  */
-export const W = {
+const W = {
   /** Base score of a claim on the ticket plan (always beats any draw). */
   planned: 100,
   /** Urgency per unit of opponent pressure, on planned claims (≈ neutral either way). */
