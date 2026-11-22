@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { Server as IOServer, type Socket } from 'socket.io';
 import { RoomError, RoomStore } from './rooms';
 import { contributorsSource } from './contributors';
+import { RateLimiter, clientAddress, contentSecurityPolicy, originAllowed } from './guard';
 import type { Contributor } from '../src/shared/project';
 import {
   EVT,
@@ -56,7 +57,18 @@ const MIME: Record<string, string> = {
  * client with SPA fallback. In dev, Vite serves the client and proxies the API
  * and socket.io here.
  */
-function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, contributors: () => Promise<Contributor[]>): void {
+/** What one address may do in a minute before it is told to wait. */
+const LIMITS = { lookups: 90, wrongCodes: 20, newRooms: 20 };
+const MINUTE = 60_000;
+
+interface Limits {
+  lookups: RateLimiter;
+  /** Room codes that turned out not to exist, by HTTP or by socket: what guessing codes looks like. */
+  wrongCodes: RateLimiter;
+  newRooms: RateLimiter;
+}
+
+function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, contributors: () => Promise<Contributor[]>, limits: Limits): void {
   httpServer.on('request', async (req, res) => {
     if (req.url?.startsWith('/socket.io')) return; // handled by socket.io
     let url: URL;
@@ -70,6 +82,7 @@ function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, con
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Content-Security-Policy', contentSecurityPolicy(req.headers.host));
 
     // The people who built GameHub, for the home page's Open source section.
     if (url.pathname === '/api/contributors') {
@@ -84,7 +97,16 @@ function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, con
     // a game already under way it lists the seats a dropped player can take back.
     if (url.pathname === '/api/room-exists') {
       res.setHeader('Content-Type', 'application/json');
+      const who = clientAddress(req.headers, req.socket.remoteAddress);
+      const now = Date.now();
+      if (limits.wrongCodes.blocked(who, now) || !limits.lookups.hit(who, now)) {
+        res.statusCode = 429;
+        res.setHeader('Retry-After', '60');
+        res.end(JSON.stringify({ error: 'too many tries, wait a minute' }));
+        return;
+      }
       const info = store.roomInfo(url.searchParams.get('code') ?? '');
+      if (!info) limits.wrongCodes.hit(who, now);
       res.end(JSON.stringify(info ? { exists: true, ...info } : { exists: false }));
       return;
     }
@@ -109,7 +131,7 @@ function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, con
 /** How long a dropped player has to reconnect before their call is hung up. */
 const BYE_GRACE_MS = 15_000;
 
-export function createServer(opts: { port?: number; contributors?: () => Promise<Contributor[]>; byeGraceMs?: number } = {}): {
+export function createServer(opts: { port?: number; contributors?: () => Promise<Contributor[]>; byeGraceMs?: number; allowedOrigins?: string[] } = {}): {
   io: IOServer;
   httpServer: HttpServer;
   store: RoomStore;
@@ -117,11 +139,20 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
 } {
   const httpServer = createHttpServer();
   const store = new RoomStore();
-  attachHttp(httpServer, process.env.NODE_ENV === 'production', store, opts.contributors ?? contributorsSource());
+  const limits: Limits = { lookups: new RateLimiter(LIMITS.lookups, MINUTE), wrongCodes: new RateLimiter(LIMITS.wrongCodes, MINUTE), newRooms: new RateLimiter(LIMITS.newRooms, MINUTE) };
+  attachHttp(httpServer, process.env.NODE_ENV === 'production', store, opts.contributors ?? contributorsSource(), limits);
+  // Pages on other sites may not open a game socket here, except the origins listed in ALLOWED_ORIGINS (comma-separated).
+  const allowedOrigins = opts.allowedOrigins ?? (process.env.ALLOWED_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
   // A dead connection is noticed within ~20s (the default is ~45s), so a dropped
   // player's seat shows as open, and can be taken back, soon after they drop.
   // No message a client sends (an action, a lobby change, a WebRTC offer) comes near 200 kB.
-  const io = new IOServer(httpServer, { cors: { origin: '*' }, pingInterval: 10_000, pingTimeout: 10_000, maxHttpBufferSize: 200_000 });
+  const io = new IOServer(httpServer, {
+    cors: allowedOrigins.length > 0 ? { origin: allowedOrigins } : undefined,
+    allowRequest: (req, done) => done(null, originAllowed(req.headers, allowedOrigins)),
+    pingInterval: 10_000,
+    pingTimeout: 10_000,
+    maxHttpBufferSize: 200_000,
+  });
 
   const fail = (socket: Socket, message: string) => socket.emit(EVT.errorMsg, { message });
 
@@ -162,6 +193,13 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
 
   io.on('connection', (socket: Socket) => {
     const data = socket.data as SocketData;
+    const who = clientAddress(socket.handshake.headers, socket.handshake.address);
+    /** A code that matched no room counts against the address that sent it; too many and it must wait. */
+    const wrongCode = (error: string): string => {
+      if (error === 'no such room') limits.wrongCodes.hit(who, Date.now());
+      return error;
+    };
+    const guessing = () => limits.wrongCodes.blocked(who, Date.now());
 
     /** Listen for a client message. A payload that is not an object is dropped, and a
      *  handler that throws answers with an error: one bad message never reaches the process. */
@@ -178,6 +216,7 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
     };
 
     on(EVT.createRoom, (p: CreateRoom) => {
+      if (!limits.newRooms.hit(who, Date.now())) return fail(socket, 'too many rooms opened, wait a minute');
       let res;
       try {
         res = store.createRoom(
@@ -200,8 +239,9 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
     });
 
     on(EVT.joinRoom, (p: JoinRoom) => {
+      if (guessing()) return fail(socket, 'too many tries, wait a minute');
       const res = store.join(p.code, p.name, p.avatar, p.seat);
-      if ('error' in res) return fail(socket, res.error);
+      if ('error' in res) return fail(socket, wrongCode(res.error));
       data.code = p.code;
       data.playerId = res.playerId;
       data.token = res.token;
@@ -212,8 +252,9 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
     });
 
     on(EVT.reconnect, (p: Reconnect) => {
+      if (guessing()) return fail(socket, 'too many tries, wait a minute');
       const res = store.reconnect(p.code, p.token);
-      if ('error' in res) return fail(socket, res.error);
+      if ('error' in res) return fail(socket, wrongCode(res.error));
       data.code = p.code;
       data.playerId = res.playerId;
       data.token = p.token;
@@ -329,6 +370,7 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
       clearTimeout(botTimers.get(code));
       botTimers.delete(code);
     }
+    for (const limiter of Object.values(limits)) limiter.sweep(now);
   }, 1000);
   turnTick.unref?.(); // don't keep the process alive on its own
 

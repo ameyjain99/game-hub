@@ -8,22 +8,26 @@ const WARN_SECS = 5;
 /**
  * A compact countdown for the player on the clock. Turns urgent in the last ten
  * seconds; then, if `onGift` is given (the viewer isn't the one on the clock),
- * offers to give that player 20 more seconds. `onUrgent` fires once per turn
- * in the last five seconds. Renders nothing with there's no clock.
+ * offers to give that player 20 more seconds. `onLow` fires once per deadline
+ * as the clock turns urgent, `onUrgent` once in the last five seconds. Renders
+ * nothing when there's no clock.
  */
 export function TurnClock({
   deadline,
   label,
   onGift,
   onUrgent,
+  onLow,
 }: {
   deadline: number | null | undefined;
   label: string;
   onGift?: () => void;
   onUrgent?: () => void;
+  onLow?: () => void;
 }) {
   const [now, setNow] = useState(() => Date.now());
   const warnedFor = useRef<number | null>(null);
+  const lowFor = useRef<number | null>(null);
   useEffect(() => {
     if (deadline == null) return;
     const t = setInterval(() => setNow(Date.now()), 500);
@@ -37,6 +41,12 @@ export function TurnClock({
     onUrgent();
   }, [secs, deadline, onUrgent]);
 
+  useEffect(() => {
+    if (secs === null || secs > URGENT_SECS || !onLow || lowFor.current === deadline) return;
+    lowFor.current = deadline ?? null;
+    onLow();
+  }, [secs, deadline, onLow]);
+
   if (deadline == null || secs === null) return null;
   const urgent = secs <= URGENT_SECS;
   return (
@@ -47,7 +57,7 @@ export function TurnClock({
       </span>
       {urgent && onGift && (
         <button type="button" className="g-clock-gift" aria-label={`Give ${label} 20 more seconds`} onClick={onGift}>
-          +20s
+          Give +20s
         </button>
       )}
     </span>

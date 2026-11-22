@@ -102,3 +102,15 @@ test('the local setup offers starting cash and house rules, and uses them', () =
   // The first board, World 2008, plays in millions: 2,000 is printed as 20M in Monopoly money.
   expect(screen.getAllByText('₥20M').length).toBeGreaterThan(0);
 });
+
+test('the rest of the table hears a low clock once, and again after a gift moves the deadline', () => {
+  const onLow = vi.fn();
+  const deadline = Date.now() + 8_000;
+  const { rerender } = render(<TurnClock deadline={deadline} label="Riya" onLow={onLow} />);
+  rerender(<TurnClock deadline={deadline} label="Riya" onLow={onLow} />);
+  expect(onLow).toHaveBeenCalledTimes(1);
+  rerender(<TurnClock deadline={Date.now() + 30_000} label="Riya" onLow={onLow} />);
+  expect(onLow).toHaveBeenCalledTimes(1);
+  rerender(<TurnClock deadline={Date.now() + 9_000} label="Riya" onLow={onLow} />);
+  expect(onLow).toHaveBeenCalledTimes(2);
+});

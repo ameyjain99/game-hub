@@ -1,7 +1,8 @@
 /* Catan: a hex island in a deep sea. Flat terrain colours with a white mark
    each, cream number tokens (6 and 8 in red), dock markers for harbours, and
    pieces outlined in near-black so they read on every terrain. Your cards,
-   dice and actions dock under the island; prompts float over it. */
+   dice and actions dock under the island; prompts float over it. On wide
+   screens the build menu moves from the dock into the sidebar. */
 
 .kit-game.catan-game {
   max-width: calc(112dvh + 340px);
@@ -64,7 +65,16 @@
 }
 
 .catan-dock:not(.is-any) + .catan-dock-label {
+  font-size: 11.5px;
   fill: #fff;
+}
+
+.catan-dock-mark {
+  fill: #ffffff2e;
+  stroke: #fff;
+  stroke-width: 0.07;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ---- Tiles ---- */
@@ -495,6 +505,18 @@
   display: none;
 }
 
+.catan-res-icon {
+  flex: none;
+  width: 1.5em;
+  height: 1.125em;
+  vertical-align: -0.2em;
+  fill: #ffffff2e;
+  stroke: currentColor;
+  stroke-width: 0.07;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* Commodities are woven goods, not raw resources: a fine weave marks their cards and chips
    (so coin never reads as ore). */
 .catan-chip.is-good,
@@ -542,13 +564,19 @@
   transition: opacity 0.2s, transform 0.2s;
 }
 
+.catan-card .catan-res-icon {
+  width: 22px;
+  height: 16.5px;
+  margin-bottom: 2px;
+}
+
 .catan-card b {
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1;
 }
 
 .catan-card span {
-  margin-top: 4px;
+  margin-top: 3px;
   font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -595,6 +623,49 @@
   border-radius: 10px;
 }
 
+.catan-build small {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.catan-build.is-on small {
+  color: #0b0b0f99;
+}
+
+/* In the dock the buttons stay narrow: how many pieces are left is in each button's tooltip. */
+.catan-actions .catan-build small {
+  display: none;
+}
+
+/* The build menu in the sidebar: two columns of full-width buttons. */
+.catan-build-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.catan-build-grid .catan-build {
+  padding: 6px 8px;
+}
+
+.catan-build-grid .catan-cards {
+  flex-wrap: nowrap;
+  gap: 2px;
+}
+
+.catan-build-grid .catan-chip {
+  padding: 1px 4px;
+}
+
+.catan-build-grid .catan-build-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+
 .catan-build:hover:not(:disabled) {
   background: #ffffff1c;
 }
@@ -609,27 +680,123 @@
 }
 
 /* ---- Sidebar ---- */
+/* Your development cards: one card per kind with how many you hold. A card you can play right now lights up and says so. */
 .catan-dev-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.catan-dev {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.catan-dev-cards li {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 3px;
+  min-height: 74px;
+  padding: 8px 2px 6px;
+  color: var(--ink);
+  background: #ffffff10;
+  border: 1px solid #ffffff26;
+  border-radius: 9px;
 }
 
-.catan-dev-cards li > span {
+.catan-dev b {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.catan-dev span {
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.catan-dev em {
+  margin-top: auto;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffd166;
+  visibility: hidden;
+}
+
+.catan-dev.is-empty {
+  opacity: 0.38;
+}
+
+button.catan-dev:not(:disabled) {
+  border-color: #ffd166;
+}
+
+button.catan-dev:not(:disabled):hover {
+  background: #ffffff1c;
+}
+
+button.catan-dev:not(:disabled) em {
+  visibility: visible;
+}
+
+/* Cities & Knights progress cards: a slot for each card you may hold. Clicking a card plays it. */
+.catan-progress-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.catan-progress-card {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 13px;
+  min-height: 52px;
+  padding: 6px 8px;
+  text-align: left;
+  color: var(--ink);
+  background: #ffffff10;
+  border: 1px solid #ffffff26;
+  border-radius: 9px;
+}
+
+.catan-progress-card b {
+  font-size: 12.5px;
+}
+
+.catan-progress-card span {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.catan-progress-card.is-empty {
+  background: none;
+  border-style: dashed;
+  border-color: #ffffff1f;
+}
+
+button.catan-progress-card:not(:disabled) {
+  border-color: #ffd166;
+}
+
+button.catan-progress-card:not(:disabled):hover {
+  background: #ffffff1c;
+}
+
+button.catan-progress-card:disabled {
+  opacity: 0.6;
+}
+
+/* The dice chart sits under the log and keeps its own height; the log takes the rest of the column. */
+.kit-left > .catan-dice-section {
+  flex: none;
+  margin-top: var(--space-6);
 }
 
 .catan-dice-stats {
@@ -705,6 +872,17 @@
   from {
     opacity: 0;
     transform: translateY(16px);
+  }
+}
+
+/* Two columns: the log and the dice chart share the sidebar's column, so both run short and leave the height to the players and your cards. */
+@media (min-width: 1101px) and (max-width: 1280px) {
+  .catan-game .kit-left .kit-log {
+    max-height: 110px;
+  }
+
+  .catan-game .catan-dice-stats {
+    height: 60px;
   }
 }
 

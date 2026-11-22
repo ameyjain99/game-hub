@@ -25,7 +25,7 @@ export interface Settings {
   randomizeOrder: boolean;
   /** Rounds to play before the highest net worth wins; 0 plays until one player is left. */
   roundLimit: number;
-  /** Which places are on the board (the squares and prices are the same on all). */
+  /** The board the game is played on. */
   board: BoardId;
   /** Paid for passing or landing on Go. */
   goSalary: number;

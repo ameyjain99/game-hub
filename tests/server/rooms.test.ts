@@ -72,7 +72,6 @@ test('createRoom rejects out-of-range seat counts', () => {
   expect(() => store.createRoom(6, 'x', '')).toThrow();
 });
 
-// Review Focus #2
 test('join errors on unknown / full / started room', () => {
   expect(store.join('ZZZZ', 'x', '')).toEqual({ error: expect.any(String) });
   const { code } = store.createRoom(2, 'host', '');
@@ -80,14 +79,12 @@ test('join errors on unknown / full / started room', () => {
   expect(store.join(code, 'late', '')).toEqual({ error: expect.any(String) });
 });
 
-// Review Focus #3
 test('reconnect rejects an unknown token without touching the seat', () => {
   const { code, token: hostTok } = store.createRoom(2, 'host', '');
   expect(store.reconnect(code, 'bogus')).toEqual({ error: expect.any(String) });
   expect(store.reconnect(code, hostTok)).toEqual({ playerId: 'p0' });
 });
 
-// Review Focus #4
 test('start rejects while a seat is unfilled, succeeds once AI-filled', () => {
   const { code, token: hostTok } = store.createRoom(2, 'host', '');
   expect(store.start(code, hostTok)).toEqual({ error: expect.any(String) });
@@ -135,7 +132,6 @@ test('submitAction rejects an action from a player whose turn it is not', () => 
   expect(res).toEqual({ error: expect.any(String) });
 });
 
-// Review Focus #5
 test('a disconnect on the disconnected players turn leaves the game paused', () => {
   const { code, token: hostTok } = store.createRoom(2, 'host', '');
   const guestTok = token(store.join(code, 'guest', ''));

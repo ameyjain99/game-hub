@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { PIPS, geoOf, type Terrain } from '../board';
+import { PIPS, geoOf, type Resource, type Terrain } from '../board';
 import type { CatanState } from '../engine';
 
 /** Board units (a hex's radius is 1) to SVG units. */
@@ -29,7 +29,13 @@ export const GLYPH: Record<Terrain, string> = {
   sea: 'M-0.36 0C-0.24 -0.1 -0.12 -0.1 0 0S0.24 0.1 0.36 0M-0.28 0.2C-0.16 0.1 -0.04 0.1 0.08 0.2',
 };
 
-export interface IslandProps {
+/** The terrain that produces each resource. */
+export const RES_TERRAIN: Record<Resource, Terrain> = { lumber: 'forest', brick: 'hills', wool: 'pasture', grain: 'fields', ore: 'mountains' };
+
+/** How far out to sea a harbour's dock stands from its coast edge, in hex radii. */
+const HARBOR_REACH = 0.7;
+
+interface IslandProps {
   s: CatanState;
   colorOf: (playerId: string) => string;
   /** Corners, edges and tiles that can be clicked right now. */
@@ -68,7 +74,6 @@ export function House({ x, y, color, city, dim }: { x: number; y: number; color:
   );
 }
 
-/** The island: sea, harbours, tiles and tokens, then roads, buildings and the robber on top. */
 /** A ship on an edge: a hull and a sail in the owner's colour, turned along the edge. */
 function Ship({ s, e, color, dim, pirate }: { s: CatanState; e: number; color: string; dim?: boolean; pirate?: boolean }) {
   const GEO = geoOf(s.board);
@@ -83,7 +88,6 @@ function Ship({ s, e, color, dim, pirate }: { s: CatanState; e: number; color: s
   );
 }
 
-/** The island: sea, harbours, tiles and tokens, then roads, ships, buildings, the robber and the pirate on top. */
 /** A knight: a shield in its owner's colour with a pip per point of strength; an inactive one is hollow. */
 function KnightPiece({ x, y, color, level, active, dim }: { x: number; y: number; color: string; level: number; active: boolean; dim: boolean }) {
   return (
@@ -134,8 +138,8 @@ export function Island({
   const big = s.board.layout === 'large';
   const xs = GEO.vertices.map((v) => v.x);
   const ys = GEO.vertices.map((v) => v.y);
-  const [w, h] = scenario ? [Math.max(...xs.map(Math.abs)) + 0.4, Math.max(...ys.map(Math.abs)) + 0.4] : big ? [6.9, 6.35] : [5.7, 5.2];
-  const [sx, sy] = big ? [6.6, 6.05] : [5.4, 4.95];
+  const [w, h] = scenario ? [Math.max(...xs.map(Math.abs)) + 0.4, Math.max(...ys.map(Math.abs)) + 0.4] : big ? [7.1, 6.55] : [5.95, 5.45];
+  const [sx, sy] = big ? [7, 6.45] : [5.85, 5.35];
   const pirate = s.board.pirate;
   return (
     <svg className="catan-island" viewBox={`${-w * U} ${-h * U} ${2 * w * U} ${2 * h * U}`} role="img" aria-label="The island">
@@ -198,18 +202,23 @@ export function Island({
       {GEO.harborEdges.map((e, k) => {
         const edge = GEO.edges[e];
         const kind = s.board.harbors[k];
-        const len = Math.hypot(edge.x, edge.y);
-        const hx = edge.x + (edge.x / len) * 0.62;
-        const hy = edge.y + (edge.y / len) * 0.62;
+        // The dock stands straight out to sea from the middle of its coast edge, so both of its piers are the same length.
+        const [a, b] = edge.v.map((v) => GEO.vertices[v]);
+        const along = Math.hypot(b.x - a.x, b.y - a.y);
+        let [nx, ny] = [(b.y - a.y) / along, -(b.x - a.x) / along];
+        if (nx * edge.x + ny * edge.y < 0) [nx, ny] = [-nx, -ny];
+        const hx = edge.x + nx * HARBOR_REACH;
+        const hy = edge.y + ny * HARBOR_REACH;
         return (
           <g key={e} className="catan-harbor">
             {edge.v.map((v) => (
               <line key={v} x1={GEO.vertices[v].x * U} y1={GEO.vertices[v].y * U} x2={hx * U} y2={hy * U} />
             ))}
-            <circle cx={hx * U} cy={hy * U} r={0.3 * U} className={`catan-dock is-${kind}`} style={kind === 'any' ? undefined : ({ '--dock': TERRAIN_COLOR[({ lumber: 'forest', brick: 'hills', wool: 'pasture', grain: 'fields', ore: 'mountains' } as const)[kind]] } as CSSProperties)} />
-            <text x={hx * U} y={hy * U + 0.11 * U} className="catan-dock-label">
+            <circle cx={hx * U} cy={hy * U} r={0.34 * U} className={`catan-dock is-${kind}`} style={kind === 'any' ? undefined : ({ '--dock': TERRAIN_COLOR[RES_TERRAIN[kind]] } as CSSProperties)} />
+            <text x={hx * U} y={(hy + (kind === 'any' ? 0.1 : 0.23)) * U} className="catan-dock-label">
               {kind === 'any' ? '3:1' : '2:1'}
             </text>
+            {kind !== 'any' && <path d={GLYPH[RES_TERRAIN[kind]]} transform={`translate(${hx * U} ${(hy - 0.1) * U}) scale(${U * 0.4})`} className="catan-dock-mark" />}
           </g>
         );
       })}

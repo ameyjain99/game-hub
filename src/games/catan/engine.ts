@@ -217,7 +217,7 @@ export interface CatanEvent {
 }
 
 export interface CatanState {
-  /** The expansion in play (absent on older states: the base game). */
+  /** The expansion in play (the base game when not set). */
   mode?: CatanMode;
   board: Board;
   players: CatanPlayer[];

@@ -228,7 +228,7 @@ const HARBOR_KINDS: Record<Layout, HarborKind[]> = {
 };
 
 export interface Board {
-  /** The island's shape (absent on boards from before there was a choice: standard). */
+  /** The island's shape (standard when not set). */
   layout?: Layout;
   terrain: Terrain[];
   /** Each tile's number token (null on the desert). */

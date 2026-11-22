@@ -88,8 +88,8 @@ function sendToJail(draft: MonopolyState, seat: number): void {
 
 /**
  * Move `seat` to `newPos` (paying Go salary when `collectGo`) and resolve the
- * landed space. Mutates the draft. Rent/tax/card/free-parking handling is layered
- * in by later tasks; this wires the dispatch and purchase offer.
+ * square it lands on: rent, tax, a card, a purchase offer, or one of Mega's
+ * squares. Mutates the draft.
  */
 export function landOn(
   draft: MonopolyState,

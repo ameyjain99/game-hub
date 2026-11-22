@@ -53,8 +53,8 @@ function stepFromUrl(gameId: string): GameStep {
 
 /**
  * URL-backed navigation for a game's own flow, so every screen is a shareable,
- * refresh-safe link and the browser Back button works. Shared by Monopoly and
- * Cluedo (same contract as Ticket to Ride's routing).
+ * refresh-safe link and the browser Back button works. Shared by every game
+ * but Ticket to Ride, whose own routing follows the same contract.
  */
 export function useGameRoute(gameId: string, onBackToHub: () => void) {
   const base = gamePath(gameId);

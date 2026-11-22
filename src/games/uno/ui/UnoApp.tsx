@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { UnoOptions } from '../engine';
-import { rulesFromSpec } from '../../../online/ui/LobbyRules';
+import { rulesFromSpec, type RulesFor } from '../../../online/ui/LobbyRules';
 import { KitApp, type KitAppConfig } from '../../kit/ui/KitApp';
 import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
@@ -36,7 +36,7 @@ const HOUSE: { key: HouseKey; label: string; desc: string; inNoMercy: boolean; n
   { key: 'challenge', label: 'Challenge a Wild Draw', desc: 'A Wild Draw may be bluffed; the player made to draw may challenge it (official rule)', inNoMercy: false, notInNoMercy: true },
 ];
 
-const LOBBY_RULES = rulesFromSpec([
+const OPTION_FIELDS = rulesFromSpec([
   {
     key: 'variant',
     label: 'Mode',
@@ -58,6 +58,23 @@ const LOBBY_RULES = rulesFromSpec([
   { key: 'target', label: 'Play to', choices: [500, 100, 200, 300].map((n) => ({ value: n, label: n === 500 ? '500 points (standard)' : `${n} points` })) },
 ]);
 
+/** The mode's display name, without the aside the picker adds. */
+const MODE_NAME: Record<Variant, string> = { classic: 'Classic', flip: 'Flip', 'no-mercy': 'No Mercy' };
+
+/** The options as played: No Mercy turns some house rules on and one off, whatever their switches say. */
+const summaryOf = (options: unknown): string[] => {
+  const o = (options ?? {}) as Partial<UnoOptions>;
+  const noMercy = o.variant === 'no-mercy';
+  return [
+    `Mode: ${MODE_NAME[o.variant ?? 'classic']}`,
+    ...HOUSE.map((h) => `${h.label}: ${(noMercy ? (h.inNoMercy || !!o[h.key]) && !h.notInNoMercy : !!o[h.key]) ? 'On' : 'Off'}`),
+    `Cards dealt: ${o.handSize ?? 7}`,
+    `Play to: ${o.target ?? 500} points`,
+  ];
+};
+
+const LOBBY_RULES: RulesFor = (options, onChange) => ({ ...OPTION_FIELDS(options, onChange), summary: summaryOf(options) });
+
 export function UnoApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [variant, setVariant] = useState<Variant>('classic');
   const [house, setHouse] = useState<Record<HouseKey, boolean>>({ stack: false, together: false, freeWild: false, drawToMatch: false, sevenZero: false, jumpIn: false, challenge: false });
@@ -72,6 +89,7 @@ export function UnoApp({ onBackToHub }: { onBackToHub: () => void }) {
       config={CONFIG}
       onBackToHub={onBackToHub}
       optionValue={options}
+      localSummary={summaryOf(options)}
       optionFields={
         <>
         <label className="g-field">

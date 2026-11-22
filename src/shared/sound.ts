@@ -8,7 +8,7 @@ import { useState } from 'react';
 let ctx: AudioContext | null = null;
 
 const STORAGE_KEY = 'gamehub-muted';
-/** Where Ticket to Ride kept its mute before sounds were shared. */
+/** A second key the mute is read from when the first is not set (Ticket to Ride's own). */
 const LEGACY_KEY = 'ttr-muted';
 
 let muted = loadMuted();
@@ -147,6 +147,16 @@ export function playTimeWarning(): void {
   withAudio((ac, t0) => {
     // F#5 - clear but not shrill.
     for (let i = 0; i < 3; i++) tone(ac, t0 + i * 0.42, { freq: 740, peak: 0.14, attack: 0.02, decay: 0.26 });
+  });
+}
+
+/**
+ * Someone else's turn clock is nearly out: two low, soft pips, quieter than your own warning.
+ * Played for everyone but the player on the clock, when the offer to give them more time appears.
+ */
+export function playTimeLow(): void {
+  withAudio((ac, t0) => {
+    for (let i = 0; i < 2; i++) tone(ac, t0 + i * 0.3, { freq: 494, peak: 0.1, attack: 0.02, decay: 0.3 });
   });
 }
 

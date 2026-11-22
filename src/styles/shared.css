@@ -358,6 +358,43 @@ select {
   line-height: 1.5;
 }
 
+/* A game's setup, a line per choice: what it is on the left, what was picked on the right. */
+.modal-card.g-setup {
+  width: 100%;
+  max-width: 400px;
+}
+
+.g-setup-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 56dvh;
+  margin: 12px 0 20px;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.g-setup-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.g-setup-list li + li {
+  border-top: 1px solid #ffffff14;
+}
+
+.g-setup-list span {
+  color: var(--muted);
+}
+
+.g-setup-list b {
+  text-align: right;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

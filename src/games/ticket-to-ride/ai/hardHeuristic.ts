@@ -8,8 +8,8 @@ import { planTickets, type Plan } from './planner';
 import { threatMap } from './opponents';
 
 /**
- * Tunable weights, tuned against Normal with `npm run bench:ai` (2p, seats
- * alternated). Each value's comment notes what the measurements showed.
+ * The weights the Hard bot scores its options with. `npm run bench:ai` measures
+ * a set of weights against Normal (2p, seats alternated).
  */
 const W = {
   /** Base score of a claim on the ticket plan (always beats any draw). */
@@ -17,8 +17,9 @@ const W = {
   /** Urgency per unit of opponent pressure, on planned claims (≈ neutral either way). */
   urgency: 8,
   /**
-   * Bonus per unit of opponent pressure for a short off-plan claim. Off: blanket
-   * blocking burned trains and turns (win rate 9.5% → 32.5% when disabled).
+   * Bonus per unit of opponent pressure for a short off-plan claim. At 0 the bot
+   * never claims a route only to block: blocking costs it more trains and turns
+   * than it costs the opponent.
    */
   block: 0,
   /** Longest route worth claiming purely to block. */
@@ -29,7 +30,7 @@ const W = {
   ticketRisk: 0.45,
   /** Points charged per kept ticket - completion is never certain (keeps 2, not 3). */
   perTicket: 10,
-  /** Only draw new tickets with at least this many trains left. Never: mid-game tickets were completed only 41-65%. */
+  /** Only draw new tickets with at least this many trains left. Infinity: never, since tickets drawn mid-game are too often left unfinished. */
   drawTicketsMinTrains: Infinity,
   /** Endgame once our trains, or any opponent's, fall to this. */
   endgameTrains: 6,

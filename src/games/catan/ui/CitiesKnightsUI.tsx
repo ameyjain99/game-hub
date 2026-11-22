@@ -1,7 +1,7 @@
 /** Cities & Knights' parts of the Catan screen: commodities, the barbarian ship, areas and progress cards. */
 import { useState, type CSSProperties } from 'react';
 import { SideSection } from '../../kit/ui/GameShell';
-import { Cards, GOOD_COLOR, GOOD_NAME, GoodsPicker, Picker } from './cards';
+import { Cards, GOOD_COLOR, GOOD_NAME, GoodsPicker, Picker, ResIcon } from './cards';
 import { RESOURCES, type Resource } from '../board';
 import { emptyHand, handSize, improveCost, victoryPoints, knightsOf, type Ask, type Hand, type CatanAction, type CatanState } from '../engine';
 import {
@@ -36,6 +36,7 @@ export function GoodsCards({ goods }: { goods: Goods }) {
     <span className="catan-goods">
       {COMMODITIES.map((c) => (
         <span key={c} className={`catan-card is-good${goods[c] === 0 ? ' is-empty' : ''}`} style={{ '--rc': GOOD_COLOR[c] } as CSSProperties} title={GOOD_NAME[c]}>
+          <ResIcon of={c} />
           <b>{goods[c]}</b>
           <span>{GOOD_NAME[c]}</span>
         </span>
@@ -82,7 +83,7 @@ export function AreasSection({ s, meId, canAct, onAction }: { s: CatanState; meI
           const affordable = cost !== null && me.goods[AREA_GOOD[g]] >= cost;
           const metropolis = s.metropolises[g];
           return (
-            <li key={g} style={{ '--gc': AREA_COLOR[g] } as CSSProperties}>
+            <li key={g} style={{ '--gc': AREA_COLOR[g] } as CSSProperties} title={`Level 3: ${AREA_ABILITY[g]} First to level ${METROPOLIS_LEVEL} takes the Metropolis.`}>
               <div className="catan-area-head">
                 <b>{AREA_NAME[g]}</b>
                 <span className="catan-area-pips" aria-label={`Level ${level} of ${MAX_LEVEL}`}>
@@ -94,10 +95,7 @@ export function AreasSection({ s, meId, canAct, onAction }: { s: CatanState; meI
                   {cost === null ? (level >= MAX_LEVEL ? 'Top level' : 'Need a city') : `Level ${level + 1}: ${cost} ${GOOD_NAME[AREA_GOOD[g]].toLowerCase()}`}
                 </button>
               </div>
-              <p className="kit-muted">
-                Level 3: {AREA_ABILITY[g]}
-                {metropolis ? ` Metropolis: ${metropolis.player === meId ? 'yours' : s.players.find((p) => p.id === metropolis.player)?.name}.` : ` First to level ${METROPOLIS_LEVEL} takes the Metropolis.`}
-              </p>
+              {metropolis && <p className="kit-muted">Metropolis: {metropolis.player === meId ? 'yours' : s.players.find((p) => p.id === metropolis.player)?.name}</p>}
             </li>
           );
         })}
@@ -113,26 +111,18 @@ export function ProgressCardsSection({ s, meId, canPlay, onPick }: { s: CatanSta
   const over = me.progressCards.length > PROGRESS_LIMIT;
   return (
     <SideSection title="Your progress cards" meta={`${me.progressCardPoints ? `${me.progressCardPoints} point${me.progressCardPoints === 1 ? '' : 's'} shown · ` : ''}${me.progressCards.length} of ${PROGRESS_LIMIT}`}>
-      {me.progressCards.length === 0 ? (
-        <p className="kit-muted">ProgressCards are drawn when the event die shows an area&apos;s gate and the red die is no more than your level there plus one.</p>
-      ) : (
-        <>
-          {over && <p className="catan-warn">You hold more than {PROGRESS_LIMIT}: play one, or put one back when you end your turn.</p>}
-          <ul className="catan-dev-cards">
-            {me.progressCards.map((e, i) => (
-              <li key={`${e}${i}`}>
-                <span>
-                  <b>{PROGRESS_NAME[e]}</b>
-                  <span className="kit-muted">{PROGRESS_TEXT[e]}</span>
-                </span>
-                <button type="button" className="g-btn g-btn-light g-btn-sm" disabled={!canPlay(e)} onClick={() => onPick(e)}>
-                  Play
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      {over && <p className="catan-warn">You hold more than {PROGRESS_LIMIT}: play one, or put one back when you end your turn.</p>}
+      <div className="catan-progress-cards">
+        {me.progressCards.map((e, i) => (
+          <button key={`${e}${i}`} type="button" className="catan-progress-card" title={PROGRESS_TEXT[e]} aria-label={`Play ${PROGRESS_NAME[e]}`} disabled={!canPlay(e)} onClick={() => onPick(e)}>
+            <b>{PROGRESS_NAME[e]}</b>
+            <span>{PROGRESS_TEXT[e]}</span>
+          </button>
+        ))}
+        {Array.from({ length: Math.max(0, PROGRESS_LIMIT - me.progressCards.length) }, (_, i) => (
+          <span key={i} className="catan-progress-card is-empty" />
+        ))}
+      </div>
     </SideSection>
   );
 }

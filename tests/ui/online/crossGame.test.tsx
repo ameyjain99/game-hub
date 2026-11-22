@@ -17,7 +17,7 @@ test('a session is only handed to the game it belongs to', () => {
   expect(loadSessionFor('monopoly')?.code).toBe('MN23');
   expect(loadSessionFor('ticket-to-ride')).toBeNull();
   expect(loadSessionFor('cluedo')).toBeNull();
-  // Sessions saved before gameId existed belong to Ticket to Ride.
+  // A session with no gameId is Ticket to Ride's.
   saveSession({ code: 'OLD1', token: 't', playerId: 'p0' });
   expect(loadSessionFor('ticket-to-ride')?.code).toBe('OLD1');
 });

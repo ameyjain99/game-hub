@@ -1,8 +1,7 @@
 /**
- * The contract every "kit" game engine implements: Tic-Tac-Toe, Checkers, Chess,
- * Snakes & Ladders, Ludo and Sequence. One contract lets a single server adapter
- * (`kitAdapter`), a single local runner (`useLocalKit`) and a single online
- * wrapper (`KitOnline`) serve them all.
+ * The contract every "kit" game engine implements. One contract lets a single
+ * server adapter (`kitAdapter`), a single local runner (`useLocalKit`) and a
+ * single online wrapper (`KitOnline`) serve them all.
  *
  * Engines stay pure: `apply` returns a new state and never mutates its input,
  * and all randomness comes from a seed carried in the state.

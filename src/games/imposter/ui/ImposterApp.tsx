@@ -58,6 +58,7 @@ export function ImposterApp({ onBackToHub }: { onBackToHub: () => void }) {
       rules={IMPOSTER_RULES}
       rulesVariant={mode}
       optionValue={options}
+      localSummary={LOBBY_RULES(options, null).summary}
       optionFields={
         <>
           <label className="g-field">

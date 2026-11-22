@@ -57,6 +57,7 @@ export function PokerApp({ onBackToHub }: { onBackToHub: () => void }) {
       rules={POKER_RULES}
       rulesVariant={variant}
       optionValue={{ variant, speed }}
+      localSummary={LOBBY_RULES({ variant, speed }, null).summary}
       optionFields={
         <>
           <label className="g-field">

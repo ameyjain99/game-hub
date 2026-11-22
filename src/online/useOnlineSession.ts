@@ -60,8 +60,8 @@ export interface OnlineSession<S = unknown, A = unknown> {
 }
 
 /** Connects to the game server, fires the intent, and exposes online state.
- * Generic over the game's redacted state `S` and action `A` (Ticket to Ride by
- * default, so existing callers are unchanged). */
+ * Generic over the game's redacted state `S` and action `A` (Ticket to Ride's
+ * by default). */
 export function useOnlineSession<S = unknown, A = unknown>(
   intent: OnlineIntent,
   opts: { persist?: boolean } = {},

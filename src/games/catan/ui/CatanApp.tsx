@@ -41,6 +41,7 @@ export function CatanApp({ onBackToHub }: { onBackToHub: () => void }) {
       rules={CATAN_RULES}
       rulesVariant={mode === 'base' ? 'standard' : mode}
       optionValue={{ mode }}
+      localSummary={LOBBY_RULES({ mode }, null).summary}
       optionFields={
         <label className="g-field">
           <span className="g-field-label">Expansion</span>

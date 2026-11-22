@@ -3,11 +3,11 @@ import type { Route, RouteColor } from '../../types';
 /**
  * Ticket to Ride EUROPE routes.
  *
- * NOTE: this is a best-effort reconstruction of the printed Europe map - the
- * topology, tunnels (`t`) and ferries (`f`, = required locomotives) are placed
- * on the well-known alpine/pyrenees/balkan crossings and sea routes, but the
- * exact per-route COLORS and LENGTHS should be verified against the physical
- * game and tuned here (and positions in the dev board editor, `/?editor=europe`).
+ * A reconstruction of the printed Europe map: the topology, tunnels (`t`) and
+ * ferries (`f`, = required locomotives) sit on the well-known alpine, pyrenees
+ * and balkan crossings and sea routes. Individual route colours and lengths may
+ * differ from the printed board. City positions are set in the dev board
+ * editor (`/?editor=europe`).
  */
 type Opts = { t?: boolean; f?: number; group?: string };
 type Def = [a: string, b: string, color: RouteColor, length: number, opts?: Opts];

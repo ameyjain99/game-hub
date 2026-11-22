@@ -5,12 +5,13 @@ import { PlayersPanel, tokenLabel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
 import { KitVideos, type KitScreenProps } from '../../kit/ui/KitOnline';
 import { Die } from '../../kit/ui/Die';
+import { useMediaQuery } from '../../../shared/useMediaQuery';
 import { TableMomentBanner, freshEvents, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
 import { useCues } from '../../kit/ui/useCues';
 import { RESOURCES, geoOf, isLand, type Resource } from '../board';
 import { COMMODITIES, PROGRESS_NAME, PROGRESS_NEEDS, FIXED_TOKENS, AREAS, AREA_NAME, KNIGHTS_PER_LEVEL, emptyGoods, goodsSize, type Card, type ProgressCard } from '../citiesKnights';
 import { AskPanel, ProgressCardDialog, ProgressCardsSection, BarbariansSection, AREA_COLOR, GoodsCards, AreasSection, HarborSection, askStatus } from './CitiesKnightsUI';
-import { Cards, GOOD_NAME, GoodsPicker, Picker, RES_COLOR, RES_NAME, cardsText } from './cards';
+import { Cards, GOOD_NAME, GoodsPicker, Picker, RES_COLOR, RES_NAME, ResIcon, cardsText } from './cards';
 import {
   COSTS,
   LIMITS,
@@ -59,6 +60,7 @@ const nextLive = (s: CatanState) => {
 export const catanSeatColor = (i: number) => SEAT_COLORS[i % SEAT_COLORS.length];
 
 const DEV_CARD_NAME: Record<DevCard, string> = { knight: 'Knight', victoryPoint: 'Victory Point', roadBuilding: 'Road Building', yearOfPlenty: 'Year of Plenty', monopoly: 'Monopoly' };
+const DEV_CARDS: DevCard[] = ['knight', 'roadBuilding', 'yearOfPlenty', 'monopoly', 'victoryPoint'];
 const DEV_CARD_TEXT: Record<DevCard, string> = {
   knight: 'Move the robber and rob a neighbour. Counts toward the Largest Army.',
   victoryPoint: '1 point, kept hidden until the end.',
@@ -398,6 +400,9 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
   // Your own main phase, or your go in a 5-6 player special build phase.
   const special = s.phase === 'special' && myMove;
   const buildTime = (myTurn && s.phase === 'main') || special;
+  // The build menu sits in the sidebar where that has room: on screens wide enough for the log to have a column of its own.
+  // Narrower screens share the sidebar's column with the log, and Cities & Knights fills it with its own panels, so both keep the menu in the dock.
+  const sideBuild = useMediaQuery('(min-width: 1281px)') && s.mode !== 'cities-knights';
   const who = (id: string) => (id === meId ? 'You' : nameFor(id));
   const colorOf = (id: string) => catanSeatColor(s.players.findIndex((p) => p.id === id));
   // Cities & Knights: a choice owed by someone holds the table until it is made.
@@ -728,7 +733,7 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
                     setChoosing(null);
                   }}
                 >
-                  {RES_NAME[r]}
+                  <ResIcon of={r} /> {RES_NAME[r]}
                 </button>
               ))}
             </div>
@@ -738,50 +743,8 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
     </div>
   );
 
-  const dock = me && !s.over && (
-    <div className="catan-dock">
-      <div className="catan-dice">
-        <Die value={s.dice?.[0] ?? null} rollKey={rollCount} size={40} label={s.mode === 'cities-knights' ? 'Red die' : 'First die'} />
-        <Die value={s.dice?.[1] ?? null} rollKey={rollCount} size={40} label={s.mode === 'cities-knights' ? 'Yellow die' : 'Second die'} />
-        {s.mode === 'cities-knights' && (
-          <span className="catan-event-die" title="The event die" style={{ '--oc': s.eventDie && s.eventDie !== 'ship' ? AREA_COLOR[s.eventDie] : '#1a557b' } as CSSProperties}>
-            {s.eventDie ? (s.eventDie === 'ship' ? 'Ship' : AREA_NAME[s.eventDie]) : 'Event die'}
-          </span>
-        )}
-        {myMove && !ask && s.phase === 'roll' && (
-          <button type="button" className="primary catan-roll" onClick={() => onAction({ type: 'ROLL' })}>
-            Roll
-          </button>
-        )}
-      </div>
-      <div className="catan-hand" aria-label="Your cards">
-        {RESOURCES.map((r) => (
-          <span key={r} className={`catan-card${me.hand[r] === 0 ? ' is-empty' : ''}`} style={{ '--rc': RES_COLOR[r] } as CSSProperties} title={RES_NAME[r]}>
-            <b>{me.hand[r]}</b>
-            <span>{RES_NAME[r]}</span>
-          </span>
-        ))}
-        {s.mode === 'cities-knights' && <GoodsCards goods={me.goods} />}
-      </div>
-      <div className="catan-actions">
-        {s.mode === 'seafarers' && myMove && ((s.phase === 'setup' && s.setup!.needRoad) || s.phase === 'roadBuilding') && (
-          <div className="catan-free-pick" role="radiogroup" aria-label="Free piece">
-            {(['road', 'ship'] as const).map((k) => (
-              <button key={k} type="button" role="radio" aria-checked={freePiece === k} className={`catan-build${freePiece === k ? ' is-on' : ''}`} onClick={() => setFreePiece(k)}>
-                <span>Place a {k}</span>
-              </button>
-            ))}
-          </div>
-        )}
-        {s.phase === 'setup' ? (
-          <p className="catan-setup-hint">
-            {s.mode === 'cities-knights'
-              ? 'Setup: a settlement and a road each, then a city and a road in reverse order. The city pays your first cards.'
-              : `Setup: a settlement and a ${s.mode === 'seafarers' ? 'road or ship' : 'road'} each, then again in reverse order. The second settlement pays your first cards.`}{' '}
-            Building opens once everyone is placed.
-          </p>
-        ) : (
-          <>
+  const buildMenu = (
+    <>
           {builds.map((p) => (
             <button
               key={p}
@@ -792,7 +755,9 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
               onClick={() => setMode(mode === p ? null : p)}
               title={`${PIECE_NAME[p]}: ${cardsText(COSTS[p])} · ${pieceLeft[p]} left`}
             >
-              <span>{PIECE_NAME[p]}</span>
+              <span className="catan-build-head">
+                {PIECE_NAME[p]} <small>{pieceLeft[p]} left</small>
+              </span>
               <Cards cards={COSTS[p]} />
             </button>
           ))}
@@ -869,10 +834,61 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
             onClick={() => onAction({ type: 'BUY_DEVELOPMENT' })}
             title={`Development card: ${cardsText(COSTS.devCard)} · ${s.deckCount} left`}
           >
-            <span>Dev card</span>
+            <span className="catan-build-head">
+              Dev card <small>{s.deckCount} left</small>
+            </span>
             <Cards cards={COSTS.devCard} />
           </button>
         )}
+    </>
+  );
+
+  const dock = me && !s.over && (
+    <div className="catan-dock">
+      <div className="catan-dice">
+        <Die value={s.dice?.[0] ?? null} rollKey={rollCount} size={40} label={s.mode === 'cities-knights' ? 'Red die' : 'First die'} />
+        <Die value={s.dice?.[1] ?? null} rollKey={rollCount} size={40} label={s.mode === 'cities-knights' ? 'Yellow die' : 'Second die'} />
+        {s.mode === 'cities-knights' && (
+          <span className="catan-event-die" title="The event die" style={{ '--oc': s.eventDie && s.eventDie !== 'ship' ? AREA_COLOR[s.eventDie] : '#1a557b' } as CSSProperties}>
+            {s.eventDie ? (s.eventDie === 'ship' ? 'Ship' : AREA_NAME[s.eventDie]) : 'Event die'}
+          </span>
+        )}
+        {myMove && !ask && s.phase === 'roll' && (
+          <button type="button" className="primary catan-roll" onClick={() => onAction({ type: 'ROLL' })}>
+            Roll
+          </button>
+        )}
+      </div>
+      <div className="catan-hand" aria-label="Your cards">
+        {RESOURCES.map((r) => (
+          <span key={r} className={`catan-card${me.hand[r] === 0 ? ' is-empty' : ''}`} style={{ '--rc': RES_COLOR[r] } as CSSProperties} title={RES_NAME[r]}>
+            <ResIcon of={r} />
+            <b>{me.hand[r]}</b>
+            <span>{RES_NAME[r]}</span>
+          </span>
+        ))}
+        {s.mode === 'cities-knights' && <GoodsCards goods={me.goods} />}
+      </div>
+      <div className="catan-actions">
+        {s.mode === 'seafarers' && myMove && ((s.phase === 'setup' && s.setup!.needRoad) || s.phase === 'roadBuilding') && (
+          <div className="catan-free-pick" role="radiogroup" aria-label="Free piece">
+            {(['road', 'ship'] as const).map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={freePiece === k} className={`catan-build${freePiece === k ? ' is-on' : ''}`} onClick={() => setFreePiece(k)}>
+                <span>Place a {k}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {s.phase === 'setup' ? (
+          <p className="catan-setup-hint">
+            {s.mode === 'cities-knights'
+              ? 'Setup: a settlement and a road each, then a city and a road in reverse order. The city pays your first cards.'
+              : `Setup: a settlement and a ${s.mode === 'seafarers' ? 'road or ship' : 'road'} each, then again in reverse order. The second settlement pays your first cards.`}{' '}
+            Building opens once everyone is placed.
+          </p>
+        ) : (
+          <>
+          {!sideBuild && buildMenu}
         <button type="button" className="g-btn g-btn-light" disabled={!(myTurn && s.phase === 'main')} onClick={() => setTrading((t) => !t)}>
           Trade
         </button>
@@ -930,6 +946,11 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
           out: p.out,
         }))}
       />
+      {sideBuild && me && !s.over && (
+        <SideSection title="Build" meta="what each costs">
+          <div className="catan-build-grid">{buildMenu}</div>
+        </SideSection>
+      )}
       {s.mode === 'cities-knights' && (
         <>
           <BarbariansSection s={s} />
@@ -952,50 +973,42 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
       )}
       {me && s.mode !== 'cities-knights' && (
         <SideSection title="Your development cards" meta={`${s.deckCount} in the deck`}>
-          {mine.length === 0 ? (
-            <p className="kit-muted">Buy one for wool, grain and ore. Knights move the robber; Victory Point cards are hidden points.</p>
-          ) : (
-            <ul className="catan-dev-cards">
-              {(Object.keys(devCardCounts) as DevCard[]).map((card) => (
-                <li key={card}>
-                  <span>
-                    <b>
-                      {DEV_CARD_NAME[card]}
-                      {devCardCounts[card]! > 1 ? ` ×${devCardCounts[card]}` : ''}
-                    </b>
-                    <span className="kit-muted">{DEV_CARD_TEXT[card]}</span>
-                  </span>
-                  {card !== 'victoryPoint' && (
-                    <button
-                      type="button"
-                      className="g-btn g-btn-light g-btn-sm"
-                      disabled={!canPlay(card)}
-                      onClick={() => {
-                        if (card === 'yearOfPlenty' || card === 'monopoly') {
-                          setPick(emptyHand());
-                          setChoosing(card);
-                        } else onAction({ type: 'PLAY_DEVELOPMENT', card });
-                      }}
-                    >
-                      Play
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="catan-dev-cards">
+            {DEV_CARDS.map((card) => {
+              const count = devCardCounts[card] ?? 0;
+              const body = (
+                <>
+                  <b>{count}</b>
+                  <span>{DEV_CARD_NAME[card]}</span>
+                </>
+              );
+              return card === 'victoryPoint' ? (
+                <span key={card} className={`catan-dev${count === 0 ? ' is-empty' : ''}`} title={DEV_CARD_TEXT[card]}>
+                  {body}
+                </span>
+              ) : (
+                <button
+                  key={card}
+                  type="button"
+                  className={`catan-dev${count === 0 ? ' is-empty' : ''}`}
+                  title={DEV_CARD_TEXT[card]}
+                  aria-label={`Play ${DEV_CARD_NAME[card]} (${count} held)`}
+                  disabled={!canPlay(card)}
+                  onClick={() => {
+                    if (card === 'yearOfPlenty' || card === 'monopoly') {
+                      setPick(emptyHand());
+                      setChoosing(card);
+                    } else onAction({ type: 'PLAY_DEVELOPMENT', card });
+                  }}
+                >
+                  {body}
+                  <em>Play</em>
+                </button>
+              );
+            })}
+          </div>
         </SideSection>
       )}
-      <SideSection title="Dice so far" meta={`${rollCount} ${rollCount === 1 ? 'roll' : 'rolls'}`}>
-        <div className="catan-dice-stats" aria-label="How often each total has been rolled">
-          {Array.from({ length: 11 }, (_, k) => k + 2).map((n) => (
-            <div key={n} className={`catan-stat${total === n ? ' is-last' : ''}`}>
-              <span className="catan-stat-bar" style={{ height: `${(s.rolls[n] / maxRoll) * 100}%` }} />
-              <span className="catan-stat-n">{n}</span>
-            </div>
-          ))}
-        </div>
-      </SideSection>
     </>
   );
 
@@ -1077,17 +1090,29 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
       }
       side={side}
       log={
-        <SideSection title="Game log">
-          {s.log.length === 0 ? (
-            <p className="kit-muted">Every roll, build, trade and raid is listed here as it happens.</p>
-          ) : (
-            <ul className="kit-log">
-              {s.log.map((e) => (
-                <li key={e.seq}>{describe(e, who)}</li>
+        <>
+          <SideSection title="Game log">
+            {s.log.length === 0 ? (
+              <p className="kit-muted">Every roll, build, trade and raid is listed here as it happens.</p>
+            ) : (
+              <ul className="kit-log">
+                {s.log.map((e) => (
+                  <li key={e.seq}>{describe(e, who)}</li>
+                ))}
+              </ul>
+            )}
+          </SideSection>
+          <SideSection title="Dice so far" meta={`${rollCount} ${rollCount === 1 ? 'roll' : 'rolls'}`} className="catan-dice-section">
+            <div className="catan-dice-stats" aria-label="How often each total has been rolled">
+              {Array.from({ length: 11 }, (_, k) => k + 2).map((n) => (
+                <div key={n} className={`catan-stat${total === n ? ' is-last' : ''}`}>
+                  <span className="catan-stat-bar" style={{ height: `${(s.rolls[n] / maxRoll) * 100}%` }} />
+                  <span className="catan-stat-n">{n}</span>
+                </div>
               ))}
-            </ul>
-          )}
-        </SideSection>
+            </div>
+          </SideSection>
+        </>
       }
     />
   );

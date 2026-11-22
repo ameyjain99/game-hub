@@ -32,7 +32,7 @@ test('playing Black flips the board and lets the engine open', async () => {
 });
 
 test('a pawn reaching the last rank asks what to promote to', () => {
-  // White pawn on b7 can take a8 or advance... set up with a short game.
+  // A short game that leaves a White pawn on b7, one step from promoting.
   let s = createChess([{ name: 'You', isAI: false }, { name: 'Friend', isAI: false }], 1);
   for (const [from, to] of [['a2', 'a4'], ['b7', 'b5'], ['a4', 'b5'], ['a7', 'a6'], ['b5', 'a6'], ['c8', 'b7']]) {
     s = chessKit.apply(s, { type: 'MOVE', from, to }, chessKit.actor(s)!);

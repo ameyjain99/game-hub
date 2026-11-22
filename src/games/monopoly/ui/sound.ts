@@ -2,7 +2,7 @@
 
 import type { MonopolyState } from '../engine/state';
 import { completedSets } from '../engine/selectors';
-import { noise, playTimeWarning, playTurn, tone, withAudio } from '../../../shared/sound';
+import { noise, playTimeLow, playTimeWarning, playTurn, tone, withAudio } from '../../../shared/sound';
 
 export type Cue =
   | 'dice'
@@ -205,4 +205,4 @@ export const PLAY: Record<Cue, () => void> = {
   turn: playTurn,
 };
 
-export { playTimeWarning };
+export { playTimeLow, playTimeWarning };

@@ -44,8 +44,7 @@ describe('bankruptcy', () => {
 
   test('a player can mortgage out of a shortfall instead of going bankrupt', () => {
     const g = mk(2);
-    g.ownership[9].owner = 'p1'; // single lightblue, base rent 8... too small
-    // Give p1 a pricier rent: own Edinburgh (14) base 12 -> still small. Use a house.
+    g.ownership[9].owner = 'p1'; // a single light blue: base rent 8
     g.ownership[9].houses = 0;
     g.players[0].cash = 5;
     g.ownership[1].owner = 'p0'; // brown, mortgage value 30

@@ -5,7 +5,7 @@ import { HubScreen } from '../../src/app/HubScreen';
 import { GameIcon } from '../../src/app/GameIcon';
 import { CATEGORIES, GAMES } from '../../src/games/registry';
 
-// Every catalogue game is live today; an upcoming one is added here so the
+// The catalogue lists only live games, so an upcoming one is added here: the
 // "Show all" switch (offered only while something is upcoming) stays covered.
 vi.mock('../../src/games/registry', async (importOriginal) => {
   const mod = await importOriginal<typeof import('../../src/games/registry')>();

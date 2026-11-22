@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameRoute } from '../../../online/useGameRoute';
 import { GameLanding } from '../../../shared/ui/GameLanding';
 import { RulesContext } from '../../../shared/rules';
+import { SetupContext } from '../../../shared/ui/GameSetup';
 import type { Difficulty } from '../engine';
 import { SUDOKU_RULES } from '../rules';
 import { SudokuGame } from './SudokuGame';
@@ -13,7 +14,9 @@ export function SudokuApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [limit, setLimit] = useState(3);
   const screen =
     step.kind === 'local' ? (
-      <SudokuGame difficulty={difficulty} mistakeLimit={limit} onExit={exit} />
+      <SetupContext.Provider value={[`Level: ${difficulty.charAt(0).toUpperCase()}${difficulty.slice(1)}`, `Mistakes: ${limit > 0 ? `${limit} and you're out` : 'No limit'}`]}>
+        <SudokuGame difficulty={difficulty} mistakeLimit={limit} onExit={exit} />
+      </SetupContext.Provider>
     ) : (
       <GameLanding
         title="Sudoku"

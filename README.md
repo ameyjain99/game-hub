@@ -150,6 +150,15 @@ npm start                               # PORT defaults to 3001
 - **Run exactly one instance.** Rooms live in memory, so instances can't share
   them and a restart ends games in progress. Scaling out would need shared room
   storage and sticky sessions first.
+- **What the server guards.** A room nobody is connected to closes after 2
+  hours. One address may look up or try 20 wrong room codes a minute, 90
+  lookups a minute and open 20 rooms a minute; past that it is told to wait.
+  The address is the first entry of `X-Forwarded-For` (set by the host's
+  proxy), or the socket's own address without one. Game sockets are accepted
+  only from pages this server serves; to serve the client from another origin,
+  list it in `ALLOWED_ORIGINS` (comma-separated). Every response carries a
+  Content-Security-Policy that keeps scripts, frames and connections to this
+  site (plus GitHub avatars for the contributors list).
 
 ## Decisions worth knowing
 

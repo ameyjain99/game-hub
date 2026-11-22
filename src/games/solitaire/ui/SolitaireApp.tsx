@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameRoute } from '../../../online/useGameRoute';
 import { GameLanding } from '../../../shared/ui/GameLanding';
 import { RulesContext } from '../../../shared/rules';
+import { SetupContext } from '../../../shared/ui/GameSetup';
 import type { DrawMode } from '../engine';
 import { SOLITAIRE_RULES } from '../rules';
 import { SolitaireGame } from './SolitaireGame';
@@ -12,7 +13,9 @@ export function SolitaireApp({ onBackToHub }: { onBackToHub: () => void }) {
   const [draw, setDraw] = useState<DrawMode>(1);
   const screen =
     step.kind === 'local' ? (
-      <SolitaireGame draw={draw} onExit={exit} />
+      <SetupContext.Provider value={[`Turn the stock: ${draw === 1 ? 'One card at a time' : 'Three at a time'}`]}>
+        <SolitaireGame draw={draw} onExit={exit} />
+      </SetupContext.Provider>
     ) : (
       <GameLanding
         title="Solitaire"
