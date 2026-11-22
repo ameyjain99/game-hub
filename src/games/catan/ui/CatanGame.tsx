@@ -745,7 +745,7 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
         <Die value={s.dice?.[1] ?? null} rollKey={rollCount} size={40} label={s.mode === 'cities-knights' ? 'Yellow die' : 'Second die'} />
         {s.mode === 'cities-knights' && (
           <span className="catan-event-die" title="The event die" style={{ '--oc': s.eventDie && s.eventDie !== 'ship' ? AREA_COLOR[s.eventDie] : '#1a557b' } as CSSProperties}>
-            {s.eventDie ? (s.eventDie === 'ship' ? 'Ship' : AREA_NAME[s.eventDie]) : 'EventDie'}
+            {s.eventDie ? (s.eventDie === 'ship' ? 'Ship' : AREA_NAME[s.eventDie]) : 'Event die'}
           </span>
         )}
         {myMove && !ask && s.phase === 'roll' && (
@@ -869,7 +869,7 @@ export function CatanGame({ view, meId, nameFor, onAction, onExit, exitLabel, on
             onClick={() => onAction({ type: 'BUY_DEVELOPMENT' })}
             title={`Development card: ${cardsText(COSTS.devCard)} · ${s.deckCount} left`}
           >
-            <span>DevCard</span>
+            <span>Dev card</span>
             <Cards cards={COSTS.devCard} />
           </button>
         )}

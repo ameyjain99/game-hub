@@ -11,7 +11,7 @@ function Face({ imposter, children }: { imposter?: boolean; children: ReactNode 
   );
 }
 
-export const WordCards = ({ decoy = false }: { decoy?: boolean }) => (
+const WordCards = ({ decoy = false }: { decoy?: boolean }) => (
   <div className="rf-row">
     <span className="rf-col">
       <Face>

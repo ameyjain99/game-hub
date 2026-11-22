@@ -3,7 +3,7 @@
  * carries a structured `effect` the reducer applies; the deck order is shuffled
  * per game from the seeded RNG and hidden by redaction.
  */
-import { spaceName, type BoardId } from './board';
+import { cardSpace, spaceName, stationWord, type BoardId } from './board';
 
 export type CardEffect =
   | { kind: 'move-to'; space: number; collectGo?: boolean }
@@ -19,21 +19,22 @@ export type CardEffect =
 
 export interface CardDef {
   id: string;
-  /** What the card says; `{24}` stands for the name of square 24 on the board in play. */
+  /** What the card says; `{24}` stands for the name of square 24 on the board in play, `{go}` for the Go salary, `{station}` for what the board calls its transport squares. */
   text: string;
   effect: CardEffect;
 }
 
 /** A card's words on a board. */
-export const cardText = (card: CardDef, board: BoardId = 'neo'): string => card.text.replace(/\{(\d+)\}/g, (_, sq) => spaceName(Number(sq), board));
+export const cardText = (card: CardDef, board: BoardId = 'neo', goSalary = 200): string =>
+  card.text.replace('{go}', String(goSalary)).replace('{station}', stationWord(board)).replace(/\{(\d+)\}/g, (_, sq) => spaceName(cardSpace(Number(sq), board), board));
 
 export const CHANCE: CardDef[] = [
-  { id: 'ch-go', text: 'Advance to Go. Collect $200.', effect: { kind: 'move-to', space: 0, collectGo: true } },
+  { id: 'ch-go', text: 'Advance to Go. Collect ${go}.', effect: { kind: 'move-to', space: 0, collectGo: true } },
   { id: 'ch-illinois', text: 'Advance to {24}.', effect: { kind: 'move-to', space: 24, collectGo: true } },
   { id: 'ch-charles', text: 'Advance to {11}.', effect: { kind: 'move-to', space: 11, collectGo: true } },
   { id: 'ch-util', text: 'Advance to the nearest Utility.', effect: { kind: 'nearest', target: 'utility' } },
-  { id: 'ch-rail1', text: 'Advance to the nearest Station.', effect: { kind: 'nearest', target: 'railroad' } },
-  { id: 'ch-rail2', text: 'Advance to the nearest Station.', effect: { kind: 'nearest', target: 'railroad' } },
+  { id: 'ch-rail1', text: 'Advance to the nearest {station}.', effect: { kind: 'nearest', target: 'railroad' } },
+  { id: 'ch-rail2', text: 'Advance to the nearest {station}.', effect: { kind: 'nearest', target: 'railroad' } },
   { id: 'ch-dividend', text: 'Bank pays you a dividend of $50.', effect: { kind: 'collect', amount: 50 } },
   { id: 'ch-free', text: 'Get Out of Jail Free.', effect: { kind: 'get-out-free' } },
   { id: 'ch-back3', text: 'Go back 3 spaces.', effect: { kind: 'move-rel', delta: -3 } },
@@ -47,7 +48,7 @@ export const CHANCE: CardDef[] = [
 ];
 
 export const CHEST: CardDef[] = [
-  { id: 'cc-go', text: 'Advance to Go. Collect $200.', effect: { kind: 'move-to', space: 0, collectGo: true } },
+  { id: 'cc-go', text: 'Advance to Go. Collect ${go}.', effect: { kind: 'move-to', space: 0, collectGo: true } },
   { id: 'cc-bankerror', text: 'Bank error in your favour. Collect $200.', effect: { kind: 'collect', amount: 200 } },
   { id: 'cc-doctor', text: "Doctor's fee. Pay $50.", effect: { kind: 'pay', amount: 50 } },
   { id: 'cc-stock', text: 'From sale of stock you get $50.', effect: { kind: 'collect', amount: 50 } },

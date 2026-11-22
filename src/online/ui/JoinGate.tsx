@@ -4,7 +4,7 @@ import type { RoomInfo } from '../../net/protocol';
 
 /** Ask the server about a room code. Fails open: if the check can't be
  *  reached, the join attempt itself still surfaces a real error. */
-export async function fetchRoomInfo(code: string): Promise<RoomInfo> {
+async function fetchRoomInfo(code: string): Promise<RoomInfo> {
   try {
     const res = await fetch(`/api/room-exists?code=${encodeURIComponent(code)}`);
     if (!res.ok) return { exists: true };
@@ -13,10 +13,6 @@ export async function fetchRoomInfo(code: string): Promise<RoomInfo> {
   } catch {
     return { exists: true };
   }
-}
-
-export async function fetchRoomExists(code: string): Promise<boolean> {
-  return (await fetchRoomInfo(code)).exists;
 }
 
 type Seat = { index: number; name: string };

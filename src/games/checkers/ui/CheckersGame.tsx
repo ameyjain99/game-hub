@@ -14,7 +14,7 @@ import { useCues } from '../../kit/ui/useCues';
 import { CHECKERS_SOUNDS, checkersCues } from './sound';
 
 /** Each side's accent in the sidebar and video ring (Black's lifted so it shows on the dark UI). */
-export const SIDE_COLOR: Record<Side, string> = { black: '#8d97ab', white: '#efe8da' };
+const SIDE_COLOR: Record<Side, string> = { black: '#8d97ab', white: '#efe8da' };
 const SIDE_NAME: Record<Side, string> = { black: 'Black', white: 'White' };
 
 export function Disc({ piece }: { piece: Piece }) {

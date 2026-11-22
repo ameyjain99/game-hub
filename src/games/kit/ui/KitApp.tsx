@@ -8,7 +8,7 @@ import { GameForm } from '../../../shared/ui/GameForm';
 import { RulesContext, type GameRules } from '../../../shared/rules';
 import { OnlineSeatsContext } from './KitOnline';
 
-export interface LocalSetup {
+interface LocalSetup {
   /** Seats including yours (the rest are bots). */
   seats: number;
   difficulty: string;

@@ -22,7 +22,7 @@ import { getDictionary, step } from './dictionary';
 export const N = 15;
 export const CENTRE = 7 * N + 7;
 export const RACK = 7;
-export const BINGO = 50;
+const BINGO = 50;
 
 export type Premium = 'TW' | 'DW' | 'TL' | 'DL' | null;
 
@@ -83,7 +83,7 @@ export interface Placed {
   by: string;
 }
 
-export interface ScrabblePlayer extends KitPlayer {
+interface ScrabblePlayer extends KitPlayer {
   rack: Tile[];
   rackCount: number;
   score: number;

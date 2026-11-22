@@ -17,7 +17,7 @@ import { shuffle } from '../kit/engine';
 
 export type DrawMode = 1 | 3;
 
-export interface TableauPile {
+interface TableauPile {
   cards: string[];
   /** How many cards from the top are face up. */
   up: number;
@@ -61,7 +61,7 @@ export const fitsTableau = (card: string, top: string | undefined) =>
   top === undefined ? rankOf(card) === 13 : red(card) !== red(top) && rankOf(card) === rankOf(top) - 1;
 
 /** Whether `card` may go on foundation `pile`. */
-export const fitsFoundation = (card: string, pile: string[]) =>
+const fitsFoundation = (card: string, pile: string[]) =>
   pile.length === 0 ? rankOf(card) === 1 : card[1] === pile[pile.length - 1][1] && rankOf(card) === pile.length + 1;
 
 /** The cards a place would move (a tableau run, or a single top card). */
@@ -130,7 +130,7 @@ export function applySol(s: SolState, action: SolAction): SolState {
 }
 
 /** The foundation `card` would go to, if any. */
-export function foundationFor(s: SolState, card: string): number | null {
+function foundationFor(s: SolState, card: string): number | null {
   const i = s.foundations.findIndex((p) => fitsFoundation(card, p));
   return i >= 0 ? i : null;
 }

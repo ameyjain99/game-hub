@@ -27,7 +27,7 @@ export type Mode = 'classic' | 'decoy';
 export type RoundsSetting = 3 | 5 | 'each';
 export type CluesSetting = 1 | 2 | 3;
 
-export interface ImposterOptions {
+interface ImposterOptions {
   mode?: Mode;
   rounds?: RoundsSetting;
   clues?: CluesSetting;
@@ -45,25 +45,25 @@ export const MAX_CLUE = 20;
 export const MIN_SEATS = 3;
 export const MAX_SEATS = 10;
 
-export interface ImpPlayer extends KitPlayer {
+interface ImpPlayer extends KitPlayer {
   score: number;
   /** Left the game: skipped for clues and votes. */
   out: boolean;
 }
 
-export interface Clue {
+interface Clue {
   player: string;
   /** Null: the clock ran out before a clue was given. */
   text: string | null;
 }
 
-export type Phase = 'clues' | 'discuss' | 'vote' | 'guess' | 'reveal' | 'over';
+type Phase = 'clues' | 'discuss' | 'vote' | 'guess' | 'reveal' | 'over';
 
 /** escaped: not voted out. guessed: voted out but named the word. caught: voted out.
  *  void: the imposter left, so the round scores nothing. */
 export type Outcome = 'escaped' | 'guessed' | 'caught' | 'void';
 
-export interface Round {
+interface Round {
   number: number;
   category: string;
   /** The crew's word (hidden until the reveal; see `yours`). */
@@ -93,7 +93,7 @@ export interface Round {
   points: Record<string, number>;
 }
 
-export interface RoundSummary {
+interface RoundSummary {
   number: number;
   category: string;
   word: string;
@@ -144,7 +144,7 @@ const isLive = (s: ImposterState, id: string) => s.players.some((p) => p.id === 
 const currentBallot = (r: Round) => r.ballots[r.ballots.length - 1];
 
 /** The word `id` was shown this round (null for a Classic imposter). */
-export function wordFor(s: ImposterState, id: string): string | null {
+function wordFor(s: ImposterState, id: string): string | null {
   if (id !== s.round.imposter) return s.round.word;
   return s.mode === 'decoy' ? s.round.decoy : null;
 }

@@ -26,7 +26,6 @@ export {
   Crown,
   Mic,
   MicOff,
-  AlertTriangle,
   User,
   Video,
   VideoOff,
@@ -37,7 +36,6 @@ export {
   Droplets,
   Receipt,
   Gem,
-  CircleHelp,
   Gift,
   ArrowLeft,
   Lock,
@@ -48,10 +46,8 @@ export {
   Minus,
   Landmark,
   ArrowLeftRight,
-  Gavel,
   // Cluedo
   Search,
-  DoorOpen,
   // Uno, Scrabble
   Ban,
   Repeat2,
@@ -70,7 +66,6 @@ export {
   Pause,
   Play,
   ArrowDownAZ,
-  PartyPopper,
   // Playing pieces a player can pick (shared/pieces.tsx)
   Rocket,
   Anchor,

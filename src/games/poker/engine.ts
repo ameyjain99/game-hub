@@ -12,9 +12,9 @@ import { deckFor, describeHand, evalHigh, evalLow, evalOmaha, rankValue, type Ca
 import { pokerBot } from './bot';
 
 export type { Card, Variant } from './cards';
-export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'seventh';
+type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'seventh';
 export type Speed = 'fast' | 'normal' | 'slow';
-export type Structure = 'no-limit' | 'pot-limit' | 'fixed-limit';
+type Structure = 'no-limit' | 'pot-limit' | 'fixed-limit';
 
 export interface VariantSpec {
   name: string;
@@ -72,13 +72,13 @@ export interface PokerPlayer extends KitPlayer {
   shown: boolean;
 }
 
-export interface PotResult {
+interface PotResult {
   amount: number;
   /** In seat order from the button: the first takes any odd chip. */
   winners: string[];
 }
 
-export interface HandResult {
+interface HandResult {
   showdown: boolean;
   pots: PotResult[];
   /** Chips each winner took. */
@@ -87,7 +87,7 @@ export interface HandResult {
   hands: Record<string, { name: string; cards: Card[] }>;
 }
 
-export type EventKind = 'post' | 'ante' | 'bring-in' | 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'complete' | 'return' | 'street' | 'win' | 'out' | 'level';
+type EventKind = 'post' | 'ante' | 'bring-in' | 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'complete' | 'return' | 'street' | 'win' | 'out' | 'level';
 export interface PokerEvent {
   seq: number;
   hand: number;
@@ -151,7 +151,7 @@ export type PokerAction =
   /** Having won without a showdown: turn your cards face up anyway. */
   | { type: 'SHOW' };
 
-export interface PokerOptions {
+interface PokerOptions {
   variant?: Variant;
   speed?: Speed;
 }
@@ -163,7 +163,7 @@ export function stakes(s: { level: number }) {
 }
 
 /** The size of a bet (and the smallest raise) on this street. */
-export function betUnit(s: PokerState): number {
+function betUnit(s: PokerState): number {
   const st = stakes(s);
   if (!VARIANTS[s.variant].stud) return st.bb;
   return s.street === 'third' || s.street === 'fourth' ? st.small : st.big;

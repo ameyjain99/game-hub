@@ -29,7 +29,7 @@ test('Monopoly announces jail, a bankruptcy, a hotel and a heavy rent, and nothi
   expect(titles(monopolyMoments(base, next, who, color))).toEqual([
     'Bot 1: goes to jail',
     expect.stringMatching(/^You: built a hotel on /),
-    'Bot 1: pays $450 rent',
+    'Bot 1: pays ₥450 rent',
   ]);
 
   const bust = structuredClone(base);

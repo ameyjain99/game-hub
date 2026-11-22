@@ -31,6 +31,7 @@ import { fly } from '../../../shared/fly';
 import { Confetti } from '../../../shared/ui/Confetti';
 import { cardHex, LOCO_GRADIENT } from './colors';
 import { TableMomentBanner, useTableMoments, type TableMoment } from '../../../shared/ui/TableMoment';
+import { OpeningCall, useGameStart } from '../../../shared/ui/OpeningCall';
 
 interface Props {
   state: GameState;
@@ -556,9 +557,13 @@ export function GameScreen({ state, lastError, dispatch: rawDispatch, onPlayAgai
     sidePane = <Commentary log={state.log} status={status} />;
   }
   const showTickets = !gameOver && !viewing.isAI && viewing.tickets.length > 0;
+  const untouched = Object.keys(state.claimedBy).length === 0 && state.drawnThisTurn === 0 && state.discardPile.length === 0;
+  const start = useGameStart(state.phase !== 'setup-tickets', gameOver, untouched);
+  const firstIsMe = current.id === viewerId || current.name === 'You';
 
   return (
     <div className="game-screen">
+      <OpeningCall start={start} name={cleanName(current.name)} isMe={firstIsMe} color={playerColor(state.current)} />
       {gameOver && counted && winners(ranked).some((r) => r.player.id === viewing.id) && <Confetti />}
       {showExtendPopup && onExtendTime && (
         <div className="disconnect-overlay" role="alert">

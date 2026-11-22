@@ -22,6 +22,8 @@ export interface ApplyCtx {
 export interface GameAdapter {
   /** How long a human's turn lasts before the room skips it (default 45s). */
   turnMs?: number;
+  /** The turn length of the game in play, when it is a setting of that game (overrides turnMs). */
+  turnMsFor?(game: unknown): number;
   /** Whether each action by the player on the clock restarts it, so only an
    *  idle player times out (games with long, many-step turns). */
   refreshClockOnAction?: boolean;

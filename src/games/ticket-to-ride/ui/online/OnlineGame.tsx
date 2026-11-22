@@ -37,7 +37,7 @@ export function OnlineGame({
   }, [code]);
 
   // A/V mesh among the human players - rendered as each seat's video frame in
-  // the right pane (replaces the old single header mic button).
+  // the right pane.
   const media = useMediaChat({
     socket,
     code,

@@ -13,7 +13,7 @@ import { ROOMS, SUSPECTS, WEAPONS, type Card, type Room, type Suspect, type Weap
 import type { ClState } from './engine';
 
 export type Depth = 'seen' | 'basic' | 'full';
-export const ENVELOPE = 'envelope';
+const ENVELOPE = 'envelope';
 
 export interface Knowledge {
   /** Who could hold each card (player ids and ENVELOPE). */

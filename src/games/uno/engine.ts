@@ -31,10 +31,10 @@ export type Variant = 'classic' | 'flip' | 'no-mercy';
 /** No Mercy: this many cards in hand knocks a player out of the hand. */
 export const MERCY = 25;
 export type Side = 'light' | 'dark';
-export const LIGHT_COLORS = ['red', 'yellow', 'green', 'blue'] as const;
-export const DARK_COLORS = ['pink', 'teal', 'orange', 'purple'] as const;
+const LIGHT_COLORS = ['red', 'yellow', 'green', 'blue'] as const;
+const DARK_COLORS = ['pink', 'teal', 'orange', 'purple'] as const;
 export type Color = (typeof LIGHT_COLORS)[number] | (typeof DARK_COLORS)[number];
-export type Kind = 'number' | 'skip' | 'reverse' | 'draw' | 'wild' | 'wild-draw' | 'flip' | 'skip-all' | 'wild-draw-color' | 'discard-all' | 'wild-reverse-draw';
+type Kind = 'number' | 'skip' | 'reverse' | 'draw' | 'wild' | 'wild-draw' | 'flip' | 'skip-all' | 'wild-draw-color' | 'discard-all' | 'wild-reverse-draw';
 
 export interface Face {
   kind: Kind;
@@ -62,7 +62,9 @@ export interface UnoPlayer extends KitPlayer {
 
 export interface UnoEvent {
   player: string;
-  kind: 'play' | 'draw' | 'pass' | 'call' | 'catch' | 'penalty' | 'swap' | 'rotate' | 'bust';
+  kind: 'play' | 'draw' | 'pass' | 'call' | 'catch' | 'penalty' | 'swap' | 'rotate' | 'bust' | 'jump' | 'challenge';
+  /** A challenge: whether the challenged player had broken the rule. */
+  caught?: boolean;
   card?: Card;
   /** How many cards were drawn. */
   count?: number;
@@ -107,6 +109,16 @@ export interface UnoState {
   drawToMatch?: boolean;
   /** House rule: a 7 swaps hands with a player you choose, a 0 passes every hand on. */
   sevenZero?: boolean;
+  /** House rule: a card identical to the top card may be played out of turn. */
+  jumpIn?: boolean;
+  /** House rule: a Wild Draw may be played as a bluff, and the player made to draw may challenge it. */
+  challenge?: boolean;
+  /** Cards dealt to each player (7 by the standard rules). */
+  handSize?: number;
+  /** The score that wins the match (500 by the standard rules). */
+  target?: number;
+  /** A Wild Draw just played that the player to move may challenge (who played it, and whether they held the colour: hidden from players). */
+  bluff?: { player: string; guilty?: boolean } | null;
   /** Cards the player to move must draw, unless they stack (0 when nothing is owed). */
   owed: number;
   /** No Mercy: points from the hands of players knocked out, for whoever wins the hand. */
@@ -115,6 +127,8 @@ export interface UnoState {
 
 export type UnoAction =
   | { type: 'PLAY'; card: number; color?: Color; callLast?: boolean; /** On a hand-swapping 7: whose hand to take. */ swapWith?: string; /** Same numbers together: more cards of that number, in the order they go on the pile. */ also?: number[] }
+  | { type: 'JUMP'; card: number; callLast?: boolean; swapWith?: string; also?: number[] }
+  | { type: 'CHALLENGE' }
   | { type: 'DRAW' }
   | { type: 'PASS' }
   | { type: 'CALL' }
@@ -128,10 +142,17 @@ export interface UnoOptions {
   freeWild?: boolean;
   drawToMatch?: boolean;
   sevenZero?: boolean;
+  jumpIn?: boolean;
+  challenge?: boolean;
+  handSize?: number;
+  target?: number;
 }
 
+export const HAND_SIZES = [5, 7, 10];
+export const TARGETS = [100, 200, 300, 500];
+
 /** The rules in force: the switches chosen, plus what No Mercy always plays with. */
-export function rulesOf(s: Pick<UnoState, 'variant' | 'stack' | 'together' | 'freeWild' | 'drawToMatch' | 'sevenZero'>) {
+export function rulesOf(s: Pick<UnoState, 'variant' | 'stack' | 'together' | 'freeWild' | 'drawToMatch' | 'sevenZero' | 'jumpIn' | 'challenge'>) {
   const noMercy = s.variant === 'no-mercy';
   return {
     stack: noMercy || !!s.stack,
@@ -139,6 +160,9 @@ export function rulesOf(s: Pick<UnoState, 'variant' | 'stack' | 'together' | 'fr
     freeWild: noMercy || !!s.freeWild,
     drawToMatch: noMercy || !!s.drawToMatch,
     sevenZero: noMercy || !!s.sevenZero,
+    jumpIn: !!s.jumpIn,
+    // No Mercy plays its wild draws freely, so there is nothing to challenge.
+    challenge: !noMercy && !!s.challenge && !s.freeWild,
   };
 }
 
@@ -234,10 +258,11 @@ export function points(f: Face): number {
 export function fits(s: UnoState, face: Face, hand: Card[]): boolean {
   if (s.owed > 0) {
     // Cards are owed: the only play is a draw card as big or bigger, to pass them on.
+    if (!rulesOf(s).stack) return false; // owed by a Wild Draw that can only be taken or challenged
     const top = faceOf(s.discard[s.discard.length - 1], s.side)!;
     return drawSize(face) > 0 && drawSize(face) >= drawSize(top);
   }
-  if (face.kind === 'wild-draw' && !rulesOf(s).freeWild) {
+  if (face.kind === 'wild-draw' && !rulesOf(s).freeWild && !rulesOf(s).challenge) {
     // Only with nothing of the colour in play to hand.
     return s.color === null || !hand.some((c) => faceOf(c, s.side)!.color === s.color);
   }
@@ -306,10 +331,11 @@ function deal(s: UnoState, game: number, starter: number): UnoState {
     game,
     owed: 0,
     pot: 0,
+    bluff: null,
   };
   for (let i = 0; i < next.players.length; i++) {
     if (next.players[i].out) continue;
-    const t = take(next, HAND);
+    const t = take(next, s.handSize ?? HAND);
     next = giveCards(t.s, i, t.cards);
   }
   // Turn up a starting card that makes nobody draw (in No Mercy, a plain number).
@@ -327,7 +353,16 @@ export function createUno(seats: KitSeat[], seed: number, options: UnoOptions = 
   const players = seats.map((seat, i) => ({ id: `p${i}`, name: seat.name, isAI: seat.isAI, difficulty: seat.difficulty, hand: [], handCount: 0 }));
   const variant = options.variant ?? 'classic';
   // No Mercy always stacks.
-  const house = { together: !!options.together, freeWild: !!options.freeWild, drawToMatch: !!options.drawToMatch, sevenZero: !!options.sevenZero };
+  const house = {
+    together: !!options.together,
+    freeWild: !!options.freeWild,
+    drawToMatch: !!options.drawToMatch,
+    sevenZero: !!options.sevenZero,
+    jumpIn: !!options.jumpIn,
+    challenge: !!options.challenge,
+    handSize: HAND_SIZES.includes(options.handSize ?? HAND) ? (options.handSize ?? HAND) : HAND,
+    target: TARGETS.includes(options.target ?? 500) ? (options.target ?? 500) : 500,
+  };
   const base = { variant, stack: variant === 'no-mercy' || !!options.stack, ...house, owed: 0, pot: 0, players, score: Object.fromEntries(players.map((p) => [p.id, 0])), seed } as unknown as UnoState;
   return deal(base, 1, 0);
 }
@@ -404,6 +439,8 @@ function play(s: UnoState, seat: number, cardId: number, color: Color | undefine
     color: isWild(face) ? color! : face.color,
     drawn: null,
     exposed: hand.length === 1 && !callLast ? me.id : null,
+    // A Wild Draw played on its own (not as an answer to a stack) can be challenged: it broke the rule if the colour in play was in hand.
+    bluff: rules.challenge && face.kind === 'wild-draw' && s.owed === 0 ? { player: me.id, guilty: s.color !== null && me.hand.some((c) => faceOf(c, s.side)!.color === s.color) } : null,
   };
   next = record(next, { player: me.id, kind: 'play', card, color: next.color, ...(under.length > 1 ? { count: under.length } : {}) });
   if (hand.length === 1 && callLast) next = record(next, { player: me.id, kind: 'call' });
@@ -439,8 +476,8 @@ function play(s: UnoState, seat: number, cardId: number, color: Color | undefine
       break;
     case 'draw':
     case 'wild-draw': {
-      if (next.stack) {
-        // Stacking: the next player answers with a card of the same kind, or draws the lot.
+      if (next.stack || next.bluff) {
+        // The cards wait for the next player, who answers (stacking), challenges (a Wild Draw), or draws the lot.
         next = advance({ ...next, owed: next.owed + face.value! });
         break;
       }
@@ -515,7 +552,34 @@ export function applyUno(s: UnoState, action: UnoAction | KitCommonAction, actor
     return finalize(settle(record(next, { player: actorId, kind: 'catch', target: action.target, count: t.cards.length })));
   }
 
+  if (action.type === 'JUMP') {
+    // Jump-in: the very same card as the one on top, played out of turn. Play carries on from the jumper.
+    if (!rulesOf(s).jumpIn) throw new IllegalMove('no jumping in at this table');
+    if (s.turn === seat) throw new IllegalMove("it's your turn: just play");
+    if (s.owed > 0 || away(s.players[seat])) throw new IllegalMove("you can't jump in now");
+    const card = s.players[seat].hand.find((c) => c.id === action.card);
+    const face = card && faceOf(card, s.side);
+    const top = faceOf(s.discard[s.discard.length - 1], s.side)!;
+    if (!face || face.color === null || face.kind !== top.kind || face.color !== top.color || face.value !== top.value) throw new IllegalMove('only the very same card can jump in');
+    const mine = record({ ...s, turn: seat, drawn: null, exposed: s.exposed === actorId ? s.exposed : null }, { player: actorId, kind: 'jump' });
+    return play(mine, seat, action.card, undefined, !!action.callLast, action.swapWith, action.also);
+  }
+
   if (s.turn !== seat) throw new IllegalMove('not your turn');
+  if (action.type === 'CHALLENGE') {
+    if (!s.bluff || s.owed === 0 || s.drawn !== null) throw new IllegalMove('nothing to challenge');
+    const offender = s.players.findIndex((p) => p.id === s.bluff!.player);
+    if (s.bluff.guilty) {
+      // Caught: the player who played it draws the cards instead, and the challenger plays on.
+      const t = take(s, s.owed);
+      const next = giveCards({ ...t.s, owed: 0, bluff: null, exposed: null }, offender, t.cards);
+      return finalize(settle(record(next, { player: actorId, kind: 'challenge', target: s.bluff.player, count: t.cards.length, caught: true })));
+    }
+    // A fair play: the challenger draws the cards and two more, and loses the turn.
+    const t = take(s, s.owed + 2);
+    const next = giveCards({ ...t.s, owed: 0, bluff: null, exposed: null }, seat, t.cards);
+    return finalize(settle(advance(record(next, { player: actorId, kind: 'challenge', target: s.bluff.player, count: t.cards.length, caught: false }))));
+  }
   // Moving on closes the chance to catch the previous player.
   const open = s.exposed && s.exposed !== actorId ? { ...s, exposed: null } : s;
   switch (action.type) {
@@ -526,7 +590,7 @@ export function applyUno(s: UnoState, action: UnoAction | KitCommonAction, actor
       if (s.owed > 0) {
         // No card to stack: take everything owed, and the turn passes.
         const t = take(open, s.owed);
-        const took = record(giveCards({ ...t.s, owed: 0 }, seat, t.cards), { player: actorId, kind: 'penalty', count: t.cards.length, target: actorId });
+        const took = record(giveCards({ ...t.s, owed: 0, bluff: null }, seat, t.cards), { player: actorId, kind: 'penalty', count: t.cards.length, target: actorId });
         return finalize(settle(advance(took)));
       }
       if (rulesOf(s).drawToMatch) {
@@ -592,6 +656,8 @@ export function unoBotAction(s: UnoState, rand: () => number = Math.random): Uno
   // Catch a player who forgot to call.
   if (s.exposed && s.exposed !== me.id && rand() < (level === 'hard' ? 0.95 : level === 'normal' ? 0.6 : 0.25)) return { type: 'CATCH', target: s.exposed };
   const options = playable(s, me).filter((c) => s.drawn === null || c.id === s.drawn);
+  // Made to draw by a Wild Draw: sometimes call the bluff (the bot does not peek at whether it was one).
+  if (options.length === 0 && s.owed > 0 && s.bluff && s.drawn === null && rand() < (level === 'hard' ? 0.35 : level === 'normal' ? 0.25 : 0.15)) return { type: 'CHALLENGE' };
   if (options.length === 0) return s.drawn !== null ? { type: 'PASS' } : { type: 'DRAW' };
   const rules = rulesOf(s);
   // For a hand-swapping 7: the hand worth taking is the smallest one at the table.
@@ -619,6 +685,8 @@ export function unoBotAction(s: UnoState, rand: () => number = Math.random): Uno
     const f = faceOf(c, s.side)!;
     let v = points(f) * 0.2; // shed heavy cards first
     if (isWild(f)) v -= 30; // keep wilds back
+    // A Wild Draw while holding the colour is a bluff that can be called: rarely worth it.
+    if (f.kind === 'wild-draw' && rules.challenge && s.owed === 0 && s.color !== null && me.hand.some((h) => faceOf(h, s.side)!.color === s.color)) v -= 45;
     if ((drawSize(f) > 0 || f.kind === 'skip' || f.kind === 'skip-all' || f.kind === 'wild-draw-color') && threat) v += 60;
     if (rules.sevenZero) {
       // A 7 is a gift when someone holds fewer cards than I would keep, and a blunder otherwise; a 0 likewise with my neighbour.
@@ -675,7 +743,9 @@ export const unoKit: GameKit<UnoState, UnoAction> = {
   end: (s) => ({ ...s, over: true }),
   // Classic: only your own hand. Flip: you see the face in play of your own cards
   // and the other face of everyone else's (the side turned towards you).
-  redact: (s, viewer) => {
+  redact: (full, viewer) => {
+    // Whether a Wild Draw was a bluff stays secret until it is challenged.
+    const s: UnoState = full.bluff ? { ...full, bluff: { player: full.bluff.player } } : full;
     // The hand is over: every hand is turned face up to count the points.
     if (s.over) return { ...s, deck: [], discard: s.discard.slice(-3) };
     if (s.variant !== 'flip') {

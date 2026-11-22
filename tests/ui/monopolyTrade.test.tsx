@@ -51,7 +51,7 @@ test('the recipient can accept an incoming offer', () => {
   };
   const onAction = vi.fn();
   render(<TradeOffer view={g} onAction={onAction} nameFor={nameFor} />);
-  expect(screen.getByText('$100')).toBeTruthy();
+  expect(screen.getByText('₥100')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: /accept/i }));
   expect(onAction).toHaveBeenCalledWith({ type: 'RESPOND_TRADE', accept: true });
 });

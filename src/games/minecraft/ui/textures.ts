@@ -7,8 +7,8 @@ import { TILE } from '../world';
 
 export const TILE_PX = 16;
 export const ATLAS_COLS = 8;
-export const TILE_COUNT = 24;
-export const ATLAS_ROWS = Math.ceil(TILE_COUNT / ATLAS_COLS);
+const TILE_COUNT = 24;
+const ATLAS_ROWS = Math.ceil(TILE_COUNT / ATLAS_COLS);
 
 type Paint = (px: (x: number, y: number, rgba: string) => void, rand: () => number) => void;
 

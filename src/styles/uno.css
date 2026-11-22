@@ -230,6 +230,40 @@
   transform: translateX(-50%) translateX(calc(var(--i) * 1.1cqw)) rotate(calc(var(--i) * 6deg));
 }
 
+/* The deal: cards leave the middle of the table for each seat in turn, yours last, a card a round. */
+.uno-table.is-dealing .uno-opp-cards .uno-card {
+  animation: uno-deal-out 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc((var(--k) * var(--seats) + var(--seat, 0)) * 45ms + 250ms);
+}
+
+.uno-table.is-dealing .uno-hand-card {
+  animation: uno-deal-in 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc((var(--k) * var(--seats) + var(--seats) - 1) * 45ms + 250ms);
+}
+
+@keyframes uno-deal-out {
+  from {
+    opacity: 0;
+    translate: 0 20cqw;
+    scale: 0.6;
+  }
+}
+
+@keyframes uno-deal-in {
+  from {
+    opacity: 0;
+    translate: 0 -24cqw;
+    scale: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uno-table.is-dealing .uno-opp-cards .uno-card,
+  .uno-table.is-dealing .uno-hand-card {
+    animation: none;
+  }
+}
+
 /* A hand under the pointer lays out flat, every card clear of the next. */
 .uno-opp-cards .uno-card {
   transition: transform 0.18s ease-out;

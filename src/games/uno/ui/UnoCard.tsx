@@ -122,7 +122,7 @@ export function UnoCard({
   if (back || !face) {
     return (
       <span className={`uno-card is-back${className ? ` ${className}` : ''}`} style={style} aria-hidden="true">
-        <span className="uno-back-mark">LC</span>
+        <span className="uno-back-mark">UNO</span>
       </span>
     );
   }

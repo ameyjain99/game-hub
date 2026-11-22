@@ -4,16 +4,12 @@
   box-sizing: border-box;
 }
 
-
-
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
   color: var(--ink);
 }
-
-
 
 /* Center standalone screens (setup/landing/profile) in the viewport; the
    full-height game grid fills it exactly, so centering is a no-op there. */
@@ -24,14 +20,10 @@ body {
   justify-content: center;
 }
 
-
-
 button {
   font: inherit;
   cursor: pointer;
 }
-
-
 
 button.primary {
   background: var(--accent);
@@ -43,12 +35,10 @@ button.primary {
   box-shadow: 0 4px 14px #0006;
 }
 
-
 button.primary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-
 
 @keyframes pop {
   from {
@@ -61,8 +51,6 @@ button.primary:disabled {
   }
 }
 
-
-
 @keyframes popUp {
   from {
     transform: translateY(14px);
@@ -74,14 +62,11 @@ button.primary:disabled {
   }
 }
 
-
-
 /* Inline lucide icons: align with adjacent text and never shrink in flex rows. */
 svg.lucide {
   vertical-align: middle;
   flex-shrink: 0;
 }
-
 
 /* Controls that pair an icon with text: center them on one baseline with a gap. */
 .back-link,
@@ -97,7 +82,6 @@ svg.lucide {
   gap: 6px;
 }
 
-
 .commentary-feed::-webkit-scrollbar,
 .top-content::-webkit-scrollbar,
 .top-content .combo-list::-webkit-scrollbar,
@@ -106,12 +90,9 @@ svg.lucide {
 .players-strip::-webkit-scrollbar,
 .decks-pane::-webkit-scrollbar,
 .detail-tickets::-webkit-scrollbar,
-.final-detail::-webkit-scrollbar,
-.cluedo-log::-webkit-scrollbar {
+.final-detail::-webkit-scrollbar {
   display: none; /* Chrome / Safari */
 }
-
-
 
 /* ---------------- Loader ---------------- */
 /* Inline by default: a single text-height row (small mark + label) that sits in

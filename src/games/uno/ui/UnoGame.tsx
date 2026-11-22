@@ -39,6 +39,12 @@ function describe(e: UnoEvent, who: (id: string) => string, side: 'light' | 'dar
       return `${who(e.player)} swapped hands with ${who(e.target!)}`;
     case 'rotate':
       return `Every hand moved on to the next player`;
+    case 'jump':
+      return `${who(e.player)} jumped in`;
+    case 'challenge':
+      return e.caught
+        ? `${who(e.player)} challenged ${who(e.target!)} and ${who(e.player) === 'You' ? 'were' : 'was'} right: ${who(e.target!)} drew ${e.count}`
+        : `${who(e.player)} challenged ${who(e.target!)}, ${who(e.player) === 'You' ? 'were' : 'was'} wrong, and drew ${e.count}`;
     case 'bust':
       return `${who(e.player)} hit ${e.count} cards and ${who(e.player) === 'You' ? 'are' : 'is'} out of the hand`;
   }
@@ -90,7 +96,7 @@ const SORT_LABEL: Record<(typeof SORTS)[number], string> = { colour: 'by colour'
 const KIND_RANK: Record<string, number> = { number: 0, skip: 10, 'skip-all': 10, reverse: 11, draw: 12, flip: 13, 'discard-all': 14, wild: 20, 'wild-draw': 21, 'wild-draw-color': 21, 'wild-reverse-draw': 22 };
 
 /** Your hand in the order you like it: grouped by colour, by number, or as the cards came. */
-export function sortHand(hand: Card[], side: 'light' | 'dark', mode: (typeof SORTS)[number]): Card[] {
+function sortHand(hand: Card[], side: 'light' | 'dark', mode: (typeof SORTS)[number]): Card[] {
   if (mode === 'dealt') return hand;
   const colours = colorsOf(side) as readonly string[];
   const key = (c: Card): [number, number] => {
@@ -140,15 +146,21 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
     if (hand.length !== 2) setCallArmed(false);
   }, [view.last?.seq, hand.length]);
 
+  /** Jump-in: off your turn, the very same card as the one on top may be played. */
+  const canJump = (c: Card) => {
+    const f = faceOf(c, side);
+    return rules.jumpIn && !myTurn && !view.over && view.owed === 0 && !me?.bust && !!f && !!topFace && f.color !== null && f.kind === topFace.kind && f.color === topFace.color && f.value === topFace.value;
+  };
+  const playType = myTurn ? 'PLAY' : 'JUMP';
   const play = (c: Card) => {
-    if (!canPlay(c)) return;
+    if (!canPlay(c) && !canJump(c)) return;
     const f = faceOf(c, side)!;
     if (f.color === null) {
       setChoosing(c.id);
       return;
     }
     // Same numbers together: holding more of this number, ask which go with it.
-    if (rules.together && view.drawn === null && f.kind === 'number' && twinsOf(c).length > 0) {
+    if (rules.together && (view.drawn === null || !myTurn) && f.kind === 'number' && twinsOf(c).length > 0) {
       setGrouping({ card: c.id, also: [] });
       return;
     }
@@ -169,7 +181,7 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
       setSwapping({ card: c.id, also });
       return;
     }
-    onAction({ type: 'PLAY', card: c.id, callLast: callArmed, ...(also.length ? { also } : {}) });
+    onAction({ type: playType, card: c.id, callLast: callArmed, ...(also.length ? { also } : {}) });
     setGrouping(null);
     setCallArmed(false);
   };
@@ -231,7 +243,7 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
   }, [view.history, meId]);
 
   const table = (
-    <div ref={tableRef} className={`kit-board uno-table is-${side}${myTurn ? ' is-my-turn' : ''}`}>
+    <div ref={tableRef} className={`kit-board uno-table is-${side}${myTurn ? ' is-my-turn' : ''}${view.history.length === 0 && !view.over ? ' is-dealing' : ''}`} style={{ '--seats': view.players.length } as CSSProperties}>
       <div className="uno-felt" />
       <div className={`uno-opponents${others.length > 5 ? ' is-many' : ''}`}>
         {others.map((p, k) => {
@@ -248,7 +260,7 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
               key={p.id}
               data-seat={p.id}
               className={`uno-opp${actor === p.id ? ' is-turn' : ''}${p.out || p.bust ? ' is-out' : ''}${spotlight === p.id ? ' is-spot' : ''}${exposed ? ' is-exposed' : ''}${open ? ' is-fanned' : ''}`}
-              style={{ left: `${x}%`, top: `${y}%`, '--tc': unoSeatColor(view.players.indexOf(p)), '--gap': `${gap}cqw`, '--shift': `${shift}cqw` } as CSSProperties}
+              style={{ left: `${x}%`, top: `${y}%`, '--tc': unoSeatColor(view.players.indexOf(p)), '--gap': `${gap}cqw`, '--shift': `${shift}cqw`, '--seat': k } as CSSProperties}
               onMouseEnter={() => setFanned(p.id)}
               onMouseLeave={() => setFanned(null)}
             >
@@ -256,7 +268,7 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
                 {Array.from({ length: shown }, (_, i) => {
                   const c = p.hand[i];
                   const backFace = view.variant === 'flip' && c ? faceOf(c, other) : null;
-                  return <UnoCard key={i} face={backFace} side={other} back={!backFace} className="is-mini" style={{ '--i': i - (shown - 1) / 2 } as CSSProperties} />;
+                  return <UnoCard key={i} face={backFace} side={other} back={!backFace} className="is-mini" style={{ '--i': i - (shown - 1) / 2, '--k': i } as CSSProperties} />;
                 })}
               </div>
               <div className="uno-opp-name">
@@ -328,6 +340,16 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
       )}
       {me && !view.over && (
         <div className="uno-controls">
+          {myTurn && view.owed > 0 && view.bluff && view.drawn === null && (
+            <button type="button" className="g-btn g-btn-light g-btn-sm" onClick={() => onAction({ type: 'CHALLENGE' })} title={`If ${nameFor(view.bluff.player)} held the colour that was in play, they draw the ${view.owed} instead. If not, you draw ${view.owed + 2}.`}>
+              Challenge {nameFor(view.bluff.player)}
+            </button>
+          )}
+          {!myTurn && hand.some(canJump) && (
+            <span className="uno-mercy" role="status">
+              You hold the same card: play it to jump in
+            </span>
+          )}
           {view.exposed && view.exposed !== meId && (
             <button type="button" className="uno-call is-urgent is-big" onClick={() => onAction({ type: 'CATCH', target: view.exposed! })}>
               <Siren size={18} /> {nameFor(view.exposed)} didn't call "UNO" - catch them!
@@ -361,14 +383,15 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
       {me && (
         <div className="uno-hand" style={{ '--n': hand.length } as CSSProperties}>
           {shown.map((c, i) => {
-            const ok = canPlay(c);
+            const jump = canJump(c);
+            const ok = canPlay(c) || jump;
             const f = faceOf(c, side);
             return (
               <button
                 key={`${c.id}-${side}`}
                 type="button"
-                className={`uno-hand-card${ok ? ' is-ok' : ''}${view.drawn === c.id ? ' is-drawn' : ''}`}
-                style={{ '--i': i - (hand.length - 1) / 2 } as CSSProperties}
+                className={`uno-hand-card${ok ? ' is-ok' : ''}${jump ? ' is-jump' : ''}${view.drawn === c.id ? ' is-drawn' : ''}`}
+                style={{ '--i': i - (hand.length - 1) / 2, '--k': i } as CSSProperties}
                 aria-label={`${f ? faceName(f) : 'card'}${ok ? '' : " (can't play)"}`}
                 disabled={!ok}
                 onClick={() => play(c)}
@@ -393,7 +416,7 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
                   className="uno-swap"
                   style={{ '--tc': unoSeatColor(view.players.indexOf(p)) } as CSSProperties}
                   onClick={() => {
-                    onAction({ type: 'PLAY', card: swapping.card, swapWith: p.id, callLast: callArmed, ...(swapping.also.length ? { also: swapping.also } : {}) });
+                    onAction({ type: playType, card: swapping.card, swapWith: p.id, callLast: callArmed, ...(swapping.also.length ? { also: swapping.also } : {}) });
                     setSwapping(null);
                     setCallArmed(false);
                   }}
@@ -536,7 +559,11 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
       <p>
         Scores: {[...view.players].sort((a, b) => (view.score[b.id] ?? 0) - (view.score[a.id] ?? 0)).map((p) => `${nameFor(p.id)} ${view.score[p.id] ?? 0}`).join(' · ')}
       </p>
-      {winnerPoints >= 500 && <p>{who(view.winner)} passed 500 points!</p>}
+      {winnerPoints >= (view.target ?? 500) && (
+        <p>
+          {who(view.winner)} passed {view.target ?? 500} points and {view.winner === meId ? 'win' : 'wins'} the match!
+        </p>
+      )}
     </ResultCard>
   ) : null;
 
@@ -547,6 +574,10 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
     !noMercy && rules.freeWild && 'Wild Draw any time',
     !noMercy && rules.drawToMatch && 'Draw until you can play',
     !noMercy && rules.sevenZero && (view.variant === 'flip' ? '7 swaps hands' : '7 swaps hands, 0 passes hands on'),
+    rules.jumpIn && 'Jump-in: play the very same card out of turn',
+    rules.challenge && 'A Wild Draw can be challenged',
+    (view.handSize ?? 7) !== 7 && `${view.handSize} cards dealt`,
+    (view.target ?? 500) !== 500 && `Play to ${view.target} points`,
   ].filter(Boolean) as string[];
 
   const side$ = (
@@ -591,7 +622,7 @@ export function UnoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onli
   if (view.over && view.winner) status = <><strong>{who(view.winner)}</strong> {view.winner === meId ? 'win' : 'wins'} the hand</>;
   else if (myTurn) {
     const onWhat = !topFace || view.color === null ? 'play any card' : topFace.color === null ? `on ${faceName(topFace)} · ${COLOR_NAME[view.color]}` : `on ${faceName(topFace)}`;
-    status = view.owed > 0 ? <><strong>Draw {view.owed}</strong> · or answer with a draw card as big or bigger</> : view.drawn !== null ? (rules.drawToMatch ? <><strong>Play the card you drew</strong></> : <><strong>Play it or keep it</strong></>) : <><strong>Your turn</strong> · {onWhat}</>;
+    status = view.owed > 0 ? <><strong>Draw {view.owed}</strong>{rules.stack ? ' · or answer with a draw card as big or bigger' : ''}{view.bluff ? ' · or challenge it' : ''}</> : view.drawn !== null ? (rules.drawToMatch ? <><strong>Play the card you drew</strong></> : <><strong>Play it or keep it</strong></>) : <><strong>Your turn</strong> · {onWhat}</>;
   }
   else status = <><strong>{nameFor(actor ?? '')}</strong> is playing...</>;
 

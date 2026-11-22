@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { createPortal } from 'react-dom';
 
 /** A piece arriving on a square, slid in from where it came from. */
-export interface Arrival {
+interface Arrival {
   from: number;
   to: number;
   /** Changes with every move, so the same squares can animate again. */

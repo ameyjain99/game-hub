@@ -23,7 +23,7 @@ export function deckFor(variant: Variant): Card[] {
   return out;
 }
 
-export type Category =
+type Category =
   | 'high-card'
   | 'pair'
   | 'two-pair'

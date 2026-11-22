@@ -1,6 +1,7 @@
 import { makeRng } from '../../../shared/rng';
-import { createMonopolyGame } from './state';
-import { BOARD, GO_SALARY, GO_TO_JAIL_ID, JAIL_ID, spaceName } from './board';
+import { SPEED_FACES, createMonopolyGame, type SpeedFace } from './state';
+import { cardSpace, groupIds, isMega, layoutOf, spaceName, spacesOf, type ColorGroup, type Space } from './board';
+import { MEGA } from './mega';
 import { CHANCE, CHEST, cardText, type CardEffect } from './cards';
 import {
   currentPlayer,
@@ -21,9 +22,23 @@ import {
   unmortgageCost,
   canRaise,
   netWorth,
+  canBuildDepot,
+  canSellDepot,
+  ownsFullSet,
+  nextAhead,
+  rentSquares,
+  ticketTargets,
+  unownedIds,
+  HOTEL,
+  SKYSCRAPER,
 } from './selectors';
 
 const clone = (state: MonopolyState): MonopolyState => structuredClone(state);
+
+/** A square of the board in play. */
+const spaceAt = (draft: MonopolyState, id: number): Space => spacesOf(draft.settings.board)[id];
+const sizeOf = (draft: MonopolyState): number => layoutOf(draft.settings.board).size;
+const megaGame = (draft: MonopolyState): boolean => isMega(draft.settings.board);
 
 const seatOf = (draft: MonopolyState, playerId: string): number =>
   draft.players.findIndex((p) => p.id === playerId);
@@ -44,6 +59,14 @@ function note(draft: MonopolyState, line: string): void {
   if (draft.log.length > LOG_LIMIT) draft.log.splice(0, draft.log.length - LOG_LIMIT);
 }
 
+/** Roll the Mega Edition's speed die. */
+function drawSpeed(draft: MonopolyState): SpeedFace {
+  const rng = makeRng(draft.rngState);
+  const face = SPEED_FACES[Math.floor(rng.next() * SPEED_FACES.length)];
+  draft.rngState = rng.state;
+  return face;
+}
+
 /** Roll two dice off the seeded RNG, advancing `rngState` in place. */
 function drawDice(draft: MonopolyState): [number, number] {
   const rng = makeRng(draft.rngState);
@@ -56,10 +79,11 @@ function drawDice(draft: MonopolyState): [number, number] {
 function sendToJail(draft: MonopolyState, seat: number): void {
   note(draft, `${tag(draft, seat)} went to jail`);
   const p = draft.players[seat];
-  p.position = JAIL_ID;
+  p.position = layoutOf(draft.settings.board).jail;
   p.inJail = true;
   p.jailRolls = 0;
   draft.doubles = 0;
+  if (megaGame(draft)) draft.bonus = null; // no bonus move from Jail
 }
 
 /**
@@ -75,20 +99,33 @@ export function landOn(
 ): void {
   const p = draft.players[seat];
   p.position = newPos;
+  const salary = draft.settings.goSalary;
   if (collectGo) {
-    p.cash += GO_SALARY;
-    note(draft, `${tag(draft, seat)} passed Go and collected $${GO_SALARY}`);
+    p.cash += salary;
+    p.passedGo = true;
+    note(draft, `${tag(draft, seat)} passed Go and collected $${salary}`);
   }
 
-  const sp = BOARD[newPos];
+  const sp = spaceAt(draft, newPos);
   switch (sp.kind) {
+    case 'auction':
+      landOnAuction(draft, seat);
+      return;
+    case 'bus-ticket':
+      if ((draft.busLeft ?? 0) > 0) drawTicket(draft, seat);
+      break;
+    case 'birthday':
+      // The money, or a Bus Ticket while any are left.
+      if ((draft.busLeft ?? 0) > 0) draft.choice = { kind: 'birthday' };
+      else giveBirthdayCash(draft, seat);
+      break;
     case 'go-to-jail':
       sendToJail(draft, seat);
       break;
     case 'go':
       if (draft.settings.doubleGoSalary) {
-        p.cash += GO_SALARY; // doubles the exact-landing salary
-        note(draft, `${tag(draft, seat)} landed right on Go: another $${GO_SALARY}`);
+        p.cash += salary; // doubles the exact-landing salary
+        note(draft, `${tag(draft, seat)} landed right on Go: another $${salary}`);
       }
       break;
     case 'property':
@@ -96,7 +133,9 @@ export function landOn(
     case 'utility': {
       const own = draft.ownership[newPos];
       if (own.owner === null) {
-        draft.pendingPurchase = newPos;
+        // Buying can wait for a first lap: until then the property simply stays with the bank.
+        if (draft.settings.firstLapBuy && !p.passedGo) note(draft, `${tag(draft, seat)} cannot buy ${spaceName(newPos, draft.settings.board)} before passing Go`);
+        else draft.pendingPurchase = newPos;
       } else if (own.owner !== p.id && !own.mortgaged) {
         payRentOnLanding(draft, seat, newPos);
       }
@@ -118,6 +157,7 @@ export function landOn(
   if (draft.phase !== 'over') draft.phase = 'action';
 }
 
+/** The white dice only: the speed die never counts toward a utility's rent. */
 const diceTotal = (draft: MonopolyState): number =>
   draft.dice ? draft.dice[0] + draft.dice[1] : 0;
 
@@ -152,31 +192,52 @@ function pay(
   }
 }
 
+/** Take one building off a lot and pay its owner half its cost; the bank's stock is updated. */
+function sellOneBuilding(draft: MonopolyState, seat: number, spaceId: number): void {
+  const own = draft.ownership[spaceId];
+  draft.players[seat].cash += Math.floor(spaceAt(draft, spaceId).houseCost! / 2);
+  if (own.houses === SKYSCRAPER) {
+    own.houses = HOTEL; // a skyscraper comes back down to a hotel
+    draft.skyscrapersLeft = (draft.skyscrapersLeft ?? 0) + 1;
+    draft.hotelsLeft -= 1;
+  } else if (own.houses === HOTEL) {
+    own.houses = 4; // a hotel breaks back into 4 houses
+    draft.hotelsLeft += 1;
+    draft.housesLeft -= 4;
+  } else {
+    own.houses -= 1;
+    draft.housesLeft += 1;
+  }
+}
+
+function sellOneDepot(draft: MonopolyState, seat: number, spaceId: number): void {
+  draft.ownership[spaceId].depot = false;
+  draft.depotsLeft = (draft.depotsLeft ?? 0) + 1;
+  draft.players[seat].cash += MEGA.depotCost / 2;
+}
+
 /** Crudely raise a seat's cash to ≥0 by selling buildings then mortgaging. */
 function liquidateToZero(draft: MonopolyState, seat: number): void {
   const id = draft.players[seat].id;
   let guard = 0;
-  while (draft.players[seat].cash < 0 && guard++ < 200) {
-    const built = ownedIds(draft, id).find(
-      (s) => BOARD[s].kind === 'property' && draft.ownership[s].houses > 0,
-    );
+  while (draft.players[seat].cash < 0 && guard++ < 400) {
+    // The tallest building first, so the even-building rule is kept on the way down.
+    const built = ownedIds(draft, id)
+      .filter((s) => draft.ownership[s].houses > 0)
+      .sort((x, y) => draft.ownership[y].houses - draft.ownership[x].houses)[0];
     if (built !== undefined) {
-      const own = draft.ownership[built];
-      draft.players[seat].cash += Math.floor(BOARD[built].houseCost! / 2);
-      if (own.houses === 5) {
-        own.houses = 4;
-        draft.hotelsLeft += 1;
-        draft.housesLeft -= 4;
-      } else {
-        own.houses -= 1;
-        draft.housesLeft += 1;
-      }
+      sellOneBuilding(draft, seat, built);
+      continue;
+    }
+    const depot = ownedIds(draft, id).find((s) => draft.ownership[s].depot);
+    if (depot !== undefined) {
+      sellOneDepot(draft, seat, depot);
       continue;
     }
     const lot = ownedIds(draft, id).find((s) => !draft.ownership[s].mortgaged);
     if (lot !== undefined) {
       draft.ownership[lot].mortgaged = true;
-      draft.players[seat].cash += mortgageValue(lot);
+      draft.players[seat].cash += mortgageValue(draft, lot);
       continue;
     }
     break;
@@ -197,16 +258,19 @@ function bankrupt(draft: MonopolyState, debtorSeat: number, creditorSeat: number
     if (debtor.cash > 0) cr.cash += debtor.cash;
     for (const id of ids) draft.ownership[id].owner = cr.id; // buildings & mortgage carry over
     cr.getOutCards += debtor.getOutCards;
+    cr.busTickets = (cr.busTickets ?? 0) + (debtor.busTickets ?? 0);
+    for (const group of new Set(ids.map((id) => spaceAt(draft, id).group).filter(Boolean) as ColorGroup[])) completeSet(draft, creditorSeat, group);
   } else {
     for (const id of ids) {
       const own = draft.ownership[id];
-      if (BOARD[id].kind === 'property') {
-        if (own.houses === 5) draft.hotelsLeft += 1;
-        else draft.housesLeft += own.houses;
-      }
+      if (own.houses === SKYSCRAPER) draft.skyscrapersLeft = (draft.skyscrapersLeft ?? 0) + 1;
+      else if (own.houses === HOTEL) draft.hotelsLeft += 1;
+      else draft.housesLeft += own.houses;
+      if (own.depot) draft.depotsLeft = (draft.depotsLeft ?? 0) + 1;
       own.owner = null;
       own.houses = 0;
       own.mortgaged = false;
+      own.depot = false;
     }
     if (debtor.getOutCards > 0) {
       draft.chanceJailOut = false;
@@ -215,6 +279,7 @@ function bankrupt(draft: MonopolyState, debtorSeat: number, creditorSeat: number
   }
   debtor.cash = 0;
   debtor.getOutCards = 0;
+  debtor.busTickets = 0;
   debtor.bankrupt = true;
   draft.pendingDebt = null;
   checkWin(draft);
@@ -231,18 +296,33 @@ function checkWin(draft: MonopolyState): void {
 function payRentOnLanding(draft: MonopolyState, seat: number, spaceId: number): void {
   const owner = draft.ownership[spaceId].owner!;
   const ownerSeat = seatOf(draft, owner);
+  // A utility reached without a roll (a Bus Ticket) is paid on a fresh roll of the two white dice.
+  if (spaceAt(draft, spaceId).kind === 'utility' && !draft.dice) {
+    draft.dice = drawDice(draft);
+    draft.rollSeq += 1;
+    note(draft, `${tag(draft, seat)} rolled ${draft.dice[0]} + ${draft.dice[1]} for the utility`);
+  }
   const rent = rentFor(draft, spaceId, diceTotal(draft));
   note(draft, `${tag(draft, seat)} paid $${rent} rent to ${tag(draft, ownerSeat)}`);
   pay(draft, seat, ownerSeat, rent);
 }
 
 function payTax(draft: MonopolyState, seat: number, spaceId: number): void {
-  const amount = BOARD[spaceId].taxAmount ?? 0;
+  const printed = spaceAt(draft, spaceId).taxAmount ?? 0;
+  const INCOME_TAX_ID = spacesOf(draft.settings.board).find((sp) => sp.kind === 'tax')!.id;
+  // Income Tax at 10% of everything you own, when that is less than the printed amount.
+  const tenth = Math.floor(netWorth(draft, draft.players[seat].id) / 10);
+  const amount = draft.settings.incomeTaxTenPercent && spaceId === INCOME_TAX_ID ? Math.min(printed, tenth) : printed;
   note(draft, `${tag(draft, seat)} paid $${amount} ${spaceName(spaceId, draft.settings.board)}`);
   pay(draft, seat, null, amount, draft.settings.freeParkingJackpot);
 }
 
 function collectFreeParking(draft: MonopolyState, seat: number): void {
+  const prize = draft.settings.freeParkingPrize;
+  if (prize > 0) {
+    draft.players[seat].cash += prize;
+    note(draft, `${tag(draft, seat)} collected the $${prize} Free Parking prize`);
+  }
   if (!draft.settings.freeParkingJackpot) return;
   if (draft.freeParkingPot > 0) note(draft, `${tag(draft, seat)} collected the $${draft.freeParkingPot} Free Parking jackpot`);
   draft.players[seat].cash += draft.freeParkingPot;
@@ -250,27 +330,23 @@ function collectFreeParking(draft: MonopolyState, seat: number): void {
 }
 
 /** The next railroad/utility at or after `from` (wrapping), with Go collected if wrapped. */
-function nearest(from: number, kind: 'railroad' | 'utility'): { pos: number; wrapped: boolean } {
-  for (let step = 1; step <= 40; step++) {
-    const pos = (from + step) % 40;
-    if (BOARD[pos].kind === kind) return { pos, wrapped: from + step >= 40 };
-  }
-  return { pos: from, wrapped: false };
+function nearest(draft: MonopolyState, from: number, kind: 'railroad' | 'utility'): { pos: number; wrapped: boolean } {
+  return nextAhead(draft, from, (id) => spaceAt(draft, id).kind === kind) ?? { pos: from, wrapped: false };
 }
 
 function applyCardEffect(draft: MonopolyState, seat: number, deck: 'chance' | 'chest', effect: CardEffect): void {
   const p = draft.players[seat];
   switch (effect.kind) {
     case 'move-to':
-      landOn(draft, seat, effect.space, effect.collectGo ?? false);
+      landOn(draft, seat, cardSpace(effect.space, draft.settings.board), effect.collectGo ?? false);
       break;
     case 'move-rel': {
-      const pos = (p.position + effect.delta + 40) % 40;
+      const pos = (p.position + effect.delta + sizeOf(draft)) % sizeOf(draft);
       landOn(draft, seat, pos, false); // going back never collects Go
       break;
     }
     case 'nearest': {
-      const { pos, wrapped } = nearest(p.position, effect.target);
+      const { pos, wrapped } = nearest(draft, p.position, effect.target);
       landOn(draft, seat, pos, wrapped);
       break;
     }
@@ -286,7 +362,7 @@ function applyCardEffect(draft: MonopolyState, seat: number, deck: 'chance' | 'c
       for (const id of Object.keys(draft.ownership).map(Number)) {
         const own = draft.ownership[id];
         if (own.owner !== p.id) continue;
-        if (own.houses === 5) hotels += 1;
+        if (own.houses >= HOTEL) hotels += 1; // a skyscraper is charged as a hotel
         else houses += own.houses;
       }
       pay(draft, seat, null, effect.perHouse * houses + effect.perHotel * hotels);
@@ -332,8 +408,8 @@ function drawCard(draft: MonopolyState, seat: number, deck: 'chance' | 'chest'):
   if (deck === 'chance') draft.chancePtr = nextPtr;
   else draft.chestPtr = nextPtr;
 
-  note(draft, `${tag(draft, seat)} drew ${deck === 'chance' ? 'Chance' : 'Community Chest'}: ${cardText(card, draft.settings.board)}`);
-  draft.uno = { deck, text: cardText(card, draft.settings.board), playerId: draft.players[seat].id, atRoll: draft.rollSeq };
+  note(draft, `${tag(draft, seat)} drew ${deck === 'chance' ? 'Chance' : 'Community Chest'}: ${cardText(card, draft.settings.board, draft.settings.goSalary)}`);
+  draft.lastCard = { deck, text: cardText(card, draft.settings.board, draft.settings.goSalary), playerId: draft.players[seat].id, atRoll: draft.rollSeq };
   applyCardEffect(draft, seat, deck, card.effect);
 }
 
@@ -368,6 +444,7 @@ function resolveAuction(draft: MonopolyState): void {
     draft.players[seat].cash -= a.highBid;
     draft.ownership[a.spaceId].owner = draft.players[seat].id;
     note(draft, `${tag(draft, seat)} won ${spaceName(a.spaceId, draft.settings.board)} at auction for $${a.highBid}`);
+    afterAcquire(draft, seat, a.spaceId);
   } else {
     note(draft, `Nobody bid, so ${spaceName(a.spaceId, draft.settings.board)} stays with the bank`);
   }
@@ -417,12 +494,13 @@ function buy(draft: MonopolyState): void {
   if (draft.phase !== 'action' || draft.pendingPurchase === null) illegal('nothing to buy');
   const seat = currentSeat(draft);
   const spaceId = draft.pendingPurchase;
-  const price = BOARD[spaceId].price!;
+  const price = spaceAt(draft, spaceId).price!;
   if (draft.players[seat].cash < price) illegal('cannot afford');
   draft.players[seat].cash -= price;
   draft.ownership[spaceId].owner = draft.players[seat].id;
   draft.pendingPurchase = null;
   note(draft, `${tag(draft, seat)} bought ${spaceName(spaceId, draft.settings.board)} for $${price}`);
+  afterAcquire(draft, seat, spaceId);
 }
 
 function decline(draft: MonopolyState): void {
@@ -448,16 +526,40 @@ function build(draft: MonopolyState, spaceId: number): void {
   const me = currentPlayer(draft);
   if (!canBuild(draft, me.id, spaceId)) illegal('cannot build here');
   const own = draft.ownership[spaceId];
-  me.cash -= BOARD[spaceId].houseCost!;
-  if (own.houses === 4) {
-    own.houses = 5; // hotel
+  me.cash -= spaceAt(draft, spaceId).houseCost!;
+  if (own.houses === HOTEL) {
+    own.houses = SKYSCRAPER; // the hotel goes back to the bank
+    draft.skyscrapersLeft = (draft.skyscrapersLeft ?? 0) - 1;
+    draft.hotelsLeft += 1;
+  } else if (own.houses === 4) {
+    own.houses = HOTEL;
     draft.hotelsLeft -= 1;
     draft.housesLeft += 4; // 4 houses return to the bank
   } else {
     own.houses += 1;
     draft.housesLeft -= 1;
   }
-  note(draft, `{${me.id}} built a ${own.houses === 5 ? 'hotel' : 'house'} on ${spaceName(spaceId, draft.settings.board)}`);
+  const what = own.houses === SKYSCRAPER ? 'skyscraper' : own.houses === HOTEL ? 'hotel' : 'house';
+  note(draft, `{${me.id}} built a ${what} on ${spaceName(spaceId, draft.settings.board)}`);
+}
+
+function buildDepot(draft: MonopolyState, spaceId: number): void {
+  requireOwnTurn(draft);
+  const me = currentPlayer(draft);
+  if (!canBuildDepot(draft, me.id, spaceId)) illegal('cannot build a depot here');
+  me.cash -= MEGA.depotCost;
+  draft.ownership[spaceId].depot = true;
+  draft.depotsLeft = (draft.depotsLeft ?? 0) - 1;
+  note(draft, `{${me.id}} built a train depot on ${spaceName(spaceId, draft.settings.board)}`);
+}
+
+function sellDepot(draft: MonopolyState, spaceId: number): void {
+  requireOwnTurn(draft);
+  const seat = currentSeat(draft);
+  if (!canSellDepot(draft, draft.players[seat].id, spaceId)) illegal('no depot to sell here');
+  sellOneDepot(draft, seat, spaceId);
+  note(draft, `${tag(draft, seat)} sold the train depot on ${spaceName(spaceId, draft.settings.board)}`);
+  clearDebtIfSettled(draft);
 }
 
 function clearDebtIfSettled(draft: MonopolyState): void {
@@ -468,16 +570,7 @@ function sellHouse(draft: MonopolyState, spaceId: number): void {
   requireOwnTurn(draft);
   const me = currentPlayer(draft);
   if (!canSellHouse(draft, me.id, spaceId)) illegal('cannot sell here');
-  const own = draft.ownership[spaceId];
-  me.cash += Math.floor(BOARD[spaceId].houseCost! / 2);
-  if (own.houses === 5) {
-    own.houses = 4; // hotel breaks back into 4 houses
-    draft.hotelsLeft += 1;
-    draft.housesLeft -= 4;
-  } else {
-    own.houses -= 1;
-    draft.housesLeft += 1;
-  }
+  sellOneBuilding(draft, currentSeat(draft), spaceId);
   note(draft, `{${me.id}} sold a building on ${spaceName(spaceId, draft.settings.board)}`);
   clearDebtIfSettled(draft);
 }
@@ -487,8 +580,8 @@ function mortgage(draft: MonopolyState, spaceId: number): void {
   const me = currentPlayer(draft);
   if (draft.ownership[spaceId].owner !== me.id || !canMortgage(draft, spaceId)) illegal('cannot mortgage');
   draft.ownership[spaceId].mortgaged = true;
-  me.cash += mortgageValue(spaceId);
-  note(draft, `{${me.id}} mortgaged ${spaceName(spaceId, draft.settings.board)} for $${mortgageValue(spaceId)}`);
+  me.cash += mortgageValue(draft, spaceId);
+  note(draft, `{${me.id}} mortgaged ${spaceName(spaceId, draft.settings.board)} for $${mortgageValue(draft, spaceId)}`);
   clearDebtIfSettled(draft);
 }
 
@@ -497,18 +590,17 @@ function unmortgage(draft: MonopolyState, spaceId: number): void {
   const me = currentPlayer(draft);
   if (!canUnmortgage(draft, me.id, spaceId)) illegal('cannot unmortgage');
   draft.ownership[spaceId].mortgaged = false;
-  me.cash -= unmortgageCost(spaceId);
+  me.cash -= unmortgageCost(draft, spaceId);
   note(draft, `{${me.id}} paid off the mortgage on ${spaceName(spaceId, draft.settings.board)}`);
 }
-
-const JAIL_FINE = 50;
 
 function payJail(draft: MonopolyState): void {
   const seat = currentSeat(draft);
   const me = draft.players[seat];
   if (draft.phase !== 'jail' || !me.inJail) illegal('not in jail');
-  note(draft, `${tag(draft, seat)} paid $${JAIL_FINE} to leave jail`);
-  pay(draft, seat, null, JAIL_FINE);
+  const fine = draft.settings.jailFine;
+  note(draft, `${tag(draft, seat)} paid $${fine} to leave jail`);
+  pay(draft, seat, null, fine);
   if (me.bankrupt) return;
   me.inJail = false;
   me.jailRolls = 0;
@@ -534,23 +626,26 @@ function rollJail(draft: MonopolyState): void {
   if (draft.phase !== 'jail' || !me.inJail) illegal('not in jail');
   const [d1, d2] = drawDice(draft);
   draft.dice = [d1, d2];
+  if (megaGame(draft)) draft.speedDie = null; // only the two white dice are rolled in Jail
   draft.rollSeq += 1;
   if (d1 === d2) {
     note(draft, `${tag(draft, seat)} rolled double ${d1}s and left jail`);
     me.inJail = false;
     me.jailRolls = 0;
     draft.doubles = 0; // leaving jail on doubles does not grant another roll
-    landOn(draft, seat, (me.position + d1 + d2) % 40, false);
+    landOn(draft, seat, (me.position + d1 + d2) % sizeOf(draft), false);
     return;
   }
   me.jailRolls += 1;
-  if (me.jailRolls >= 3) {
-    note(draft, `${tag(draft, seat)} paid $${JAIL_FINE} after three tries and left jail`);
-    pay(draft, seat, null, JAIL_FINE);
+  const tries = draft.settings.jailTurns;
+  if (me.jailRolls >= tries) {
+    const fine = draft.settings.jailFine;
+    note(draft, `${tag(draft, seat)} paid $${fine} after ${tries === 1 ? 'one try' : `${tries} tries`} and left jail`);
+    pay(draft, seat, null, fine);
     if (me.bankrupt) return;
     me.inJail = false;
     me.jailRolls = 0;
-    landOn(draft, seat, (me.position + d1 + d2) % 40, false);
+    landOn(draft, seat, (me.position + d1 + d2) % sizeOf(draft), false);
   } else {
     draft.phase = 'action'; // stays in jail; turn will end
   }
@@ -575,8 +670,21 @@ function roll(draft: MonopolyState): void {
   const p: MonopolyPlayer = draft.players[seat];
   const [d1, d2] = drawDice(draft);
   draft.dice = [d1, d2];
+  // Mega: the speed die is rolled with the two white dice.
+  const speed = megaGame(draft) ? drawSpeed(draft) : null;
+  if (megaGame(draft)) draft.speedDie = speed;
   draft.rollSeq += 1;
-  note(draft, `${tag(draft, seat)} rolled ${d1} + ${d2}${d1 === d2 ? ', doubles' : ''}`);
+  const speedText = speed === null ? '' : speed === 'mr' ? ' and Mr. Monopoly' : speed === 'bus' ? ' and the Bus' : ` + ${speed}`;
+  note(draft, `${tag(draft, seat)} rolled ${d1} + ${d2}${speedText}${d1 === d2 ? ', doubles' : ''}`);
+
+  // Triples (all three dice the same): move to any square, and no second roll. Not counted as doubles.
+  if (typeof speed === 'number' && d1 === d2 && d1 === speed) {
+    note(draft, `${tag(draft, seat)} rolled triple ${d1}s and may move to any square`);
+    draft.doubles = 0;
+    draft.choice = { kind: 'triples' };
+    draft.phase = 'action';
+    return;
+  }
 
   if (d1 === d2) {
     draft.doubles += 1;
@@ -589,8 +697,188 @@ function roll(draft: MonopolyState): void {
     draft.doubles = 0;
   }
 
-  const raw = p.position + d1 + d2;
-  landOn(draft, seat, raw % 40, raw >= 40);
+  const size = sizeOf(draft);
+  const raw = p.position + d1 + d2 + (typeof speed === 'number' ? speed : 0);
+  if (megaGame(draft)) draft.bonus = speed === 'mr' || speed === 'bus' ? speed : null;
+  landOn(draft, seat, raw % size, raw >= size);
+  if (megaGame(draft) && (p.inJail || p.bankrupt)) draft.bonus = null;
+}
+
+// ---------------------------------------------------------------------------
+// The Mega Edition: bus tickets, the speed die's bonus moves, the Auction, Bus
+// Ticket and Birthday Gift squares, and what happens when a colour set is completed.
+
+/** Take the top Bus Ticket. An expiry ticket makes every other ticket held, the drawer's too, worthless. */
+function drawTicket(draft: MonopolyState, seat: number): void {
+  const deck = draft.busDeck ?? [];
+  if (deck.length === 0) return;
+  const expires = deck.shift()!;
+  draft.busLeft = deck.length;
+  const p = draft.players[seat];
+  if (expires) {
+    for (const other of draft.players) other.busTickets = 0;
+    p.busTickets = 1;
+    note(draft, `${tag(draft, seat)} drew a Bus Ticket: all other Bus Tickets expire`);
+  } else {
+    p.busTickets = (p.busTickets ?? 0) + 1;
+    note(draft, `${tag(draft, seat)} took a Bus Ticket`);
+  }
+}
+
+function giveBirthdayCash(draft: MonopolyState, seat: number): void {
+  draft.players[seat].cash += MEGA.birthdayGift;
+  note(draft, `${tag(draft, seat)} collected a $${MEGA.birthdayGift} birthday gift`);
+}
+
+/** Auction: name an unowned property for the bank to sell. With none left, go and pay the dearest rent on the board. */
+function landOnAuction(draft: MonopolyState, seat: number): void {
+  draft.phase = 'action';
+  if (unownedIds(draft).length > 0) {
+    draft.choice = { kind: 'auction' };
+    return;
+  }
+  const me = draft.players[seat];
+  const owed = rentSquares(draft, me.id, diceTotal(draft));
+  if (owed.length === 0) return;
+  const size = sizeOf(draft);
+  const ahead = (id: number) => (id - me.position + size) % size;
+  const rentAt = (id: number) => rentFor(draft, id, diceTotal(draft) || 7);
+  // The highest rent; the nearer square when two are equal.
+  const target = [...owed].sort((x, y) => rentAt(y) - rentAt(x) || ahead(x) - ahead(y))[0];
+  note(draft, `Every property is owned: ${tag(draft, seat)} moves to ${spaceName(target, draft.settings.board)}`);
+  landOn(draft, seat, target, target < me.position);
+}
+
+/** Instead of rolling: a Bus Ticket to a square further along this side of the board. */
+function useTicket(draft: MonopolyState, space: number): void {
+  if (draft.phase !== 'roll') illegal('a Bus Ticket is used in place of a roll');
+  const seat = currentSeat(draft);
+  const me = draft.players[seat];
+  if (me.inJail) illegal('not from Jail');
+  if ((me.busTickets ?? 0) < 1) illegal('no Bus Ticket');
+  if (!ticketTargets(draft, me.position).includes(space)) illegal('a Bus Ticket only goes further along this side of the board');
+  me.busTickets = (me.busTickets ?? 0) - 1;
+  // The ticket takes the place of the roll: no dice, no doubles, no speed die bonus.
+  draft.dice = null;
+  draft.speedDie = null;
+  draft.doubles = 0;
+  draft.bonus = null;
+  note(draft, `${tag(draft, seat)} rode a Bus Ticket to ${spaceName(space, draft.settings.board)}`);
+  landOn(draft, seat, space, space < me.position);
+}
+
+/** Whether the current player still has something to settle before a bonus move or a new choice. */
+function busy(draft: MonopolyState): boolean {
+  return draft.pendingPurchase !== null || !!draft.pendingAuction || !!draft.pendingTrade || currentPlayer(draft).cash < 0;
+}
+
+/** The speed die's bonus, taken once the ordinary move has been dealt with. */
+function takeBonus(draft: MonopolyState, take: 'ticket' | 'move' | undefined): void {
+  if (draft.phase !== 'action' || !draft.bonus) illegal('no bonus move to take');
+  if (busy(draft) || draft.choice) illegal('finish this square first');
+  const seat = currentSeat(draft);
+  const me = draft.players[seat];
+  const bonus = draft.bonus;
+  draft.bonus = null;
+  if (bonus === 'bus') {
+    // A ticket for later, or a ride to the next Chance or Community Chest square.
+    if (take === 'ticket') {
+      if ((draft.busLeft ?? 0) < 1) illegal('no Bus Tickets are left');
+      drawTicket(draft, seat);
+      return;
+    }
+    const card = nextAhead(draft, me.position, (id) => spaceAt(draft, id).kind === 'chance' || spaceAt(draft, id).kind === 'chest');
+    if (card) landOn(draft, seat, card.pos, card.wrapped);
+    return;
+  }
+  // Mr. Monopoly: on to the next unowned property, which may be bought. With none left, to the next rent owed.
+  const unowned = nextAhead(draft, me.position, (id) => draft.ownership[id]?.owner === null);
+  if (unowned) {
+    note(draft, `Mr. Monopoly takes ${tag(draft, seat)} on to ${spaceName(unowned.pos, draft.settings.board)}`);
+    landOn(draft, seat, unowned.pos, unowned.wrapped);
+    return;
+  }
+  const owed = new Set(rentSquares(draft, me.id, diceTotal(draft)));
+  const rent = nextAhead(draft, me.position, (id) => owed.has(id));
+  if (!rent) {
+    note(draft, `Mr. Monopoly finds nothing for ${tag(draft, seat)} to pay`);
+    return;
+  }
+  note(draft, `Mr. Monopoly takes ${tag(draft, seat)} on to ${spaceName(rent.pos, draft.settings.board)}`);
+  landOn(draft, seat, rent.pos, rent.wrapped);
+}
+
+/** Answer the choice owed: where triples take you, what to auction, or which birthday gift. */
+function choose(draft: MonopolyState, space: number | undefined, take: 'cash' | 'ticket' | undefined): void {
+  const choice = draft.choice;
+  if (draft.phase !== 'action' || !choice) illegal('nothing to choose');
+  const seat = currentSeat(draft);
+  const me = draft.players[seat];
+  if (choice.kind === 'birthday') {
+    if (take !== 'cash' && take !== 'ticket') illegal('take the money or a Bus Ticket');
+    if (take === 'ticket' && (draft.busLeft ?? 0) < 1) illegal('no Bus Tickets are left');
+    draft.choice = null;
+    if (take === 'ticket') drawTicket(draft, seat);
+    else giveBirthdayCash(draft, seat);
+    return;
+  }
+  if (space === undefined || space < 0 || space >= sizeOf(draft)) illegal('name a square');
+  if (choice.kind === 'auction') {
+    if (!unownedIds(draft).includes(space)) illegal('that property is not for sale');
+    draft.choice = null;
+    openAuction(draft, space);
+    return;
+  }
+  // Triples: any square but the one you are on.
+  if (space === me.position) illegal('move to another square');
+  draft.choice = null;
+  landOn(draft, seat, space, space < me.position);
+}
+
+/**
+ * Mega: completing a colour set that already has buildings. The street that
+ * completed it is un-mortgaged at once, and the buildings are spread evenly
+ * over every street of the set (hotels are broken down where needed).
+ */
+function completeSet(draft: MonopolyState, seat: number, group: ColorGroup): void {
+  if (!megaGame(draft)) return;
+  const me = draft.players[seat];
+  if (!ownsFullSet(draft, me.id, group)) return;
+  const lots = groupIds(group, draft.settings.board);
+  const total = lots.reduce((n, id) => n + draft.ownership[id].houses, 0);
+  if (total === 0) return;
+  for (const id of lots) {
+    const own = draft.ownership[id];
+    if (!own.mortgaged) continue;
+    own.mortgaged = false;
+    note(draft, `${tag(draft, seat)} had to pay off the mortgage on ${spaceName(id, draft.settings.board)}`);
+    pay(draft, seat, null, unmortgageCost(draft, id));
+    if (me.bankrupt) return;
+  }
+  // Hand the buildings back, then deal them out again evenly, the dearest streets first.
+  for (const id of lots) {
+    const own = draft.ownership[id];
+    if (own.houses === HOTEL) draft.hotelsLeft += 1;
+    else draft.housesLeft += own.houses;
+    own.houses = 0;
+  }
+  const order = [...lots].sort((x, y) => spaceAt(draft, y).price! - spaceAt(draft, x).price!);
+  for (let left = total, k = 0; left > 0; k++) {
+    draft.ownership[order[k % order.length]].houses += 1;
+    left -= 1;
+  }
+  for (const id of lots) {
+    const own = draft.ownership[id];
+    if (own.houses === HOTEL) draft.hotelsLeft -= 1;
+    else draft.housesLeft -= own.houses;
+  }
+  note(draft, `${tag(draft, seat)} completed a set: its buildings were spread evenly`);
+}
+
+/** What follows a property changing hands. */
+function afterAcquire(draft: MonopolyState, seat: number, spaceId: number): void {
+  const group = spaceAt(draft, spaceId).group;
+  if (group) completeSet(draft, seat, group);
 }
 
 /** Whether `playerId` can presently deliver everything in a bundle. */
@@ -599,9 +887,10 @@ function canDeliver(draft: MonopolyState, playerId: string, bundle: TradeBundle)
   if (!p || p.bankrupt) return false;
   if (p.cash < bundle.cash) return false;
   if (p.getOutCards < bundle.getOutCards) return false;
+  if ((p.busTickets ?? 0) < (bundle.busTickets ?? 0)) return false;
   return bundle.properties.every((id) => {
     const own = draft.ownership[id];
-    return own && own.owner === playerId && own.houses === 0; // no built-up lots
+    return own && own.owner === playerId && own.houses === 0 && !own.depot; // no built-up lots
   });
 }
 
@@ -621,7 +910,7 @@ function proposeTrade(draft: MonopolyState, trade: PendingTrade): void {
 function moveProperty(draft: MonopolyState, spaceId: number, toSeat: number): void {
   const own = draft.ownership[spaceId];
   own.owner = draft.players[toSeat].id;
-  if (own.mortgaged) draft.players[toSeat].cash -= Math.ceil(mortgageValue(spaceId) * 0.1);
+  if (own.mortgaged) draft.players[toSeat].cash -= Math.ceil(mortgageValue(draft, spaceId) * 0.1);
 }
 
 function respondTrade(draft: MonopolyState, accept: boolean): void {
@@ -646,8 +935,15 @@ function respondTrade(draft: MonopolyState, accept: boolean): void {
   draft.players[toSeat].cash += t.give.cash - t.receive.cash;
   draft.players[fromSeat].getOutCards += t.receive.getOutCards - t.give.getOutCards;
   draft.players[toSeat].getOutCards += t.give.getOutCards - t.receive.getOutCards;
+  const tickets = (t.receive.busTickets ?? 0) - (t.give.busTickets ?? 0);
+  if (tickets !== 0) {
+    draft.players[fromSeat].busTickets = (draft.players[fromSeat].busTickets ?? 0) + tickets;
+    draft.players[toSeat].busTickets = (draft.players[toSeat].busTickets ?? 0) - tickets;
+  }
   for (const id of t.give.properties) moveProperty(draft, id, toSeat);
   for (const id of t.receive.properties) moveProperty(draft, id, fromSeat);
+  for (const id of t.give.properties) afterAcquire(draft, toSeat, id);
+  for (const id of t.receive.properties) afterAcquire(draft, fromSeat, id);
 }
 
 /** After any action: if the player whose turn it is has gone bankrupt (and no
@@ -657,6 +953,10 @@ function settleTurn(draft: MonopolyState): void {
   if (!currentPlayer(draft).bankrupt) return;
   draft.pendingPurchase = null;
   draft.doubles = 0;
+  if (megaGame(draft)) {
+    draft.bonus = null;
+    draft.choice = null;
+  }
   nextActive(draft);
 }
 
@@ -690,6 +990,11 @@ function nextActive(draft: MonopolyState): void {
   const next = currentPlayer(draft);
   draft.phase = next.inJail ? 'jail' : 'roll';
   draft.dice = null;
+  if (megaGame(draft)) {
+    draft.speedDie = null;
+    draft.bonus = null;
+    draft.choice = null;
+  }
 }
 
 function endTurn(draft: MonopolyState): void {
@@ -697,6 +1002,8 @@ function endTurn(draft: MonopolyState): void {
   if (draft.pendingPurchase !== null || draft.pendingAuction || draft.pendingTrade) {
     illegal('resolve the pending action first');
   }
+  if (draft.choice) illegal('make your choice first');
+  if (draft.bonus) illegal('take your bonus move first');
   const me = currentPlayer(draft);
   if (me.cash < 0) illegal('settle your debt first');
   // A non-jail double earns the same player another roll.
@@ -769,7 +1076,7 @@ export function endGame(state: MonopolyState): MonopolyState {
 }
 
 /** A fresh game for the same players, pieces and rules. */
-export function rematch(state: MonopolyState): MonopolyState {
+function rematch(state: MonopolyState): MonopolyState {
   return createMonopolyGame(
     state.players.map((p) => ({ name: p.name, avatar: p.avatar, isAI: p.isAI, difficulty: p.difficulty })),
     (state.rngState ^ 0x9e3779b9) >>> 0,
@@ -823,6 +1130,21 @@ export function applyAction(state: MonopolyState, action: Action): MonopolyState
     case 'END_TURN':
       endTurn(draft);
       break;
+    case 'BUILD_DEPOT':
+      buildDepot(draft, action.spaceId);
+      break;
+    case 'SELL_DEPOT':
+      sellDepot(draft, action.spaceId);
+      break;
+    case 'USE_TICKET':
+      useTicket(draft, action.space);
+      break;
+    case 'BONUS':
+      takeBonus(draft, action.take);
+      break;
+    case 'CHOOSE':
+      choose(draft, action.space, action.take);
+      break;
     case 'DECLARE_BANKRUPTCY':
       declareBankruptcy(draft);
       break;
@@ -838,5 +1160,3 @@ export function applyAction(state: MonopolyState, action: Action): MonopolyState
   settleTurn(draft);
   return draft;
 }
-
-export { GO_TO_JAIL_ID };

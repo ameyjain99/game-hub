@@ -329,7 +329,7 @@ function applyResolveTunnel(
 }
 
 /** How many cards the player's next station costs: 1, then 2, then 3. */
-export function stationCost(player: PlayerState): number {
+function stationCost(player: PlayerState): number {
   return player.stations.length + 1;
 }
 

@@ -21,7 +21,7 @@ export const LEVELS: Record<Level, { label: string; cols: number; rows: number; 
   expert: { label: 'Expert', cols: 30, rows: 24, mines: 160 },
 };
 
-export type Status = 'ready' | 'playing' | 'won' | 'lost';
+type Status = 'ready' | 'playing' | 'won' | 'lost';
 
 export interface MsState {
   level: Level;

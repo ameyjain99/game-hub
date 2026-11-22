@@ -92,6 +92,13 @@ const house = (mode: 'classic' | 'flip') =>
           ? 'Play a **7** and you swap hands with a player of your choice. Play a **0** and every hand moves on to the next player in the direction of play. A 7 or 0 that is your last card simply wins the hand.'
           : 'Play a **7** and you swap hands with a player of your choice (there are no 0s in the Flip deck). A 7 that is your last card simply wins the hand.',
       ],
+      ['Jump-in', 'If you hold the **very same card** as the one on top of the pile (same colour and same number or symbol; never a wild), you may play it at once, **even when it is not your turn**. Play then carries on from you, so the players in between miss their turns. Not while draw cards are owed. Bots do not jump in.'],
+      [
+        'Challenge a Wild Draw',
+        `This is the official rule in place of the game refusing the card. A ${mode === 'classic' ? 'Wild Draw 4' : 'Wild Draw 2'} may then be played at any time, as a bluff. The player made to draw may either **take the cards** or **challenge**. If the player who played it **did hold a card of the colour that was in play**, they draw the cards instead and the challenger plays on. If they did not, the challenger draws the cards **plus 2 more** and loses the turn. Hands are not shown; the game checks. A wild draw used to answer a stack cannot be challenged, and this rule is not offered with Wild Draw any time or in No Mercy.`,
+      ],
+      ['Cards dealt', 'The host may deal 5 or 10 cards each instead of 7.'],
+      ['Play to', 'The match is won by the first player to pass the target score: 500 by the standard rules, or 100, 200 or 300 for a shorter evening.'],
     ),
     p('**What answers what** when Stack draw cards is on:'),
     mode === 'classic'
@@ -124,7 +131,7 @@ const classic: RuleSection[] = [
     note('By the standard rules draw cards cannot be passed on: the player made to draw cannot answer with a draw card of their own. The **Stack draw cards** house rule changes that (see House rules).'),
   ),
   call,
-  end('Only the player who goes out scores. The traditional target is 500 points: the result shows when someone passes it, and you may keep dealing hands.'),
+  end('Only the player who goes out scores. The match goes to the first player past the target, 500 points unless the host chose another (see House rules); you may keep dealing hands after that.'),
   section(
     'Points',
     p('Each card still in a hand when someone goes out is worth this much **to the player who went out**:'),
@@ -249,8 +256,12 @@ const noMercy: RuleSection[] = [
   ),
   section(
     'House rules',
-    p('No Mercy already plays with stacking, drawing until you can play, a free wild draw and sevens and zeros: those cannot be switched off. One more can be switched on by the host:'),
-    terms(['Same numbers together', 'On your turn you may play **several number cards of the same number** at once, in any colours. The first must be a legal play; the **last** one sets the colour. A group of 7s swaps hands once, and a group of 0s passes hands on once.']),
+    p('No Mercy already plays with stacking, drawing until you can play, a free wild draw and sevens and zeros: those cannot be switched off. The host can add:'),
+    terms(
+      ['Same numbers together', 'On your turn you may play **several number cards of the same number** at once, in any colours. The first must be a legal play; the **last** one sets the colour. A group of 7s swaps hands once, and a group of 0s passes hands on once.'],
+      ['Jump-in', 'If you hold the **very same card** as the one on top of the pile (never a wild), you may play it at once, even when it is not your turn. Play carries on from you. Not while draw cards are owed.'],
+      ['Cards dealt / Play to', 'The host may deal 5 or 10 cards instead of 7, and set the match target to 100, 200, 300 or 500 points.'],
+    ),
   ),
   call,
   end('The winner of a hand also takes the pot from any hands that were knocked out. The traditional target is 500 points: the result shows when someone passes it, and you may keep dealing hands.'),

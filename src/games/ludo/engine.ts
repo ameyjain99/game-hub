@@ -262,7 +262,7 @@ function threats(s: LudoState, me: LudoPlayer, idx: number): number {
 }
 
 /** The bot's token for the current roll. */
-export function chooseToken(s: LudoState, rand: () => number = Math.random): number {
+function chooseToken(s: LudoState, rand: () => number = Math.random): number {
   const me = s.players[s.turn];
   const roll = s.dice!;
   const options = movableTokens(me, roll);

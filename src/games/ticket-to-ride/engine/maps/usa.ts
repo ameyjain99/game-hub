@@ -6,7 +6,7 @@ import { TICKETS_1910, TICKETS_1910_REPRINTS } from '../data/usa/tickets1910';
 import { DECK_COMPOSITION } from '../data/deck';
 
 /** The Big Cities of the USA 1910 rulebook's Big Cities mode. */
-export const BIG_CITIES = new Set(['chicago', 'dallas', 'houston', 'los-angeles', 'miami', 'new-york', 'seattle']);
+const BIG_CITIES = new Set(['chicago', 'dallas', 'houston', 'los-angeles', 'miami', 'new-york', 'seattle']);
 
 /** Ticket to Ride USA base game. No tunnels, ferries, or stations. */
 export const USA_MAP: GameMap = {

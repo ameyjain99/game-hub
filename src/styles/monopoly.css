@@ -86,8 +86,9 @@
   position: relative; /* the token layer covers it */
   display: grid;
   /* Kept in step with tokenAnchor() in board-layout.ts. */
-  grid-template-columns: 1.55fr repeat(9, 1fr) 1.55fr;
-  grid-template-rows: 1.55fr repeat(9, 1fr) 1.55fr;
+  /* 9 squares between the corners on the standard board, 12 on Mega's. */
+  grid-template-columns: 1.55fr repeat(var(--per-side, 9), 1fr) 1.55fr;
+  grid-template-rows: 1.55fr repeat(var(--per-side, 9), 1fr) 1.55fr;
   gap: 1px;
   width: min(100cqw, 100cqh);
   aspect-ratio: 1;
@@ -144,6 +145,23 @@ button.mono-cell.is-owned:hover {
   z-index: 1;
   outline: 2px solid var(--board-ink);
   outline-offset: -2px;
+}
+
+/* Mega: squares that can be picked (a triples move, an auction, a Bus Ticket ride). */
+.mono-cell.is-target {
+  cursor: pointer;
+  box-shadow: inset 0 0 0 2px #f2c200;
+}
+
+.mono-cell.is-target:hover,
+.mono-cell.is-picked {
+  z-index: 1;
+  box-shadow: inset 0 0 0 max(3px, 0.45cqw) #c62828;
+}
+
+.mono-chance-mark.is-small {
+  font-size: 18px;
+  rotate: 0deg;
 }
 
 /* Spotlight: one player's holdings light up, ringed in their colour; every
@@ -251,6 +269,102 @@ button.mono-cell.is-owned:hover {
   height: clamp(8px, 1.7cqw, 18px);
 }
 
+/* Mega: a skyscraper stands taller than a hotel, in steel blue with lit windows. */
+.mono-skyscraper {
+  width: clamp(8px, 1.5cqw, 16px);
+  height: clamp(7px, 1.25cqw, 14px);
+  background:
+    repeating-linear-gradient(90deg, #ffffffb3 0 1px, transparent 1px 3px),
+    #1f3a5f;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 2px #f2c200;
+}
+
+/* Mega: a train depot on a railroad, a small shed beside its name. */
+.mono-depot {
+  width: clamp(8px, 1.4cqw, 15px);
+  height: clamp(5px, 0.9cqw, 10px);
+  margin: 1px 0;
+  background: #1f3a5f;
+  border-radius: 3px 3px 1px 1px;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 2px #f2c200;
+}
+
+/* Mega has 14 tracks to a side instead of 11: everything on a square is a size smaller. */
+.mono-board.is-mega .mono-cell-name {
+  font-size: clamp(6px, 0.92cqw, 11px);
+}
+
+.mono-board.is-mega .mono-cell-price {
+  font-size: clamp(6px, 0.85cqw, 10px);
+}
+
+/* A phone-sized Mega board: its corners and squares are a quarter smaller than the
+   standard board's, so the corner words shrink and a square keeps only its mark and price. */
+@container (max-width: 560px) {
+  .mono-board.is-mega .mono-corner {
+    gap: 0;
+    padding: 0.8cqw 0.3cqw 0;
+  }
+
+  .mono-board.is-mega .mono-corner-title {
+    font-size: clamp(6px, 1.9cqw, 10px);
+    letter-spacing: 0;
+  }
+
+  .mono-board.is-mega .kind-go .mono-corner-title {
+    font-size: clamp(11px, 3.6cqw, 18px);
+  }
+
+  .mono-board.is-mega .mono-corner-sub,
+  .mono-board.is-mega .kind-tax .mono-cell-price {
+    display: none;
+  }
+
+  .mono-board.is-mega .mono-cell-price {
+    font-size: clamp(5.5px, 1.55cqw, 9px);
+  }
+}
+
+/* Chance: the printed card's bold question mark. */
+.mono-chance-mark {
+  font-size: clamp(13px, 2.5cqw, 28px);
+  font-weight: 900;
+  line-height: 0.9;
+  rotate: 10deg;
+}
+
+/* The speed die: red, as in the box, with the Bus or Mr. Monopoly in place of pips. */
+.mono-die.is-speed {
+  color: #fff;
+  background: #c62828;
+}
+
+.mono-die.is-speed > .is-pip {
+  background: #fff;
+}
+
+.mono-die.is-speed.is-mark {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.mono-die.is-speed.is-mark > * {
+  grid-area: 1 / 1 / -1 / -1;
+}
+
+.mono-die.is-speed svg {
+  width: 62%;
+  height: 62%;
+}
+
+.mono-die-mr {
+  font-size: clamp(13px, 2.2cqw, 24px);
+  font-weight: 900;
+  line-height: 1;
+}
+
 .mono-cell-body {
   display: flex;
   flex: 1;
@@ -281,10 +395,13 @@ button.mono-cell.is-owned:hover {
 }
 
 .mono-cell-name {
+  min-width: 0;
+  max-width: 100%;
   font-size: clamp(7px, 1.1cqw, 12px);
   font-weight: 700;
   line-height: 1.1;
-  overflow-wrap: break-word;
+  /* A long single word (Northumberland, Kurfürstendamm) breaks rather than running under the colour band. */
+  overflow-wrap: anywhere;
   hyphens: auto;
 }
 
@@ -519,8 +636,9 @@ button.mono-cell.is-owned:hover {
 
 /* ---------------- Board centre: the play area ---------------- */
 .mono-center {
-  grid-row: 2 / 11;
-  grid-column: 2 / 11;
+  /* Everything inside the ring, whatever the board's size. */
+  grid-row: 2 / -2;
+  grid-column: 2 / -2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -564,7 +682,8 @@ button.mono-cell.is-owned:hover {
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   width: clamp(26px, 4.2cqw, 46px);
   aspect-ratio: 1;
-  padding: 14%;
+  /* Sized from two dice and their gap, so the inset is the same with a third die beside them. */
+  padding: calc((2 * clamp(26px, 4.2cqw, 46px) + 0.8cqw) * 0.14);
   background: #fff;
   border-radius: 22%;
   box-shadow: 0 2px 0 #0002, 0 6px 14px #0002, inset 0 0 0 1px #0000000f;
@@ -1470,6 +1589,12 @@ button.mono-cell.is-owned:hover {
 .mono-pip.is-hotel {
   width: 16px;
   background: var(--danger);
+}
+
+.mono-pip.is-sky {
+  width: 16px;
+  height: 11px;
+  background: #3b6ea8;
 }
 
 .mono-set-progress {

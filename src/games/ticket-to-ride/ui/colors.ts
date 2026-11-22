@@ -60,7 +60,7 @@ export function cardBorder(card: TrainCard): string {
 }
 
 /** Per-seat player token colors (up to 5) - distinct from each other. */
-export const PLAYER_COLORS = ['#d1352b', '#2f6fdb', '#2fa84f', '#e8a41c', '#333338'];
+const PLAYER_COLORS = ['#d1352b', '#2f6fdb', '#2fa84f', '#e8a41c', '#333338'];
 
 export function playerColor(index: number): string {
   return PLAYER_COLORS[index % PLAYER_COLORS.length];

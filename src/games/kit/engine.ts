@@ -103,11 +103,6 @@ export const DEALER_ID = 'dealer';
 /** The default pause before a bot acts. */
 export const BOT_DELAY_MS = 700;
 
-/** Shorthand for a kit's player list lookup. */
-export function playerById<P extends KitPlayer>(players: P[], id: string): P | undefined {
-  return players.find((p) => p.id === id);
-}
-
 /** A small seeded RNG step (mulberry32) over a numeric state, for engines that
  *  keep their seed in plain JSON: returns [value in 0..1, next seed]. */
 export function nextRandom(seed: number): [number, number] {

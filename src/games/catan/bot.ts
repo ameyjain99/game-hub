@@ -51,7 +51,7 @@ const count = (s: CatanState, id: string, kind: 'road' | 'settlement' | 'city' |
       : s.buildings.filter((b) => b?.player === id && b.city === (kind === 'city')).length;
 
 /** What a corner is worth to `id`. */
-export function cornerValue(s: CatanState, v: number, id: string): number {
+function cornerValue(s: CatanState, v: number, id: string): number {
   const have = new Set<Resource>();
   s.buildings.forEach((b, i) => {
     if (b?.player !== id) return;

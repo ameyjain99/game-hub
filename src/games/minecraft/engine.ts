@@ -7,7 +7,7 @@
 import { IllegalMove, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
 import { BLOCKS, D, H, W, B, coordsOf } from './world';
 
-export interface BuilderPlayer extends KitPlayer {
+interface BuilderPlayer extends KitPlayer {
   color: string;
   placed: number;
   broken: number;

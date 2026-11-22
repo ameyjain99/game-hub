@@ -1,4 +1,5 @@
-import { BOARD, OWNABLE_IDS } from './board';
+import { isMega, ownableIds, spacesOf, type Space } from './board';
+import { MEGA } from './mega';
 import {
   currentPlayer,
   type MonopolyDifficulty,
@@ -8,7 +9,7 @@ import {
 } from './state';
 import { Action } from './actions';
 import { applyAction } from './reducer';
-import { canBuild, canMortgage, canSellHouse, canUnmortgage, legalBid, unmortgageCost } from './selectors';
+import { canBuild, canBuildDepot, canMortgage, canSellDepot, canSellHouse, canUnmortgage, legalBid, ticketTargets, unmortgageCost, unownedIds } from './selectors';
 
 /** The player who must act now: a trade recipient, the current bidder, or the
  *  player whose turn it is. Undefined once the game is over. */
@@ -29,14 +30,19 @@ function reserve(d: MonopolyDifficulty | undefined): number {
   return d === 'easy' ? 0 : d === 'hard' ? 200 : 100;
 }
 
+/** The squares of the board in play, and the ones that can be owned. */
+const boardOfGame = (state: MonopolyState): Space[] => spacesOf(state.settings.board);
+const ownable = (state: MonopolyState): number[] => ownableIds(state.settings.board);
+
 const ownedBy = (state: MonopolyState, id: string): number[] =>
-  OWNABLE_IDS.filter((s) => state.ownership[s].owner === id);
+  ownable(state).filter((s) => state.ownership[s].owner === id);
 
 /** The lots that form a set with `id`: its colour group, or all railroads /
- *  both utilities. */
-function setOf(id: number): number[] {
+ *  all utilities. */
+function setOf(state: MonopolyState, id: number): number[] {
+  const BOARD = boardOfGame(state);
   const sp = BOARD[id];
-  return OWNABLE_IDS.filter((x) =>
+  return ownable(state).filter((x) =>
     sp.kind === 'property' ? BOARD[x].group === sp.group : BOARD[x].kind === sp.kind,
   );
 }
@@ -48,19 +54,21 @@ function setOf(id: number): number[] {
  * responder's own set counts 3×; handing the proposer a completed set costs the
  * responder an extra 2× that lot. So an even set-for-set swap nets out to ~0.
  */
-export function tradeGain(state: MonopolyState, t: PendingTrade): number {
+function tradeGain(state: MonopolyState, t: PendingTrade): number {
   const ownerAfter = (id: number): string | null =>
     t.give.properties.includes(id) ? t.to : t.receive.properties.includes(id) ? t.from : state.ownership[id].owner;
-  const completesFor = (playerId: string, id: number) => setOf(id).every((x) => ownerAfter(x) === playerId);
+  const BOARD = boardOfGame(state);
+  const setOfLot = (id: number) => setOf(state, id);
+  const completesFor = (playerId: string, id: number) => setOfLot(id).every((x) => ownerAfter(x) === playerId);
   const price = (id: number) => BOARD[id].price ?? 0;
 
-  let gain = t.give.cash - t.receive.cash + 50 * (t.give.getOutCards - t.receive.getOutCards);
+  let gain = t.give.cash - t.receive.cash + 50 * (t.give.getOutCards - t.receive.getOutCards) + 50 * ((t.give.busTickets ?? 0) - (t.receive.busTickets ?? 0));
   for (const id of t.give.properties) {
-    const sharesSet = setOf(id).some((x) => x !== id && state.ownership[x].owner === t.to);
+    const sharesSet = setOfLot(id).some((x) => x !== id && state.ownership[x].owner === t.to);
     gain += price(id) * (completesFor(t.to, id) ? 3 : sharesSet ? 1.4 : 1);
   }
   for (const id of t.receive.properties) {
-    const brokeSet = setOf(id).some((x) => x !== id && state.ownership[x].owner === t.to);
+    const brokeSet = setOfLot(id).some((x) => x !== id && state.ownership[x].owner === t.to);
     gain -= price(id) * (brokeSet ? 1.4 : 1);
     if (completesFor(t.from, id)) gain -= price(id) * 2;
   }
@@ -76,7 +84,7 @@ function respondToTrade(state: MonopolyState, me: MonopolyPlayer): Action {
   return { type: 'RESPOND_TRADE', accept: wouldAccept(state, me, state.pendingTrade!) };
 }
 
-const tradable = (state: MonopolyState, id: number) => state.ownership[id].houses === 0;
+const tradable = (state: MonopolyState, id: number) => state.ownership[id].houses === 0 && !state.ownership[id].depot;
 
 /**
  * A set-completing offer this bot could make, or null. It looks for a colour
@@ -86,6 +94,8 @@ const tradable = (state: MonopolyState, id: number) => state.ownership[id].house
  */
 function proposeBotTrade(state: MonopolyState, me: MonopolyPlayer): PendingTrade | null {
   if (me.difficulty === 'easy' || state.tradesThisTurn > 0) return null;
+  const BOARD = boardOfGame(state);
+  const OWNABLE_IDS = ownable(state);
   const groups = [...new Set(OWNABLE_IDS.filter((id) => BOARD[id].kind === 'property').map((id) => BOARD[id].group))];
   for (const g of groups) {
     const lots = OWNABLE_IDS.filter((id) => BOARD[id].group === g);
@@ -102,7 +112,7 @@ function proposeBotTrade(state: MonopolyState, me: MonopolyPlayer): PendingTrade
     // Mutual swap: one of my lots that completes the holder's set.
     for (const mine of OWNABLE_IDS.filter((id) => state.ownership[id].owner === me.id && tradable(state, id))) {
       if (lots.includes(mine)) continue;
-      const theirSet = setOf(mine).filter((x) => x !== mine);
+      const theirSet = setOf(state, mine).filter((x) => x !== mine);
       if (theirSet.length > 0 && theirSet.every((x) => state.ownership[x].owner === holder.id)) {
         const topUp = Math.max(0, price - (BOARD[mine].price ?? 0));
         candidates.push({ from: me.id, to: holder.id, give: { cash: topUp, properties: [mine], getOutCards: 0 }, receive: { cash: 0, properties: [want], getOutCards: 0 } });
@@ -129,7 +139,7 @@ function decideJail(me: MonopolyPlayer): Action {
 
 function decideAuction(state: MonopolyState, me: MonopolyPlayer): Action {
   const a = state.pendingAuction!;
-  const price = BOARD[a.spaceId].price ?? 0;
+  const price = boardOfGame(state)[a.spaceId].price ?? 0;
   const willing = Math.floor(price * (me.difficulty === 'easy' ? 0.6 : 1));
   const { min, max } = legalBid(state, me.id, a.highBid);
   const ceiling = Math.min(willing, max);
@@ -143,13 +153,15 @@ function decideAuction(state: MonopolyState, me: MonopolyPlayer): Action {
 function settleDebt(state: MonopolyState, me: MonopolyPlayer): Action {
   const built = ownedBy(state, me.id).find((id) => canSellHouse(state, me.id, id));
   if (built !== undefined) return { type: 'SELL_HOUSE', spaceId: built };
+  const depot = ownedBy(state, me.id).find((id) => canSellDepot(state, me.id, id));
+  if (depot !== undefined) return { type: 'SELL_DEPOT', spaceId: depot };
   const lot = ownedBy(state, me.id).find((id) => canMortgage(state, id));
   if (lot !== undefined) return { type: 'MORTGAGE', spaceId: lot };
   return { type: 'DECLARE_BANKRUPTCY' };
 }
 
 function decidePurchase(state: MonopolyState, me: MonopolyPlayer): Action {
-  const price = BOARD[state.pendingPurchase!].price ?? 0;
+  const price = boardOfGame(state)[state.pendingPurchase!].price ?? 0;
   if (me.cash - price >= reserve(me.difficulty)) return { type: 'BUY' };
   // Buy a cheap lot even into the reserve rather than let it go.
   if (me.difficulty !== 'easy' && me.cash >= price && price <= 120) return { type: 'BUY' };
@@ -160,6 +172,7 @@ function decidePurchase(state: MonopolyState, me: MonopolyPlayer): Action {
 /** A buildable lot for a bot that keeps its reserve, or undefined. */
 function bestBuild(state: MonopolyState, me: MonopolyPlayer): number | undefined {
   if (me.difficulty === 'easy') return undefined; // easy bots don't develop
+  const BOARD = boardOfGame(state);
   const buildable = ownedBy(state, me.id).filter(
     (id) =>
       canBuild(state, me.id, id) &&
@@ -170,17 +183,57 @@ function bestBuild(state: MonopolyState, me: MonopolyPlayer): number | undefined
   return buildable[0];
 }
 
+/** How many lots of `id`'s set this player already holds. */
+const heldInSet = (state: MonopolyState, me: MonopolyPlayer, id: number) => setOf(state, id).filter((x) => state.ownership[x].owner === me.id).length;
+
+/** Mega: the unowned property a bot would most like, within what it can spend: the one that adds to a set it is building. */
+function wanted(state: MonopolyState, me: MonopolyPlayer, among: number[]): number | undefined {
+  const BOARD = boardOfGame(state);
+  const afford = among.filter((id) => state.ownership[id]?.owner === null && (BOARD[id].price ?? 0) <= me.cash - reserve(me.difficulty));
+  return [...afford].sort((x, y) => heldInSet(state, me, y) - heldInSet(state, me, x) || (BOARD[y].price ?? 0) - (BOARD[x].price ?? 0))[0];
+}
+
+/** Mega: answer a choice owed. */
+function decideChoice(state: MonopolyState, me: MonopolyPlayer): Action {
+  const kind = state.choice!.kind;
+  if (kind === 'birthday') return { type: 'CHOOSE', take: me.cash >= 300 ? 'ticket' : 'cash' };
+  const free = unownedIds(state);
+  if (kind === 'auction') {
+    // Put up what it wants itself; failing that, the cheapest lot, which helps nobody much.
+    const BOARD = boardOfGame(state);
+    return { type: 'CHOOSE', space: wanted(state, me, free) ?? [...free].sort((x, y) => (BOARD[x].price ?? 0) - (BOARD[y].price ?? 0))[0] };
+  }
+  // Triples: a property worth having, or else Go for the salary.
+  const target = me.difficulty === 'easy' ? undefined : wanted(state, me, free.filter((id) => id !== me.position));
+  return { type: 'CHOOSE', space: target ?? (me.position === 0 ? 1 : 0) };
+}
+
+/** Mega: whether to ride a Bus Ticket instead of rolling, and where to. */
+function ticketRide(state: MonopolyState, me: MonopolyPlayer): number | undefined {
+  if (!isMega(state.settings.board) || me.difficulty === 'easy' || (me.busTickets ?? 0) < 1 || me.inJail) return undefined;
+  // Only for a lot that adds to a set already begun.
+  const target = wanted(state, me, ticketTargets(state, me.position));
+  return target !== undefined && heldInSet(state, me, target) > 0 ? target : undefined;
+}
+
 function decideAction(state: MonopolyState, me: MonopolyPlayer): Action {
   if (state.pendingDebt && me.cash < 0) return settleDebt(state, me);
+  if (state.choice) return decideChoice(state, me);
   if (state.pendingPurchase !== null) return decidePurchase(state, me);
+  // The speed die's bonus: Mr. Monopoly's move, or for the Bus a ticket while any are left.
+  if (state.bonus) return { type: 'BONUS', take: state.bonus === 'bus' ? ((state.busLeft ?? 0) > 0 ? 'ticket' : 'move') : undefined };
   const offer = proposeBotTrade(state, me);
   if (offer) return { type: 'PROPOSE_TRADE', trade: offer };
   const build = bestBuild(state, me);
   if (build !== undefined) return { type: 'BUILD', spaceId: build };
+  if (me.difficulty !== 'easy') {
+    const depot = ownedBy(state, me.id).find((id) => canBuildDepot(state, me.id, id) && me.cash - MEGA.depotCost >= reserve(me.difficulty) + 200);
+    if (depot !== undefined) return { type: 'BUILD_DEPOT', spaceId: depot };
+  }
   // Redeem a mortgage (so it earns rent and its group can build) when flush.
   if (me.difficulty !== 'easy') {
     const redeem = ownedBy(state, me.id).find(
-      (id) => canUnmortgage(state, me.id, id) && me.cash - unmortgageCost(id) >= reserve(me.difficulty) + 150,
+      (id) => canUnmortgage(state, me.id, id) && me.cash - unmortgageCost(state, id) >= reserve(me.difficulty) + 150,
     );
     if (redeem !== undefined) return { type: 'UNMORTGAGE', spaceId: redeem };
   }
@@ -194,7 +247,10 @@ export function chooseMonopolyAction(state: MonopolyState): Action {
   if (state.pendingTrade) return respondToTrade(state, me);
   if (state.pendingAuction) return decideAuction(state, me);
   if (state.phase === 'jail') return decideJail(me);
-  if (state.phase === 'roll') return { type: 'ROLL' };
+  if (state.phase === 'roll') {
+    const ride = ticketRide(state, me);
+    return ride !== undefined ? { type: 'USE_TICKET', space: ride } : { type: 'ROLL' };
+  }
   return decideAction(state, me);
 }
 
@@ -209,7 +265,15 @@ export function timeoutAction(state: MonopolyState): Action {
   if (state.phase === 'jail') return { type: 'ROLL_JAIL' };
   if (state.phase === 'roll') return { type: 'ROLL' };
   if (me && state.pendingDebt && me.cash < 0) return settleDebt(state, me);
+  if (me && state.choice) {
+    // The cautious answer: the gift in cash, the cheapest lot to auction, Go for triples.
+    if (state.choice.kind === 'birthday') return { type: 'CHOOSE', take: 'cash' };
+    const BOARD = boardOfGame(state);
+    if (state.choice.kind === 'auction') return { type: 'CHOOSE', space: [...unownedIds(state)].sort((x, y) => (BOARD[x].price ?? 0) - (BOARD[y].price ?? 0))[0] };
+    return { type: 'CHOOSE', space: me.position === 0 ? 1 : 0 };
+  }
   if (state.pendingPurchase !== null) return { type: 'DECLINE' };
+  if (state.bonus) return { type: 'BONUS', take: state.bonus === 'bus' ? ((state.busLeft ?? 0) > 0 ? 'ticket' : 'move') : undefined };
   return { type: 'END_TURN' };
 }
 

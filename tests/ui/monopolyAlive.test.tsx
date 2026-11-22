@@ -94,21 +94,21 @@ describe('drawn card', () => {
   );
 
   test('the card drawn on this roll is shown, naming who drew it', () => {
-    const v = { ...afterBuy(), rollSeq: 3, uno: { deck: 'chance' as const, text: 'Speeding fine. Pay $15.', playerId: 'p1', atRoll: 3 } };
+    const v = { ...afterBuy(), rollSeq: 3, lastCard: { deck: 'chance' as const, text: 'Speeding fine. Pay $15.', playerId: 'p1', atRoll: 3 } };
     render(center(v));
     const card = screen.getByRole('note', { name: /chance/i });
-    expect(card.textContent).toContain('Speeding fine. Pay $15.');
+    expect(card.textContent).toContain('Speeding fine. Pay ₥15.');
     expect(card.textContent).toContain('Bot 1');
   });
 
   test('a card from an earlier roll is not', () => {
-    const v = { ...afterBuy(), rollSeq: 4, uno: { deck: 'chest' as const, text: 'old', playerId: 'p1', atRoll: 3 } };
+    const v = { ...afterBuy(), rollSeq: 4, lastCard: { deck: 'chest' as const, text: 'old', playerId: 'p1', atRoll: 3 } };
     render(center(v));
     expect(screen.queryByRole('note', { name: /community chest/i })).toBeNull();
   });
 
   test('the card can be put away', () => {
-    const v = { ...afterBuy(), rollSeq: 3, uno: { deck: 'chest' as const, text: 'Bank error.', playerId: 'p0', atRoll: 3 } };
+    const v = { ...afterBuy(), rollSeq: 3, lastCard: { deck: 'chest' as const, text: 'Bank error.', playerId: 'p0', atRoll: 3 } };
     render(center(v));
     fireEvent.click(screen.getByRole('button', { name: /put the card away/i }));
     expect(screen.queryByRole('note', { name: /community chest/i })).toBeNull();
@@ -125,14 +125,14 @@ describe('player panels', () => {
     const { rerender } = render(side(v));
     const paid = { ...v, players: v.players.map((p) => (p.id === 'p1' ? { ...p, cash: p.cash + 200 } : p)) };
     rerender(side(paid));
-    expect(screen.getByText('+$200')).toBeTruthy();
+    expect(screen.getByText('+₥200')).toBeTruthy();
     tick(2500);
-    expect(screen.queryByText('+$200')).toBeNull();
+    expect(screen.queryByText('+₥200')).toBeNull();
   });
 
   test('each player shows their net worth', () => {
     render(side(game()));
-    expect(screen.getAllByText('Net $1,500')).toHaveLength(2);
+    expect(screen.getAllByText('Net ₥1,500')).toHaveLength(2);
   });
 
   test('a held Get Out of Jail Free card is shown', () => {
@@ -148,7 +148,7 @@ describe('player panels', () => {
     const log = screen.getByRole('group', { name: /game log/i });
     const items = log.querySelectorAll('li');
     expect(items.length).toBe(v.log.length);
-    expect(items[0].textContent).toBe(v.log[v.log.length - 1].replace('{p0}', 'You'));
+    expect(items[0].textContent).toBe(v.log[v.log.length - 1].replace('{p0}', 'You').replace('$', '₥'));
   });
 });
 

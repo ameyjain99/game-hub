@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 
 export const SUIT_SYMBOL: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
-export const SUIT_NAME: Record<string, string> = { S: 'spades', H: 'hearts', D: 'diamonds', C: 'clubs' };
+const SUIT_NAME: Record<string, string> = { S: 'spades', H: 'hearts', D: 'diamonds', C: 'clubs' };
 const RANK_NAME: Record<string, string> = { A: 'ace', K: 'king', Q: 'queen', J: 'jack', T: '10' };
 
 /** "TS" → "10", "QH" → "Q". */

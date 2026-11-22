@@ -6,7 +6,8 @@ import { DEFAULT_SETTINGS, type MonopolyDifficulty, type Settings } from '../eng
 import { MonopolyLocalGame } from './MonopolyLocalGame';
 import { MonopolyOnlineGame } from './MonopolyOnlineGame';
 import { MonopolyProfile } from './MonopolyProfile';
-import { BoardField, HOUSE_RULES, HouseRuleSwitches, RoundLimitField, StartingCashField } from './MonopolyRules';
+import { BoardField, HOUSE_RULES, HouseRuleSwitches, RoundLimitField, StartingCashField, cashForBoard } from './MonopolyRules';
+import { BOARDS, formatMoney } from '../engine/board';
 import { RulesContext } from '../../../shared/rules';
 import { MONOPOLY_RULES } from '../rules';
 
@@ -24,7 +25,7 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
   const { step, navigate, syncCode, exit } = useGameRoute('monopoly', onBackToHub);
   const [playerCount, setPlayerCount] = useState(4);
   const [difficulty, setDifficulty] = useState<MonopolyDifficulty>('normal');
-  const [localRules, setLocalRules] = useState<Settings>(DEFAULT_SETTINGS);
+  const [localRules, setLocalRules] = useState<Settings>({ ...DEFAULT_SETTINGS, board: BOARDS[0].id });
   const toLanding = () => navigate({ kind: 'landing' });
   const rulesOn = HOUSE_RULES.filter((r) => localRules[r.key]).length;
 
@@ -76,7 +77,7 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
           onLocal={() => navigate({ kind: 'local' })}
           localOptions={
             <>
-              <BoardField value={localRules.board} onChange={(board) => setLocalRules((r) => ({ ...r, board }))} />
+              <BoardField value={localRules.board} onChange={(board) => setLocalRules((r) => ({ ...r, board, startingCash: cashForBoard(r.startingCash, r.board, board) }))} />
               <label className="g-field">
                 <span className="g-field-label">Players</span>
                 <select aria-label="Players" value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))}>
@@ -102,11 +103,11 @@ function MonopolyScreens({ onBackToHub }: { onBackToHub: () => void }) {
               <summary>
                 House rules
                 <span className="g-disclosure-meta">
-                  {localRules.board === 'india' ? '₹' : '$'}{localRules.startingCash.toLocaleString()} · {rulesOn} on
+                  {formatMoney(localRules.startingCash, localRules.board)} · {rulesOn} on
                 </span>
               </summary>
               <div className="g-disclosure-body">
-                <StartingCashField value={localRules.startingCash} onChange={(c) => setLocalRules((r) => ({ ...r, startingCash: c }))} />
+                <StartingCashField board={localRules.board} value={localRules.startingCash} onChange={(c) => setLocalRules((r) => ({ ...r, startingCash: c }))} />
                 <RoundLimitField value={localRules.roundLimit} onChange={(roundLimit) => setLocalRules((r) => ({ ...r, roundLimit }))} />
                 <HouseRuleSwitches value={localRules} onChange={setLocalRules} />
               </div>

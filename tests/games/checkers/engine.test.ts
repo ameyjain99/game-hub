@@ -156,7 +156,7 @@ describe('bot', () => {
   });
 
   test("the hard bot never searches past its budget, so a move can't stall the table", () => {
-    // A busy middlegame where the search used to run to 2.6x its budget.
+    // A busy middlegame: many captures and kings, the costliest kind of position to search.
     const s = position({ b: [1, 3, 4, 6, 11, 14, 19], w: [17, 21, 28, 29, 30, 31, 32] });
     const moves = legalMoves(s.board, 'black');
     const { picks, nodes } = bestMoves(s.board, 'black', moves, 'hard');

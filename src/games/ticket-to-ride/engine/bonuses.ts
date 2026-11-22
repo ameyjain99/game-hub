@@ -47,7 +47,7 @@ export const mostTicketsBonus: BonusRule = { ...globetrotterBonus, id: 'most-tic
 export const GRAND_TOUR_POINTS = [0, 5, 10, 20, 30, 40];
 
 /** A player's tickets whose two cities are joined by two paths that share no route. */
-export function grandTourTickets(player: PlayerState) {
+function grandTourTickets(player: PlayerState) {
   return player.tickets.filter((t) => twoPaths(player.claimedRouteIds, t.a, t.b));
 }
 

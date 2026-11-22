@@ -11,7 +11,7 @@ import { shuffle } from '../kit/engine';
 
 export type Resource = 'lumber' | 'brick' | 'wool' | 'grain' | 'ore';
 export type Terrain = 'forest' | 'hills' | 'pasture' | 'fields' | 'mountains' | 'desert' | 'gold' | 'sea';
-export type HarborKind = Resource | 'any';
+type HarborKind = Resource | 'any';
 
 export const RESOURCES: Resource[] = ['lumber', 'brick', 'wool', 'grain', 'ore'];
 export const YIELD: Record<Terrain, Resource | null> = {
@@ -29,7 +29,7 @@ export const isLand = (t: Terrain) => t !== 'sea';
 /** How many of the 36 dice outcomes roll each total (the dots on a number token). */
 export const PIPS: Record<number, number> = { 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 0, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1 };
 
-export interface Tile {
+interface Tile {
   q: number;
   r: number;
   /** Centre, in hex-radius units. */
@@ -43,7 +43,7 @@ export interface Tile {
   island: number;
 }
 
-export interface Vertex {
+interface Vertex {
   x: number;
   y: number;
   tiles: number[];
@@ -52,7 +52,7 @@ export interface Vertex {
   neighbours: number[];
 }
 
-export interface Edge {
+interface Edge {
   v: [number, number];
   tiles: number[];
   /** Midpoint. */
@@ -208,20 +208,20 @@ export const geoOf = (b: { layout?: Layout }): Geometry => geometry(b.layout ?? 
 
 const pool = (counts: Partial<Record<Terrain, number>>): Terrain[] => (Object.keys(counts) as Terrain[]).flatMap((t) => Array<Terrain>(counts[t]!).fill(t));
 /** The land tiles of each shape (New Shores: its home island; see OUTER_TERRAINS for the rest). */
-export const TERRAINS: Record<Layout, Terrain[]> = {
+const TERRAINS: Record<Layout, Terrain[]> = {
   standard: pool({ forest: 4, hills: 3, pasture: 4, fields: 4, mountains: 3, desert: 1 }),
   large: pool({ forest: 6, hills: 5, pasture: 6, fields: 6, mountains: 5, desert: 2 }),
   newShores: pool({ forest: 4, hills: 3, pasture: 4, fields: 4, mountains: 3, desert: 1 }),
 };
 /** New Shores' nine outer-island tiles, two of them gold fields. */
-export const OUTER_TERRAINS: Terrain[] = pool({ gold: 2, forest: 1, hills: 2, pasture: 1, fields: 1, mountains: 2 });
-export const NUMBERS: Record<Layout, number[]> = {
+const OUTER_TERRAINS: Terrain[] = pool({ gold: 2, forest: 1, hills: 2, pasture: 1, fields: 1, mountains: 2 });
+const NUMBERS: Record<Layout, number[]> = {
   standard: [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12],
   large: [2, 2, ...[3, 4, 5, 6, 8, 9, 10, 11].flatMap((n) => [n, n, n]), 12, 12],
   newShores: [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12],
 };
-export const OUTER_NUMBERS = [2, 3, 4, 5, 6, 8, 9, 10, 11];
-export const HARBOR_KINDS: Record<Layout, HarborKind[]> = {
+const OUTER_NUMBERS = [2, 3, 4, 5, 6, 8, 9, 10, 11];
+const HARBOR_KINDS: Record<Layout, HarborKind[]> = {
   standard: ['any', 'any', 'any', 'any', 'lumber', 'brick', 'wool', 'grain', 'ore'],
   large: ['any', 'any', 'any', 'any', 'any', 'lumber', 'brick', 'wool', 'wool', 'grain', 'ore'],
   newShores: ['any', 'any', 'any', 'any', 'lumber', 'brick', 'wool', 'grain', 'ore'],

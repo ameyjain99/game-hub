@@ -20,8 +20,6 @@ export const TOKENS = [
   { id: 'bolt', label: 'Lightning', Icon: Zap },
 ] as const;
 
-export { TOKEN_IDS } from './pieceIds';
-
 /** The picture for a token id, or null for an id that isn't one (then a seat shows its letter). */
 export function TokenGlyph({ id, size = 16 }: { id: string | undefined; size?: number }) {
   const token = TOKENS.find((t) => t.id === id);
@@ -29,5 +27,3 @@ export function TokenGlyph({ id, size = 16 }: { id: string | undefined; size?: n
   const { Icon } = token;
   return <Icon size={size} strokeWidth={2.4} aria-hidden="true" />;
 }
-
-export const tokenName = (id: string | undefined): string | null => TOKENS.find((t) => t.id === id)?.label ?? null;

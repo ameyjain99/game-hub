@@ -345,7 +345,7 @@ function citiesKnightsBook(): RuleBook {
         ),
       ),
       section(
-        'ProgressCards',
+        'Progress cards',
         steps(
           `You may hold at most **${PROGRESS_LIMIT} progress cards**. If you draw a fifth on someone else's turn, you put one of your choice back under its deck at once. On your own turn you may keep a fifth until you end the turn, when you put one back.`,
           'Play any number of progress cards on your turn, after rolling. The **Alchemist** is the exception: it is played before rolling, in place of the number dice. A played progress card goes back under its own deck.',

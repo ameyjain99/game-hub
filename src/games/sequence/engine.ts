@@ -42,12 +42,12 @@ const HAND_SIZE: Record<number, number> = { 2: 7, 3: 6, 4: 6, 6: 5, 8: 4, 9: 4, 
 export const isTwoEyed = (card: string) => card === 'JD' || card === 'JC';
 export const isOneEyed = (card: string) => card === 'JH' || card === 'JS';
 export const teamsFor = (players: number) => (players % 3 === 0 ? 3 : 2);
-export const sequencesNeeded = (teams: number) => (teams === 2 ? 2 : 1);
+const sequencesNeeded = (teams: number) => (teams === 2 ? 2 : 1);
 
 /** Board spaces showing `card`. */
 export const cellsOf = (card: string): number[] => BOARD.flatMap((c, i) => (c === card ? [i] : []));
 
-export interface SeqPlayer extends KitPlayer {
+interface SeqPlayer extends KitPlayer {
   team: number;
   hand: string[];
   /** In a redacted view, how many cards an opponent holds. */
@@ -316,7 +316,7 @@ function cellValue(s: SeqState, cell: number, team: number): { build: number; bl
 }
 
 /** The bot's move for the player to act. */
-export function seqBotAction(s: SeqState, rand: () => number = Math.random): SeqAction {
+function seqBotAction(s: SeqState, rand: () => number = Math.random): SeqAction {
   const me = s.players[s.turn];
   const level = me.difficulty ?? 'normal';
   // Swap a dead card first.

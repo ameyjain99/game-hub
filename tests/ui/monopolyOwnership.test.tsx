@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 const nameFor = (id: string) => (id === 'p0' ? 'You' : `Bot ${id.slice(1)}`);
-const BROWN = groupIds('brown');
+const BROWN = groupIds('brown', 'neo');
 const SEVILLE = 8;
 
 /** You own Seville; Bot 1 owns the given lots. */
@@ -105,7 +105,7 @@ test("an owned square's card says who owns it and the rent it charges now", () =
   fireEvent.click(cell(SEVILLE));
   const card = screen.getByRole('article', { name: `Title deed: ${BOARD[SEVILLE].name}` }).parentElement!;
   expect(card.textContent).toContain('Owned by You');
-  expect(card.textContent).toContain(`Rent now $${BOARD[SEVILLE].rent![0]}`);
+  expect(card.textContent).toContain(`Rent now ₥${BOARD[SEVILLE].rent![0]}`);
 });
 
 test('completing a colour set is announced with what it unlocks, then fades', () => {

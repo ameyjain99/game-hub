@@ -35,7 +35,7 @@ const RUN = 6.8;
 const FLY = 10;
 const EPS = 1e-4;
 
-export const blockAt = (blocks: Uint8Array, x: number, y: number, z: number) =>
+const blockAt = (blocks: Uint8Array, x: number, y: number, z: number) =>
   x < 0 || z < 0 || x >= W || z >= D ? B.bedrock : y < 0 ? B.bedrock : y >= H ? 0 : blocks[index(x, y, z)];
 
 const solidAt = (blocks: Uint8Array, x: number, y: number, z: number) => isSolid(blockAt(blocks, x, y, z));

@@ -6,7 +6,7 @@ a join link), and everyone is at the same table - no accounts, no installs.
 | Game | Players | Modes |
 |---|---|---|
 | **Ticket to Ride** (USA: classic, 1910, Mega, Big Cities; Europe) | 2-5 | Online, local vs bots, pass-and-play |
-| **Monopoly** (six boards: Hasbro, Classic, Neo, World, Nations, India) | 2-6 | Online, local vs bots |
+| **Monopoly** (twelve boards: World 2008, World 2015, US, UK, India, Europe 1991, the 52-square Mega US and Mega UK, and GameHub's Classic, Neo, World, Nations) | 2-6 | Online, local vs bots |
 | **Catan** (hex-island trading and building; a larger island for 5-6; Seafarers and Cities & Knights expansions) | 3-6 | Online, local vs bots |
 | **Cluedo** (murder mystery on GameHub's own mansion board) | 3-6 | Online, local vs bots |
 | **Poker** (Texas Hold'em, Omaha, Short Deck, Seven-Card Stud, Razz) | 2-9 | Online, local vs bots; sit-and-go tournaments |
@@ -197,8 +197,11 @@ npm start                               # PORT defaults to 3001
   (answer with a draw card as big or bigger, in every mode), play same numbers
   together, play a Wild Draw any time, draw until you can play, and sevens and
   zeros (swap hands / pass hands on). No Mercy has all but "same numbers
-  together" built in. The rule book's House rules section lists what answers
-  what.
+  together" built in. Also optional: jump-in (play the very same card out of
+  turn), challenging a Wild Draw (the official rule, in place of the game
+  refusing the card: a wrong challenge costs two extra cards), 5 or 10 cards
+  dealt, and a match target of 100 to 500 points. The rule book's House rules
+  section lists what answers what.
 - **Scrabble.** 15×15, 100 tiles (two blanks), racks of seven, words checked
   against ENABLE (public domain, `public/words/`); premiums only under new tiles;
   all seven tiles score 50 more; swap with seven or more in the bag; the game
@@ -248,7 +251,19 @@ npm start                               # PORT defaults to 3001
   one runoff on a tie. Bots clue from per-word clue lists and vote on how well
   each player's clues fit their word.
 - **Monopoly house rules are opt-in toggles.** Defaults follow the official
-  rules (auctions on; Free Parking jackpot off).
+  rules (auctions on; Free Parking jackpot off). The host can also change the
+  Go salary, the Jail fine and the number of Jail rolls, add a fixed Free
+  Parking prize, charge Income Tax at 10% of net worth when that is lower,
+  hold buying back until a first lap, deal 2 or 3 title deeds each at the
+  start (the short game), and set the online turn clock. Each board prints
+  money its own way: rupees on India, pounds on UK, Europe 1991 and Mega UK,
+  dollars on US and Mega US, and Monopoly money on the boards that mix
+  countries.
+- **Mega Edition is the whole game.** Mega US and Mega UK play on 52 squares
+  with the speed die (Mr. Monopoly and Bus bonus moves, triples), Bus Tickets
+  with the three that expire the rest, the Auction, Bus Ticket and Birthday
+  Gift squares, building on all but one street of a set, skyscrapers, train
+  depots and a third utility. Rents follow the published Mega deeds.
 
 ## Contributing
 

@@ -2,7 +2,7 @@
 // together, a free Wild Draw, drawing until a card fits, and sevens and zeros.
 import { expect, test } from 'vitest';
 import { IllegalMove } from '../../../src/games/kit/engine';
-import { applyUno, createUno, faceOf, fits, unoBotAction, playable, rulesOf, type Card, type Face, type UnoOptions, type UnoState } from '../../../src/games/uno/engine';
+import { applyUno, createUno, faceOf, fits, unoBotAction, unoKit, playable, rulesOf, type Card, type Face, type UnoOptions, type UnoState } from '../../../src/games/uno/engine';
 
 const seats = (n = 3) => Array.from({ length: n }, (_, i) => ({ name: `P${i}`, isAI: false }));
 let nextId = 20_000;
@@ -22,8 +22,8 @@ const owing = (options: UnoOptions, top: Face, side: 'light' | 'dark' = 'light')
 };
 
 test('No Mercy has every house rule but "together" built in; the other modes have what was switched on', () => {
-  expect(rulesOf(createUno(seats(), 1, { variant: 'no-mercy' }))).toEqual({ stack: true, together: false, freeWild: true, drawToMatch: true, sevenZero: true });
-  expect(rulesOf(createUno(seats(), 1))).toEqual({ stack: false, together: false, freeWild: false, drawToMatch: false, sevenZero: false });
+  expect(rulesOf(createUno(seats(), 1, { variant: 'no-mercy' }))).toEqual({ stack: true, together: false, freeWild: true, drawToMatch: true, sevenZero: true, jumpIn: false, challenge: false });
+  expect(rulesOf(createUno(seats(), 1))).toEqual({ stack: false, together: false, freeWild: false, drawToMatch: false, sevenZero: false, jumpIn: false, challenge: false });
   expect(rulesOf(createUno(seats(), 1, { variant: 'flip', together: true, sevenZero: true }))).toMatchObject({ together: true, sevenZero: true, stack: false });
 });
 
@@ -131,5 +131,64 @@ test('bots finish hands under every house rule, in every mode', () => {
       for (let i = 0; i < 6000 && !s.over; i++) s = applyUno(s, unoBotAction(s, rand), s.players[s.turn].id);
       expect(s.over, `${variant} seed ${seed}`).toBe(true);
     }
+  }
+});
+
+test('jump-in: the very same card goes down out of turn, and play carries on from the jumper', () => {
+  const twin = card(num('red', 9));
+  const s = table({ jumpIn: true }, [[card(num('blue', 1)), card(num('blue', 2))], [card(num('red', 4)), card(num('red', 5))], [twin, card(num('green', 3)), card(num('green', 4))]], card(num('red', 9)));
+  expect(s.turn).toBe(0);
+  const after = applyUno(s, { type: 'JUMP', card: twin.id }, 'p2');
+  expect(after.players[2].hand).toHaveLength(2);
+  expect(after.turn).toBe(0); // on from p2: p0 is next
+  expect(after.history.map((e) => e.kind)).toEqual(['play', 'jump']);
+  // Not a different card, not a wild, not on your own turn, and not when the rule is off.
+  expect(() => applyUno(s, { type: 'JUMP', card: s.players[2].hand[1].id }, 'p2')).toThrow(IllegalMove);
+  expect(() => applyUno(s, { type: 'JUMP', card: s.players[0].hand[0].id }, 'p0')).toThrow(IllegalMove);
+  expect(() => applyUno(table({}, s.players.map((p) => p.hand), s.discard[0]), { type: 'JUMP', card: twin.id }, 'p2')).toThrow(IllegalMove);
+});
+
+test('challenge: a bluffed Wild Draw 4 costs the bluffer the cards, and the challenger plays on', () => {
+  const wd = card(wildDraw(4));
+  const s = table({ challenge: true }, [[wd, card(num('red', 2)), card(num('blue', 3))], [card(num('green', 5)), card(num('green', 6))], [card(num('red', 1))]], card(num('red', 9)));
+  // Holding red, the Wild Draw 4 is a bluff, but it may be played.
+  const played = applyUno(s, { type: 'PLAY', card: wd.id, color: 'green' }, 'p0');
+  expect([played.turn, played.owed, played.bluff?.player]).toEqual([1, 4, 'p0']);
+  expect(unoKit.redact(played, 'p1').bluff).toEqual({ player: 'p0' });
+  const after = applyUno(played, { type: 'CHALLENGE' }, 'p1');
+  expect([after.players[0].hand.length, after.players[1].hand.length, after.owed, after.turn]).toEqual([6, 2, 0, 1]);
+  expect(after.last).toMatchObject({ kind: 'challenge', caught: true, count: 4 });
+});
+
+test('challenge: a fair Wild Draw 4 costs the challenger six, and taking the cards is always allowed', () => {
+  const wd = card(wildDraw(4));
+  const s = table({ challenge: true }, [[wd, card(num('blue', 3)), card(num('blue', 4))], [card(num('green', 5))], [card(num('red', 1))]], card(num('red', 9)));
+  const played = applyUno(s, { type: 'PLAY', card: wd.id, color: 'blue' }, 'p0');
+  const wrong = applyUno(played, { type: 'CHALLENGE' }, 'p1');
+  expect([wrong.players[1].hand.length, wrong.players[0].hand.length, wrong.turn]).toEqual([7, 2, 2]);
+  expect(wrong.last).toMatchObject({ kind: 'challenge', caught: false, count: 6 });
+  const took = applyUno(played, { type: 'DRAW' }, 'p1');
+  expect([took.players[1].hand.length, took.turn, took.bluff ?? null]).toEqual([5, 2, null]);
+  // No stacking at this table: nothing else may be played on it.
+  expect(playable(played, played.players[1])).toHaveLength(0);
+  // Without the rule the bluff cannot be played at all.
+  const strict = table({}, [[wd, card(num('red', 2))], [card(num('green', 5))]], card(num('red', 9)));
+  expect(() => applyUno(strict, { type: 'PLAY', card: wd.id, color: 'green' }, 'p0')).toThrow(IllegalMove);
+});
+
+test('cards dealt and the target score follow the host, with the standard 7 and 500 otherwise', () => {
+  const s = createUno(seats(3), 2, { handSize: 10, target: 200 });
+  expect([s.players.map((p) => p.hand.length), s.target]).toEqual([[10, 10, 10], 200]);
+  const d = createUno(seats(3), 2, { handSize: 3 as never, target: 7 as never });
+  expect([d.players[0].hand.length, d.target]).toEqual([7, 500]);
+});
+
+test('bots finish hands with jump-in and challenges on', () => {
+  for (let seed = 1; seed <= 15; seed++) {
+    let s = createUno(Array.from({ length: 4 }, (_, i) => ({ name: `B${i}`, isAI: true, difficulty: (['easy', 'normal', 'hard'] as const)[(seed + i) % 3] })), seed, { variant: seed % 2 ? 'classic' : 'flip', stack: seed % 3 === 0, jumpIn: true, challenge: true, handSize: 5 });
+    let r = seed * 104729;
+    const rand = () => ((r = (r * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    for (let i = 0; i < 6000 && !s.over; i++) s = applyUno(s, unoBotAction(s, rand), s.players[s.turn].id);
+    expect(s.over, `seed ${seed}`).toBe(true);
   }
 });

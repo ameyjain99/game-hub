@@ -139,6 +139,7 @@ const monopolyAdapter: GameAdapter = {
 
   // A Monopoly turn (buy, build, trade) runs long; activity keeps the clock alive.
   turnMs: 90_000,
+  turnMsFor: (game) => ((game as MonopolyState).settings.turnSeconds ?? 90) * 1000,
   refreshClockOnAction: true,
 
   validateSeatCount(seatCount) {

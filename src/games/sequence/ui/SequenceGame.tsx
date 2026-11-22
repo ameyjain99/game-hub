@@ -32,7 +32,7 @@ const RANKS = 'A23456789TJQK';
 const SUITS = 'SHDC';
 
 /** The positions of your cards in the order you like to hold them (a play still names the card by its real position). */
-export function handOrder(hand: string[], mode: (typeof SORTS)[number]): number[] {
+function handOrder(hand: string[], mode: (typeof SORTS)[number]): number[] {
   const idx = hand.map((_, i) => i);
   if (mode === 'dealt') return idx;
   const rank = (c: string) => RANKS.indexOf(c[0]);
@@ -44,7 +44,7 @@ export function handOrder(hand: string[], mode: (typeof SORTS)[number]): number[
 const FX_MS = 2600;
 
 /** A chip removed, or a line made: who did it and where, said large. */
-export function seqMoments(prev: SeqState, next: SeqState, who: (id: string) => string): TableMoment[] {
+function seqMoments(prev: SeqState, next: SeqState, who: (id: string) => string): TableMoment[] {
   const p = next.last;
   if (!p || p.seq === prev.last?.seq || next.game !== prev.game) return [];
   const team = next.players.find((pl) => pl.id === p.player)?.team ?? 0;
@@ -220,11 +220,11 @@ export function SequenceGame({ view, meId, nameFor, onAction, onExit, exitLabel,
     <SideSection title="Your hand" meta={`${view.deckCount} in the deck`}>
       <div className="kit-panel seq-hand-panel" style={{ '--tc': TEAM_COLOR[me.team] } as CSSProperties}>
         <SortButton label={SORT_LABEL[sortBy]} onClick={nextSort} />
-        <div className="seq-hand" onMouseLeave={() => setHoverCard(null)}>
-          {handOrder(hand, sortBy).map((i) => {
+        <div className={`seq-hand${view.history.length === 0 && !view.over ? ' is-dealing' : ''}`} onMouseLeave={() => setHoverCard(null)}>
+          {handOrder(hand, sortBy).map((i, place) => {
             const card = hand[i];
             const dead = isDead(view, card);
-            const cls = ['seq-card'];
+            const cls = ['seq-card', 'g-dealt'];
             if (selected === i) cls.push('is-selected');
             if (fitsHover(card)) cls.push('is-fit');
             if (dead) cls.push('is-dead');
@@ -233,6 +233,7 @@ export function SequenceGame({ view, meId, nameFor, onAction, onExit, exitLabel,
                 key={`${card}-${i}`}
                 type="button"
                 className={cls.join(' ')}
+                style={{ '--k': place } as CSSProperties}
                 aria-label={`${cardName(card)}${isTwoEyed(card) ? ', wild' : isOneEyed(card) ? ', removes a chip' : ''}${dead ? ', dead' : ''}`}
                 aria-pressed={selected === i}
                 disabled={!myTurn}

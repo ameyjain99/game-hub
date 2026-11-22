@@ -72,17 +72,16 @@ export const KNIGHT_COSTS = {
 export const LIMITS = { road: 15, settlement: 5, city: 4, ship: 15 };
 /** Cards of each resource in the bank: 19, or 24 at a table of 5 or 6. */
 export const BANK: Record<Layout, number> = { standard: 19, large: 24, newShores: 19 };
-export const BANK_SIZE = BANK.standard;
 export const WIN_POINTS = 10;
 /** Seafarers plays to more points: the outer islands add island bonuses. */
 export const SEAFARERS_WIN_POINTS = 13;
 /** Points for a player's first settlement on each outer island. */
 export const ISLAND_BONUS_POINTS = 2;
 export const winPoints = (s: { mode?: CatanMode }) => (s.mode === 'seafarers' ? SEAFARERS_WIN_POINTS : s.mode === 'cities-knights' ? CITIES_KNIGHTS_WIN_POINTS : WIN_POINTS);
-export const MIN_SEATS = 3;
-export const MAX_SEATS = 6;
+const MIN_SEATS = 3;
+const MAX_SEATS = 6;
 /** The island for a table: the large one seats 5 or 6. */
-export const layoutFor = (seats: number): Layout => (seats >= 5 ? 'large' : 'standard');
+const layoutFor = (seats: number): Layout => (seats >= 5 ? 'large' : 'standard');
 /** Longest Road and Largest Army need at least this much. */
 export const ROAD_MIN = 5;
 export const ARMY_MIN = 3;
@@ -119,7 +118,7 @@ export interface CatanPlayer extends KitPlayer {
   progressCardPoints: number;
 }
 
-export interface Offer {
+interface Offer {
   from: string;
   give: Partial<Hand>;
   get: Partial<Hand>;
@@ -165,7 +164,7 @@ export type Ask =
 
 /** special: at a table of 5 or 6, after each turn the others may build in turn (no trading). */
 /** gold: players owed gold field pay pick their resources, one at a time. */
-export type Phase = 'setup' | 'roll' | 'discard' | 'robber' | 'steal' | 'main' | 'roadBuilding' | 'offer' | 'special' | 'gold' | 'over';
+type Phase = 'setup' | 'roll' | 'discard' | 'robber' | 'steal' | 'main' | 'roadBuilding' | 'offer' | 'special' | 'gold' | 'over';
 
 export interface CatanEvent {
   seq: number;
@@ -368,7 +367,7 @@ const isGood = (c: Card): c is Commodity => (COMMODITIES as string[]).includes(c
 /** Every card in a hand: resources and commodities. */
 export const cardsHeld = (p: CatanPlayer) => handSize(p.hand) + goodsSize(p.goods);
 /** The most cards a player may hold through a 7: 7, plus 2 for each wall. */
-export const handLimit = (s: CatanState, p: CatanPlayer) => 7 + (s.mode === 'cities-knights' ? 2 * p.walls : 0);
+const handLimit = (s: CatanState, p: CatanPlayer) => 7 + (s.mode === 'cities-knights' ? 2 * p.walls : 0);
 const knightAt = (s: CatanState, v: number) => (s.knights ?? [])[v] ?? null;
 const enemyAt = (s: CatanState, v: number, id: string) => {
   const b = s.buildings[v];
@@ -431,7 +430,7 @@ export function pillageable(s: CatanState, id: string): number[] {
 }
 
 /** Deserter: the strength of knight `id` may place (the one given up, else strength 1), or null if none is left. */
-export function hireLevel(s: CatanState, id: string, level: 1 | 2 | 3): 1 | 2 | 3 | null {
+function hireLevel(s: CatanState, id: string, level: 1 | 2 | 3): 1 | 2 | 3 | null {
   const owned = (lv: number) => (s.knights ?? []).filter((w) => w?.player === id && w.level === lv).length;
   if (owned(level) < KNIGHTS_PER_LEVEL) return level;
   return owned(1) < KNIGHTS_PER_LEVEL ? 1 : null;
@@ -857,7 +856,7 @@ function sync(s: CatanState): CatanState {
   return s;
 }
 
-export interface CatanOptions {
+interface CatanOptions {
   mode?: CatanMode;
 }
 

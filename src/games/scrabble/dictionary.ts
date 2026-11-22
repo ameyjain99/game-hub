@@ -85,8 +85,6 @@ export function getDictionary(): Dictionary | null {
   return current;
 }
 
-export const isWord = (w: string) => !!current?.words.has(w.toUpperCase());
-
 let loading: Promise<Dictionary> | null = null;
 
 /** Fetch and build the dictionary in the browser (once). */

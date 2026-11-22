@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Socket } from 'socket.io-client';
 import { playTimeWarning } from '../../../shared/sound';
 import { useOnlineSession, type OnlineIntent } from '../../../online/useOnlineSession';
@@ -16,6 +16,7 @@ import { VideoTiles, type VideoSeat } from '../../../online/ui/VideoTiles';
 import type { GameKit, KitCommonAction } from '../engine';
 import { SideSection } from './GameShell';
 import { TableProvider, useTableState } from '../../../online/TableContext';
+import { OpeningCall, useGameStart } from '../../../shared/ui/OpeningCall';
 
 /** What an online game adds to the shared screen. */
 export interface KitOnlineExtras {
@@ -106,6 +107,11 @@ export function KitOnline<S, A extends { type: string }>({ kit, gameId, title, i
   const togglePause = useCallback(() => setPaused(!paused), [setPaused, paused]);
   const table = useTableState({ meId: myPlayerId ?? '', nameFor, players: state ? kit.players(state) : [], media, lobby, onPause: state ? togglePause : undefined });
   const seatCounts = useContext(OnlineSeatsContext);
+  // Who goes first, said once as the game starts: only for players who were in the lobby when it did.
+  const sawLobby = useRef(false);
+  if (lobby && !lobby.started) sawLobby.current = true;
+  const start = useGameStart(!!state, !!state && kit.isOver(state), sawLobby.current);
+  const first = state && kit.players(state).length > 1 ? kit.players(state).find((p) => p.id === kit.actor(state)) : undefined;
   const [leaving, setLeaving] = useState(false);
   const leave = () => {
     session.leave();
@@ -172,6 +178,7 @@ export function KitOnline<S, A extends { type: string }>({ kit, gameId, title, i
           online: { clock, banner, media, socket: session.socket, code: session.code },
         })}
         {extras}
+        <OpeningCall start={start} name={first ? nameFor(first.id) : null} isMe={first?.id === myPlayerId} color={first ? colorFor(kit.players(state).indexOf(first), kit.players(state).length) : undefined} />
       </TableProvider>
     );
   }

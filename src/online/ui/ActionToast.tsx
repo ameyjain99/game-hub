@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 /** A refused move, in words for the player. */
-export function actionErrorText(error: string): string {
+function actionErrorText(error: string): string {
   switch (error) {
     case 'not your turn':
       return "It's not your turn yet.";

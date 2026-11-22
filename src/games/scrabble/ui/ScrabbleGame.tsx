@@ -363,12 +363,13 @@ export function ScrabbleGame({ view, meId, nameFor, onAction, onExit, exitLabel,
       {me && !view.over && (
         <SideSection title="Your rack" meta={`${view.bagCount} in the bag`}>
           <div className="kit-panel scrabble-rack-panel">
-            <div className="scrabble-rack" onDragStart={(e) => e.preventDefault()}>
-              {rackTiles.map((t) => (
+            <div className={`scrabble-rack${view.history.length === 0 && !view.over ? ' is-dealing' : ''}`} onDragStart={(e) => e.preventDefault()}>
+              {rackTiles.map((t, k) => (
                 <button
                   key={t.id}
                   type="button"
-                  className={`scrabble-rack-tile${selected === t.id ? ' is-picked' : ''}${drag?.id === t.id && drag.moved ? ' is-lifted' : ''}`}
+                  className={`scrabble-rack-tile g-dealt${selected === t.id ? ' is-picked' : ''}${drag?.id === t.id && drag.moved ? ' is-lifted' : ''}`}
+                  style={{ '--k': k } as CSSProperties}
                   aria-label={`${t.letter === '?' ? 'blank' : t.letter}${selected === t.id ? ', picked' : ''}`}
                   aria-pressed={selected === t.id}
                   disabled={!myTurn}

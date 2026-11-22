@@ -10,14 +10,14 @@
 export const W = 96;
 export const H = 40;
 export const D = 96;
-export const WATER_LEVEL = 13;
+const WATER_LEVEL = 13;
 
 /** Index of a block in the flat world array. */
 export const index = (x: number, y: number, z: number) => (y * D + z) * W + x;
 export const inBounds = (x: number, y: number, z: number) => x >= 0 && x < W && y >= 0 && y < H && z >= 0 && z < D;
 export const coordsOf = (i: number): [number, number, number] => [i % W, Math.floor(i / (W * D)), Math.floor(i / W) % D];
 
-export const AIR = 0;
+const AIR = 0;
 
 /** Texture tiles in the atlas (see ui/textures.ts). */
 export const TILE = {
@@ -47,7 +47,7 @@ export const TILE = {
   glowstone: 23,
 } as const;
 
-export type Render = 'opaque' | 'cutout' | 'blend';
+type Render = 'opaque' | 'cutout' | 'blend';
 
 export interface BlockDef {
   name: string;
@@ -141,7 +141,7 @@ function valueNoise(seed: number, x: number, z: number, cell: number): number {
 }
 
 /** Height of the ground at a column. */
-export function heightAt(seed: number, x: number, z: number): number {
+function heightAt(seed: number, x: number, z: number): number {
   const n = valueNoise(seed, x, z, 32) * 0.6 + valueNoise(seed + 7, x, z, 14) * 0.3 + valueNoise(seed + 13, x, z, 6) * 0.1;
   // Gentle plains with the occasional hill, and a lift towards the middle so
   // the spawn is on land.

@@ -57,7 +57,7 @@ function capVideo(sender: RTCRtpSender | null): void {
 }
 
 /** How a peer's connection is doing, for its video tile. */
-export type PeerStatus = 'connecting' | 'live' | 'reconnecting' | 'failed';
+type PeerStatus = 'connecting' | 'live' | 'reconnecting' | 'failed';
 
 interface Peer {
   pc: RTCPeerConnection;

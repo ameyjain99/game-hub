@@ -1,10 +1,10 @@
 import { createServer as createHttpServer, type Server as HttpServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
+import { extname, join, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Server as IOServer, type Socket } from 'socket.io';
-import { RoomStore } from './rooms';
+import { RoomError, RoomStore } from './rooms';
 import { contributorsSource } from './contributors';
 import type { Contributor } from '../src/shared/project';
 import {
@@ -59,12 +59,22 @@ const MIME: Record<string, string> = {
 function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, contributors: () => Promise<Contributor[]>): void {
   httpServer.on('request', async (req, res) => {
     if (req.url?.startsWith('/socket.io')) return; // handled by socket.io
-    const url = new URL(req.url ?? '/', 'http://localhost');
+    let url: URL;
+    try {
+      url = new URL(req.url ?? '/', 'http://localhost');
+    } catch {
+      res.statusCode = 400;
+      res.end('bad request');
+      return;
+    }
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
     // The people who built GameHub, for the home page's Open source section.
     if (url.pathname === '/api/contributors') {
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify(await contributors()));
+      res.end(JSON.stringify(await contributors().catch(() => [])));
       return;
     }
 
@@ -82,7 +92,7 @@ function attachHttp(httpServer: HttpServer, prod: boolean, store: RoomStore, con
     if (!prod) return; // dev: Vite serves everything else
     const candidate = resolve(DIST, '.' + url.pathname);
     const file =
-      candidate.startsWith(DIST) && existsSync(candidate) && extname(candidate)
+      candidate.startsWith(DIST + sep) && existsSync(candidate) && extname(candidate)
         ? candidate
         : join(DIST, 'index.html');
     try {
@@ -110,7 +120,8 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
   attachHttp(httpServer, process.env.NODE_ENV === 'production', store, opts.contributors ?? contributorsSource());
   // A dead connection is noticed within ~20s (the default is ~45s), so a dropped
   // player's seat shows as open, and can be taken back, soon after they drop.
-  const io = new IOServer(httpServer, { cors: { origin: '*' }, pingInterval: 10_000, pingTimeout: 10_000 });
+  // No message a client sends (an action, a lobby change, a WebRTC offer) comes near 200 kB.
+  const io = new IOServer(httpServer, { cors: { origin: '*' }, pingInterval: 10_000, pingTimeout: 10_000, maxHttpBufferSize: 200_000 });
 
   const fail = (socket: Socket, message: string) => socket.emit(EVT.errorMsg, { message });
 
@@ -123,7 +134,11 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
     if (delay === null) return;
     const timer = setTimeout(() => {
       botTimers.delete(code);
-      if (store.stepBot(code)) broadcast(code);
+      try {
+        if (store.stepBot(code)) broadcast(code);
+      } catch (err) {
+        console.error('[bot]', code, err);
+      }
     }, delay);
     timer.unref?.();
     botTimers.set(code, timer);
@@ -148,7 +163,21 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
   io.on('connection', (socket: Socket) => {
     const data = socket.data as SocketData;
 
-    socket.on(EVT.createRoom, (p: CreateRoom) => {
+    /** Listen for a client message. A payload that is not an object is dropped, and a
+     *  handler that throws answers with an error: one bad message never reaches the process. */
+    const on = <P>(event: string, handler: (p: P) => void) => {
+      socket.on(event, (p: unknown) => {
+        if (typeof p !== 'object' || p === null) return;
+        try {
+          handler(p as P);
+        } catch (err) {
+          console.error(`[${event}]`, err);
+          fail(socket, 'something went wrong');
+        }
+      });
+    };
+
+    on(EVT.createRoom, (p: CreateRoom) => {
       let res;
       try {
         res = store.createRoom(
@@ -159,7 +188,7 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
           p.gameId ?? 'ticket-to-ride',
         );
       } catch (err) {
-        return fail(socket, (err as Error).message);
+        return fail(socket, err instanceof RoomError ? err.message : 'could not open a room with those settings');
       }
       data.code = res.code;
       data.playerId = res.playerId;
@@ -170,7 +199,7 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
       broadcast(res.code);
     });
 
-    socket.on(EVT.joinRoom, (p: JoinRoom) => {
+    on(EVT.joinRoom, (p: JoinRoom) => {
       const res = store.join(p.code, p.name, p.avatar, p.seat);
       if ('error' in res) return fail(socket, res.error);
       data.code = p.code;
@@ -182,7 +211,7 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
       broadcast(p.code);
     });
 
-    socket.on(EVT.reconnect, (p: Reconnect) => {
+    on(EVT.reconnect, (p: Reconnect) => {
       const res = store.reconnect(p.code, p.token);
       if ('error' in res) return fail(socket, res.error);
       data.code = p.code;
@@ -194,81 +223,81 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
       broadcast(p.code);
     });
 
-    socket.on(EVT.setSeatAi, (p: SetSeatAi) => {
+    on(EVT.setSeatAi, (p: SetSeatAi) => {
       const res = store.setSeatAi(p.code, data.token ?? '', p.index, p.isAI, p.difficulty as Difficulty | undefined);
       if ('error' in res) return fail(socket, res.error);
       broadcast(p.code);
     });
 
-    socket.on(EVT.startGame, (p: StartGame) => {
+    on(EVT.startGame, (p: StartGame) => {
       const res = store.start(p.code, data.token ?? '');
       if ('error' in res) return fail(socket, res.error);
       broadcast(p.code);
     });
 
-    socket.on(EVT.action, (p: SubmitAction) => {
+    on(EVT.action, (p: SubmitAction) => {
       const res = store.submitAction(p.code, data.token ?? '', p.action);
       if ('error' in res) return fail(socket, res.error);
       broadcast(p.code);
     });
 
-    socket.on(EVT.replaceWithAi, (p: ReplaceWithAi) => {
+    on(EVT.replaceWithAi, (p: ReplaceWithAi) => {
       const res = store.replaceWithAi(p.code, data.token ?? '', p.index, p.difficulty as Difficulty | undefined);
       if ('error' in res) return fail(socket, res.error);
       broadcast(p.code);
     });
 
-    socket.on(EVT.removeSeat, (p: RemoveSeat) => {
+    on(EVT.removeSeat, (p: RemoveSeat) => {
       const res = store.removeSeat(p.code, data.token ?? '', p.index);
       if ('error' in res) return fail(socket, res.error);
       broadcast(p.code);
     });
 
-    socket.on(EVT.extendTime, (p: ExtendTime) => {
+    on(EVT.extendTime, (p: ExtendTime) => {
       const res = store.extendTime(p.code, data.token ?? '', 20_000);
       if ('error' in res) return; // a stale/forbidden grant is harmless - ignore
       broadcast(p.code);
     });
 
-    socket.on(EVT.setAvatar, (p: SetAvatar) => {
+    on(EVT.setAvatar, (p: SetAvatar) => {
       const res = store.setAvatar(p.code, data.token ?? '', p.avatar);
       if ('error' in res) return fail(socket, res.error);
       broadcast(p.code);
     });
 
-    socket.on(EVT.setPaused, (p: SetPaused) => {
+    on(EVT.setPaused, (p: SetPaused) => {
       const res = store.setPaused(p.code, data.token ?? '', !!p.paused);
       if ('error' in res) return fail(socket, res.error);
       broadcast(p.code);
     });
 
-    socket.on(EVT.setOptions, (p: SetOptions) => {
+    on(EVT.setOptions, (p: SetOptions) => {
       const res = store.setOptions(p.code, data.token ?? '', p.options);
       if ('error' in res) return fail(socket, res.error);
       broadcast(p.code);
     });
 
-    socket.on(EVT.setSeatCount, (p: SetSeatCount) => {
+    on(EVT.setSeatCount, (p: SetSeatCount) => {
       const res = store.setSeatCount(p.code, data.token ?? '', p.seatCount);
       if ('error' in res) return fail(socket, res.error);
       broadcast(p.code);
     });
 
-    socket.on(EVT.leaveRoom, (p: LeaveRoom) => {
+    on(EVT.leaveRoom, (p: LeaveRoom) => {
       const res = store.leaveRoom(p.code, data.token ?? '');
       socket.leave(p.code);
       if (res && !res.deleted) broadcast(res.code);
     });
 
-    // Voice signaling: relay to the rest of the room. Audio is peer-to-peer; the
-    // server only brokers the WebRTC handshake. `socket.to(code)` excludes the sender.
-    socket.on(EVT.voice, (p: VoiceSignal) => {
-      if (p && typeof p.code === 'string') socket.to(p.code).emit(EVT.voice, p);
+    // Voice signaling: relayed to the rest of the sender's own room, under the sender's
+    // own id. Audio is peer-to-peer; the server only brokers the WebRTC handshake.
+    on(EVT.voice, (p: VoiceSignal) => {
+      if (p.code === data.code && p.from === data.playerId) socket.to(p.code).emit(EVT.voice, p);
     });
 
     // Presence (a builder's position): relayed to the room, dropped under load.
-    socket.on(EVT.presence, (p: Presence) => {
-      if (p && typeof p.code === 'string' && p.code === data.code && p.from === data.playerId) socket.to(p.code).volatile.emit(EVT.presence, p);
+    on(EVT.presence, (p: Presence) => {
+      if (p.code === data.code && p.from === data.playerId) socket.to(p.code).volatile.emit(EVT.presence, p);
     });
 
     socket.on('disconnect', () => {
@@ -288,9 +317,18 @@ export function createServer(opts: { port?: number; contributors?: () => Promise
     });
   });
 
-  // Enforce turn clocks: once a second, skip any room whose timer ran out.
+  // Once a second: skip any room whose turn clock ran out, and close rooms everyone has left.
   const turnTick = setInterval(() => {
-    for (const code of store.expireTurns(Date.now())) broadcast(code);
+    const now = Date.now();
+    try {
+      for (const code of store.expireTurns(now)) broadcast(code);
+    } catch (err) {
+      console.error('[turn clock]', err);
+    }
+    for (const code of store.sweep(now)) {
+      clearTimeout(botTimers.get(code));
+      botTimers.delete(code);
+    }
   }, 1000);
   turnTick.unref?.(); // don't keep the process alive on its own
 

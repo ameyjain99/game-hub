@@ -22,7 +22,7 @@ export interface FlyOptions {
 
 const rectOf = (p: Place): DOMRect | null => (!p ? null : p instanceof Element ? p.getBoundingClientRect() : p);
 
-export function canFly(): boolean {
+function canFly(): boolean {
   if (typeof document === 'undefined' || typeof window === 'undefined') return false;
   if (typeof Element.prototype.animate !== 'function') return false;
   return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
