@@ -8,7 +8,7 @@ export const LUDO_RULES: GameRules = {
       id: 'standard',
       label: 'Standard',
       book: {
-        summary: 'Race your four tokens out of your yard, once round the board and up your home column. Land on rivals to send them back. The first to bring all four tokens home wins. 2 to 4 players.',
+        summary: 'Race your four tokens out of your yard, once round the board and up your home column. Land on rivals to send them back. The first to bring all four tokens home wins. 2 to 4 players on the cross board, 5 to 8 on a star board.',
         sections: [
           section('The goal', p('Be the first player to move **all four** of your tokens into **home**, the centre of the board.')),
           section(
@@ -20,6 +20,16 @@ export const LUDO_RULES: GameRules = {
               'All four of every player\'s tokens start in their yard.',
               'The first player in the seat order (the host online, you on this device) rolls first. Turns go clockwise: red, green, yellow, blue.',
             ),
+          ),
+          section(
+            'Five to eight players: the star board',
+            steps(
+              'With 5, 6, 7 or 8 players the board is a **star**: a centre with as many sides as there are players, and an **arm** on each side. Every arm is built exactly like an arm of the cross: 3 squares wide and 6 long, with a start square, a star square and a home column of five.',
+              'Each player has their own arm, in seat order clockwise from the left, and a round yard in the gap beside it. The colours are red, green, yellow, blue, purple, orange, teal and pink; a colour picked in the lobby is kept and the others are given out in that order.',
+              'The track is 13 squares longer for each arm: 65 squares with 5 players, 78 with 6, 91 with 7 and 104 with 8. A token still enters its home column after one full lap, at the tip of its own arm.',
+              'Every rule is the same as on the cross board. There is one start square and one star square on each arm, all of them safe.',
+            ),
+            note('A game with more players takes longer: there is more track to cover and more rivals to send you back.'),
           ),
           section(
             'A turn',
@@ -53,7 +63,7 @@ export const LUDO_RULES: GameRules = {
             'Capturing and safe squares',
             steps(
               'If your token ends its move on a track square holding rival tokens, every rival token there is **captured** and goes back to its owner\'s yard.',
-              'There are **8 safe squares**: the four start squares and the four star squares (eight squares on from each start). Tokens on a safe square cannot be captured; any number of colours may share it.',
+              'There are **8 safe squares** on the cross board (two on each arm of a star board): the start squares and the star squares, eight squares on from each start. Tokens on a safe square cannot be captured; any number of colours may share it.',
               'Tokens of the same colour may share any square. There are no blockades: a token never blocks another from passing or landing.',
               'Tokens in a home column or at home can never be captured.',
             ),

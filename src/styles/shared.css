@@ -99,6 +99,7 @@
 
 .difficulty,
 select {
+  font-family: inherit;
   background-color: #0e0e12;
   color: var(--ink);
   border: 1px solid #2a2c31;

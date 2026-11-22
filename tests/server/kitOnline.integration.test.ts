@@ -146,6 +146,48 @@ test("online Uno (Flip): each player sees the face in play of their own cards an
   await srv.close();
 });
 
+test('online Exploding Kittens: hands and the draw pile stay hidden, and a draw passes the turn', async () => {
+  const { srv, url } = await serve();
+  const { host, guest, code, hostState } = await pair(url, 'exploding-kittens', { handSize: 5 });
+  expect(hostState.players.map((p: { hand: unknown[] }) => p.hand.length)).toEqual([6, 0]);
+  expect(hostState.players.map((p: { handCount: number }) => p.handCount)).toEqual([6, 6]);
+  expect([hostState.deck.length, hostState.deckCount > 0, hostState.seed]).toEqual([0, true, 0]);
+  const mover = hostState.turn === 0 ? host : guest;
+  const next = waitFor<{ turn: number; defusing: string | null; deckCount: number }>(host, EVT.state);
+  mover.emit(EVT.action, { code, action: { type: 'DRAW' } });
+  const after = await next;
+  expect(after.deckCount).toBe(hostState.deckCount - 1);
+  expect(after.defusing !== null || after.turn !== hostState.turn).toBe(true);
+  host.close();
+  guest.close();
+  await srv.close();
+});
+
+test('online Monopoly Deal: hands stay hidden, and a card banked is seen by both', async () => {
+  const { srv, url } = await serve();
+  const { host, guest, code, hostState } = await pair(url, 'monopoly-deal', { setsToWin: 2 });
+  expect(hostState.players.map((p: { hand: unknown[] }) => p.hand.length)).toEqual([5, 0]);
+  expect([hostState.deck.length, hostState.deckCount, hostState.setsToWin]).toEqual([0, 96, 2]);
+  const mover = hostState.turn === 0 ? host : guest;
+  const watcher = hostState.turn === 0 ? guest : host;
+  const drew = waitFor<{ players: { hand: { id: number; kind: string }[]; handCount: number }[]; turn: number }>(mover, EVT.state);
+  const watched = waitFor(watcher, EVT.state);
+  mover.emit(EVT.action, { code, action: { type: 'DRAW' } });
+  const mine = (await drew).players[hostState.turn];
+  await watched;
+  expect(mine.hand).toHaveLength(7);
+  const card = mine.hand.find((c) => c.kind !== 'property' && c.kind !== 'wild');
+  if (card) {
+    const seen = waitFor<{ players: { bank: { id: number }[]; hand: unknown[] }[] }>(watcher, EVT.state);
+    mover.emit(EVT.action, { code, action: { type: 'BANK', card: card.id } });
+    const theirs = (await seen).players[hostState.turn];
+    expect([theirs.bank.map((c) => c.id), theirs.hand]).toEqual([[card.id], []]);
+  }
+  host.close();
+  guest.close();
+  await srv.close();
+});
+
 test('online Poker (Omaha): hole cards stay hidden, and the dealer deals the flop by itself', async () => {
   const { srv, url } = await serve();
   const { host, guest, code, hostState } = await pair(url, 'poker', { variant: 'omaha' });

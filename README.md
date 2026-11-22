@@ -13,10 +13,12 @@ a join link), and everyone is at the same table - no accounts, no installs.
 | **Chess** | 2 | Online, local vs Stockfish (five strengths) |
 | **Checkers** (American) | 2 | Online, local vs bots |
 | **Tic-Tac-Toe** | 2 | Online, local vs bots (one never loses) |
-| **Ludo** | 2-4 | Online, local vs bots |
+| **Ludo** (the cross board for 2-4, a star board with an arm each for 5-8) | 2-8 | Online, local vs bots |
 | **Snakes & Ladders** | 2-6 | Online, local vs bots |
 | **Sequence** (five-in-a-row with cards and chips) | 2-12, in teams | Online, local vs bots (with a bot partner) |
 | **Uno** (colour-matching card game: Classic, Flip and No Mercy, with house rules) | 2-10 | Online, local vs bots |
+| **Exploding Kittens** (the original 56-card deck, with Nope windows and house rules) | 2-5 | Online, local vs bots |
+| **Monopoly Deal** (the Monopoly card game, all 106 cards) | 2-5 | Online, local vs bots |
 | **Scrabble** (crossword tile game) | 2-4 | Online, local vs bots |
 | **Minecraft** (3D block-building sandbox) | 1-8 | Online (shared world), local (saved in the browser) |
 | **Solitaire** (Klondike) | 1 | Draw one or three, undo, hints |
@@ -193,6 +195,29 @@ npm start                               # PORT defaults to 3001
   a Wild that makes the next player draw until they find the colour); you see the
   other face of everyone else's cards. No Mercy: 152 cards, endless stacking,
   draw until you can play, and 25 cards puts you out of the hand.
+- **Exploding Kittens.** The original box: 4 Kittens, 6 Defuses, 5 Nopes, 4 each
+  of Attack, Skip, Favor and Shuffle, 5 See the Future and 20 Cat Cards. Every
+  action waits before it takes effect so it can be Noped: bots holding a Nope
+  are asked in turn, then people holding one get 4.5 seconds (or press Let it
+  happen). When nobody who could Nope is still deciding, the wait is under a
+  second, which tells the table that much and no more. Attacks stack by the
+  current official rule (remaining turns plus 2). A Defused Kitten goes back at
+  a depth the player picks; only they are shown where. The screen keeps what
+  you learned from See the Future until a Shuffle or someone else's Kitten
+  makes it unreliable. A player who leaves takes one Kitten out of the pile, so
+  it always holds one fewer than the players left. House rules: 5 cards dealt,
+  Cat-only pairs, no attack stacking, a short game.
+- **Monopoly Deal.** The 106 playing cards of the published deck. A player's
+  properties of one colour lie as one set (extras beyond a full set stay in
+  it), so a full colour is safe from Sly and Forced Deals and a Deal Breaker
+  takes all of it. A debtor chooses what to pay with; the game only pays for
+  them when there is no choice (everything they have is no more than the
+  debt). A Just Say No is offered only to a player who holds one, protects only
+  that player, and can be answered in turn. A property received in payment
+  keeps the colour it lay in; a House or Hotel received goes to the bank. The
+  game is won the moment anyone has 3 full sets of different colours, on any
+  turn. House rules: 2 or 4 sets to win, buildings on Railroads and Utilities,
+  one Double the Rent per Rent card.
 - **Uno house rules are opt-in toggles**, all off by default: stack draw cards
   (answer with a draw card as big or bigger, in every mode), play same numbers
   together, play a Wild Draw any time, draw until you can play, and sevens and

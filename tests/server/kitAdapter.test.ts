@@ -92,7 +92,7 @@ describe('a returning player takes the seat back from the bot that covered it', 
   // Every kit game the room store serves.
   const games: [string, number][] = [
     ['tic-tac-toe', 2], ['checkers', 2], ['chess', 2], ['snakes-and-ladders', 2], ['ludo', 2], ['sequence', 2],
-    ['uno', 2], ['poker', 2], ['cluedo', 3], ['imposter', 4], ['catan', 3], ['scrabble', 2],
+    ['uno', 2], ['poker', 2], ['cluedo', 3], ['imposter', 4], ['catan', 3], ['scrabble', 2], ['exploding-kittens', 3], ['monopoly-deal', 3],
   ];
   test.each(games)('%s', (gameId, seats) => {
     const a = adapterFor(gameId);

@@ -401,16 +401,17 @@
   border-right: 0.45cqw solid #ffffff55;
 }
 
+/* The arrows ride the two far ends of the ellipse, where the piles in the middle never cover them. */
 .uno-direction::before {
-  top: -0.9cqw;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
+  top: 50%;
+  left: -0.9cqw;
+  transform: translateY(-50%) rotate(-45deg);
 }
 
 .uno-direction::after {
-  bottom: -0.9cqw;
-  left: 50%;
-  transform: translateX(-50%) rotate(-135deg);
+  top: 50%;
+  right: -0.9cqw;
+  transform: translateY(-50%) rotate(135deg);
 }
 
 .uno-direction.is-ccw {
@@ -418,11 +419,11 @@
 }
 
 .uno-direction.is-ccw::before {
-  transform: translateX(-50%) rotate(-135deg);
+  transform: translateY(-50%) rotate(135deg);
 }
 
 .uno-direction.is-ccw::after {
-  transform: translateX(-50%) rotate(45deg);
+  transform: translateY(-50%) rotate(-45deg);
 }
 
 @keyframes uno-spin {

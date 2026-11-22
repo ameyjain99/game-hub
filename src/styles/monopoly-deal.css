@@ -1,0 +1,777 @@
+/* Monopoly Deal: a green baize table. Every other player's bank and property
+   sets lie along the top, the draw and discard piles in the middle, your own
+   table below them and your hand along the bottom edge. */
+
+.md-table {
+  overflow: hidden;
+  border-radius: clamp(16px, 3cqmin, 28px);
+  box-shadow: 0 30px 80px #000c, inset 0 0 0 1px #ffffff1a;
+  container-type: inline-size;
+}
+
+.md-felt {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 45%, #1f6b4a 0%, #14503a 55%, #0c3527 100%);
+  box-shadow: inset 0 0 0 0.9cqw #0a2a1f, inset 0 0 0 1.2cqw #d8c48a55;
+}
+
+/* ---- Cards ---- */
+.md-card {
+  --lw: 10.4cqw;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--lw);
+  aspect-ratio: 5 / 7;
+  overflow: hidden;
+  color: #17171b;
+  background: #fbf7ee;
+  border-radius: calc(var(--lw) * 0.08);
+  box-shadow: 0 calc(var(--lw) * 0.04) calc(var(--lw) * 0.12) #0008, inset 0 0 0 calc(var(--lw) * 0.02) #17171b33;
+  user-select: none;
+}
+
+.md-card-value {
+  position: absolute;
+  right: calc(var(--lw) * 0.05);
+  bottom: calc(var(--lw) * 0.05);
+  padding: 0 calc(var(--lw) * 0.05);
+  font-size: calc(var(--lw) * 0.095);
+  font-weight: 800;
+  line-height: 1.5;
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 calc(var(--lw) * 0.012) #17171b;
+}
+
+.md-card-band {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 30%;
+  padding: calc(var(--lw) * 0.05);
+  font-size: calc(var(--lw) * 0.1);
+  font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.md-card-kicker {
+  margin-top: calc(var(--lw) * 0.04);
+  font-size: calc(var(--lw) * 0.072);
+  font-weight: 700;
+  color: #55606e;
+  text-align: center;
+}
+
+.md-card-rents {
+  display: grid;
+  gap: calc(var(--lw) * 0.02);
+  width: 100%;
+  padding: calc(var(--lw) * 0.06) calc(var(--lw) * 0.1);
+  font-size: calc(var(--lw) * 0.085);
+}
+
+.md-card-rents span {
+  display: flex;
+  justify-content: space-between;
+}
+
+.md-card-rents i {
+  font-style: normal;
+  color: #55606e;
+}
+
+.md-card-rents .is-full {
+  font-weight: 800;
+}
+
+.md-card.is-money {
+  justify-content: center;
+  background: var(--cc);
+}
+
+.md-card-big {
+  display: grid;
+  place-items: center;
+  width: 74%;
+  aspect-ratio: 1;
+  font-size: calc(var(--lw) * 0.2);
+  font-weight: 900;
+  background: #ffffffb8;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 calc(var(--lw) * 0.025) #17171b;
+}
+
+.md-card-disc {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 72%;
+  aspect-ratio: 1;
+  margin: calc(var(--lw) * 0.1) 0 calc(var(--lw) * 0.05);
+  padding: calc(var(--lw) * 0.06);
+  font-size: calc(var(--lw) * 0.102);
+  font-weight: 900;
+  line-height: 1.05;
+  color: #fff;
+  text-align: center;
+  text-transform: uppercase;
+  background: var(--cc);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 calc(var(--lw) * 0.02) #17171b55;
+}
+
+.md-card.is-rent .md-card-disc b {
+  padding: calc(var(--lw) * 0.02) calc(var(--lw) * 0.08);
+  color: #17171b;
+  background: #fff;
+  border-radius: 999px;
+}
+
+.md-card-text {
+  padding: 0 calc(var(--lw) * 0.07);
+  font-size: calc(var(--lw) * 0.07);
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.md-card.is-back {
+  background:
+    radial-gradient(circle at 50% 50%, #fff 0 22%, transparent 23%),
+    repeating-linear-gradient(45deg, #c0392b 0 calc(var(--lw) * 0.07), #a93226 calc(var(--lw) * 0.07) calc(var(--lw) * 0.14));
+  box-shadow: 0 calc(var(--lw) * 0.04) calc(var(--lw) * 0.12) #0008, inset 0 0 0 calc(var(--lw) * 0.04) #fff;
+}
+
+.md-card.is-small {
+  --lw: 9.5cqw;
+}
+
+.md-card.is-shown {
+  --lw: 21cqw;
+}
+
+/* ---- A player's table ---- */
+.md-seats {
+  position: absolute;
+  top: 2.6cqw;
+  right: 2.6cqw;
+  left: 2.6cqw;
+  display: grid;
+  grid-template-columns: repeat(var(--seats), minmax(0, 1fr));
+  gap: 1.2cqw;
+  height: 33cqw;
+}
+
+.md-seat,
+.md-me {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8cqw;
+  min-width: 0;
+  padding: 0.9cqw 1cqw;
+  overflow: hidden;
+  color: #fff;
+  background: #00000047;
+  border: 0.3cqw solid transparent;
+  border-radius: 1.4cqw;
+  transition: border-color 0.2s, opacity 0.3s;
+}
+
+.md-seat.is-turn,
+.md-seat.is-spot,
+.md-me.is-turn {
+  border-color: var(--tc);
+  box-shadow: 0 0 0 0.4cqw color-mix(in srgb, var(--tc) 30%, transparent);
+}
+
+.md-seat.is-out {
+  opacity: 0.45;
+}
+
+.md-me {
+  position: absolute;
+  top: 52cqw;
+  right: 2.6cqw;
+  left: 2.6cqw;
+  height: 23.5cqw;
+}
+
+.md-seat-head {
+  display: flex;
+  gap: 0.8cqw;
+  align-items: center;
+  min-width: 0;
+  font-size: clamp(10px, 1.7cqw, 15px);
+}
+
+.md-seat-head b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-seat-face {
+  flex: none;
+  width: 2.6cqw;
+  height: 2.6cqw;
+}
+
+.md-dot {
+  flex: none;
+  width: 0.7em;
+  height: 0.7em;
+  background: var(--tc);
+  border-radius: 50%;
+}
+
+.md-seat-hand {
+  flex: none;
+  padding: 0 0.7cqw;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #17171b;
+  background: #fff;
+  border-radius: 0.5cqw;
+  box-shadow: 0.35cqw 0.35cqw 0 #ffffff66;
+}
+
+.md-seat-sets {
+  flex: none;
+  margin-left: auto;
+  padding: 0 0.9cqw;
+  font-weight: 800;
+  color: #17171b;
+  background: #f2c14e;
+  border-radius: 999px;
+}
+
+.md-tableau {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9cqw 0.7cqw;
+  align-content: flex-start;
+  align-items: flex-start;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.md-bank {
+  display: grid;
+  padding: 0.4cqw 0.9cqw;
+  color: #17171b;
+  background: linear-gradient(160deg, #f6e7a8, #e2c868);
+  border-radius: 0.8cqw;
+  box-shadow: 0 0.3cqw 0.8cqw #0006;
+}
+
+.md-bank b {
+  font-size: clamp(11px, 1.9cqw, 17px);
+}
+
+.md-bank i {
+  font-size: clamp(8px, 1.05cqw, 11px);
+  font-style: normal;
+  opacity: 0.75;
+}
+
+.md-pile {
+  display: flex;
+  flex-direction: column;
+  width: var(--pw, 9cqw);
+  border-radius: 0.7cqw;
+  box-shadow: 0 0.3cqw 0.8cqw #0006;
+}
+
+.md-me .md-pile {
+  width: 14.4cqw;
+}
+
+.md-pile.is-full {
+  outline: 0.35cqw solid #f2c14e;
+  box-shadow: 0 0 2cqw #f2c14eaa;
+}
+
+.md-bar {
+  display: block;
+  height: 2.3cqw;
+  padding: 0 0.6cqw;
+  overflow: hidden;
+  font: inherit;
+  font-size: clamp(7px, 1.2cqw, 13px);
+  font-weight: 700;
+  line-height: 2.3cqw;
+  color: var(--ink);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--pc);
+  border: 0;
+  border-bottom: 1px solid #0003;
+}
+
+.md-me .md-bar {
+  height: 2.9cqw;
+  font-size: clamp(8px, 1.4cqw, 14px);
+  line-height: 2.9cqw;
+}
+
+.md-bar:first-child {
+  border-radius: 0.7cqw 0.7cqw 0 0;
+}
+
+.md-bar.is-wild {
+  background: repeating-linear-gradient(135deg, var(--pc) 0 0.8cqw, color-mix(in srgb, var(--pc) 70%, #fff) 0.8cqw 1.6cqw);
+}
+
+button.md-bar {
+  width: 100%;
+  cursor: pointer;
+}
+
+button.md-bar:hover {
+  filter: brightness(1.15);
+}
+
+.md-pile-foot {
+  display: flex;
+  gap: 0.4cqw;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25cqw 0.6cqw;
+  font-size: clamp(8px, 1.25cqw, 13px);
+  color: #17171b;
+  background: #fbf7ee;
+  border-radius: 0 0 0.7cqw 0.7cqw;
+}
+
+.md-pile-foot i {
+  font-style: normal;
+  font-weight: 700;
+}
+
+.md-empty {
+  font-size: clamp(9px, 1.4cqw, 13px);
+  color: #ffffff80;
+}
+
+/* ---- The piles ---- */
+.md-centre {
+  position: absolute;
+  top: 37.2cqw;
+  right: 0;
+  left: 0;
+  display: flex;
+  gap: 3cqw;
+  align-items: center;
+  justify-content: center;
+  height: 13.2cqw;
+}
+
+.md-deck,
+.md-discard {
+  position: relative;
+  width: 9cqw;
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.md-centre .md-card {
+  --lw: 9cqw;
+  position: absolute;
+  inset: 0;
+}
+
+.md-discard .md-card {
+  rotate: var(--r);
+}
+
+.md-discard {
+  border: 0.25cqw dashed #ffffff40;
+  border-radius: 0.8cqw;
+}
+
+.md-discard .md-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.md-deck.is-live {
+  cursor: pointer;
+}
+
+.md-deck.is-live .md-card {
+  box-shadow: 0 0 0 0.5cqw #f2c14e, 0 0 3cqw #f2c14e99;
+  animation: md-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes md-breathe {
+  50% {
+    box-shadow: 0 0 0 0.5cqw #f2c14e, 0 0 5cqw #f2c14edd;
+  }
+}
+
+.md-deck-count {
+  position: absolute;
+  right: -1cqw;
+  bottom: -1cqw;
+  min-width: 3.8cqw;
+  padding: 0.2cqw 0.7cqw;
+  font-size: clamp(10px, 1.7cqw, 15px);
+  font-weight: 800;
+  color: #17171b;
+  text-align: center;
+  background: #fff;
+  border-radius: 999px;
+}
+
+.md-turn {
+  display: grid;
+  gap: 0.6cqw;
+  min-width: 26cqw;
+  color: #fff;
+}
+
+.md-turn b {
+  font-size: clamp(13px, 2.5cqw, 22px);
+}
+
+.md-turn span {
+  display: inline-flex;
+  gap: 0.7cqw;
+  align-items: center;
+  font-size: clamp(10px, 1.6cqw, 14px);
+  color: #ffffffcc;
+}
+
+.md-pips i {
+  width: 1.5cqw;
+  height: 1.5cqw;
+  background: #f2c14e;
+  border-radius: 50%;
+}
+
+.md-pips i.is-used {
+  background: #ffffff33;
+}
+
+/* ---- Prompts ---- */
+.md-picker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 1.3cqw;
+  align-items: center;
+  width: max-content;
+  max-width: 92cqw;
+  max-height: 84cqw;
+  padding: 2cqw 2.6cqw;
+  overflow: auto;
+  color: #fff;
+  text-align: center;
+  background: #0b0b0ef5;
+  border: 1px solid #ffffff26;
+  border-radius: 1.8cqw;
+  box-shadow: 0 1.5cqw 6cqw #000d;
+  translate: -50% -50%;
+  animation: md-pop 0.2s ease-out;
+}
+
+@keyframes md-pop {
+  from {
+    scale: 0.88;
+    opacity: 0;
+  }
+}
+
+.md-picker p {
+  margin: 0;
+  font-size: clamp(12px, 2cqw, 17px);
+}
+
+.md-picker .md-note,
+.md-note {
+  font-size: clamp(10px, 1.5cqw, 13px);
+  color: #ffffff99;
+}
+
+.md-choices,
+.md-pay,
+.md-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1cqw;
+  align-items: center;
+  justify-content: center;
+}
+
+.md-choices.is-stack {
+  flex-direction: column;
+  align-items: stretch;
+  min-width: min(46cqw, 320px);
+}
+
+.md-choice {
+  padding: 0.9cqw 1.8cqw;
+  font-size: clamp(12px, 1.8cqw, 15px);
+  font-weight: 700;
+  color: #fff;
+  background: #ffffff14;
+  border: 0.25cqw solid var(--tc, #ffffff33);
+  border-radius: 1cqw;
+}
+
+.md-choice:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--tc, #fff) 28%, transparent);
+}
+
+.md-choice:disabled {
+  opacity: 0.4;
+}
+
+.md-on .md-choice {
+  color: #17171b;
+  background: #f2c14e;
+  border-color: #f2c14e;
+}
+
+.md-pay-card {
+  position: relative;
+  display: grid;
+  gap: 0.4cqw;
+  justify-items: center;
+  padding: 0;
+  color: #fff;
+  background: none;
+  border: 0;
+  transition: translate 0.12s;
+}
+
+.md-pay-card:hover {
+  translate: 0 -0.6cqw;
+}
+
+.md-pay-card.is-on .md-card {
+  box-shadow: 0 0 0 0.5cqw #f2c14e, 0 1cqw 2.4cqw #000a;
+}
+
+.md-pay-card i {
+  padding: 0 0.8cqw;
+  font-size: clamp(9px, 1.3cqw, 12px);
+  font-style: normal;
+  border-bottom: 0.3cqw solid var(--tc);
+}
+
+.md-no-btn {
+  padding: 0.9cqw 2.4cqw;
+  font-size: clamp(13px, 2.1cqw, 18px);
+  font-weight: 900;
+  color: #fff;
+  text-transform: uppercase;
+  background: #2f7de1;
+  border: 0;
+  border-radius: 1cqw;
+  box-shadow: 0 0.5cqw 0 #1b4f95;
+}
+
+.md-no-btn:active {
+  translate: 0 0.4cqw;
+  box-shadow: 0 0.1cqw 0 #1b4f95;
+}
+
+.md-cancel {
+  font-size: clamp(11px, 1.6cqw, 14px);
+  color: #ffffff99;
+  text-decoration: underline;
+  background: none;
+  border: 0;
+}
+
+/* ---- Your hand ---- */
+.md-controls {
+  position: absolute;
+  right: 0;
+  bottom: 18.6cqw;
+  left: 0;
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2cqw;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14cqw;
+}
+
+.md-hint {
+  padding: 0.6cqw 1.6cqw;
+  font-size: clamp(11px, 1.7cqw, 15px);
+  font-weight: 700;
+  color: #17171b;
+  background: #f2c14e;
+  border-radius: 999px;
+}
+
+.md-hint.is-quiet {
+  color: #ffffffb3;
+  background: none;
+}
+
+.md-sort {
+  position: absolute;
+  right: 2.6cqw;
+  bottom: 18.6cqw;
+  z-index: 8;
+}
+
+.md-hand {
+  --gap: min(11cqw, calc(84cqw / max(var(--n), 1)));
+  position: absolute;
+  right: 0;
+  bottom: 2.4cqw;
+  left: 0;
+  height: 14.7cqw;
+}
+
+.md-hand-card {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  padding: 0;
+  background: none;
+  border: 0;
+  transform: translateX(-50%) translateX(calc(var(--i) * var(--gap)));
+  transition: translate 0.14s ease-out, scale 0.14s ease-out;
+}
+
+.md-hand-card.is-ok {
+  cursor: pointer;
+}
+
+.md-hand-card:hover,
+.md-hand-card:focus-visible {
+  z-index: 5;
+  translate: 0 -3cqw;
+  scale: 1.25;
+}
+
+.md-hand-card.is-on {
+  z-index: 4;
+  translate: 0 -3.6cqw;
+}
+
+.md-hand-card.is-on .md-card {
+  box-shadow: 0 0 0 0.5cqw #e03131, 0 1.2cqw 3cqw #000a;
+}
+
+/* A card in flight between the piles and the tables. */
+.md-flyer {
+  width: clamp(22px, 4.4cqw, 40px);
+  aspect-ratio: 5 / 7;
+  background: #c0392b;
+  border-radius: 12%;
+  box-shadow: 0 6px 16px #000a, inset 0 0 0 2px #fff;
+}
+
+.md-flyer.is-cash {
+  background: #e2c868;
+}
+
+.md-flyer.is-deed {
+  background: #fbf7ee;
+}
+
+/* ---- Sidebar and result ---- */
+.md-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--muted);
+  list-style: none;
+}
+
+.md-standings {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.md-standings li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+}
+
+.md-standings li.is-winner {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.md-standings li b {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.md-standing-sets {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.md-standing-sets i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* A phone-sized table: the sets keep their colours and counts, and lose their lettering. */
+@container (max-width: 520px) {
+  .md-seat .md-bar {
+    font-size: 0;
+  }
+
+  .md-seat .md-pile-foot i,
+  .md-bank i {
+    display: none;
+  }
+
+  .md-seat .md-seat-sets {
+    display: none;
+  }
+
+  .md-controls {
+    justify-content: flex-start;
+    padding: 0 3cqw;
+  }
+
+  .md-controls .g-btn {
+    padding: 1.4cqw 2.6cqw;
+    font-size: clamp(11px, 3cqw, 15px);
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-deck.is-live .md-card,
+  .md-picker {
+    animation: none;
+  }
+}

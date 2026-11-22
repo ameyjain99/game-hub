@@ -32,6 +32,8 @@ import { ludoKit } from '../src/games/ludo/engine';
 import { sequenceKit } from '../src/games/sequence/engine';
 import { minecraftKit } from '../src/games/minecraft/engine';
 import { unoKit } from '../src/games/uno/engine';
+import { ekKit } from '../src/games/exploding-kittens/engine';
+import { mdKit } from '../src/games/monopoly-deal/engine';
 import { pokerKit } from '../src/games/poker/engine';
 import { cluedoKit } from '../src/games/cluedo/engine';
 import { imposterKit } from '../src/games/imposter/engine';
@@ -233,6 +235,8 @@ const ADAPTERS: Record<string, GameAdapter> = {
   sequence: kitAdapter(sequenceKit),
   minecraft: kitAdapter(minecraftKit),
   'uno': kitAdapter(unoKit),
+  'exploding-kittens': kitAdapter(ekKit),
+  'monopoly-deal': kitAdapter(mdKit),
   poker: kitAdapter(pokerKit),
   imposter: kitAdapter(imposterKit),
   catan: kitAdapter(catanKit),

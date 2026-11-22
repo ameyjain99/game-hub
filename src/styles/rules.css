@@ -429,7 +429,7 @@
 /* Catan's pieces drawn small in a rule book. */
 .rf-hx {
   flex: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'GameHub Money', 'Inter', system-ui, sans-serif;
 }
 
 /* Scrabble tiles at a fixed size in a rule book (on the board they scale with it). */

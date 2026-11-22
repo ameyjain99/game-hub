@@ -72,6 +72,17 @@ const PATHS: Record<string, IconSpec> = {
     d: 'M32 11.7C39.2 21.6 50.9 27 50.9 36.9A8.55 8.55 0 0 1 35.6 42.3L39.2 55.8H24.8L28.4 42.3A8.55 8.55 0 0 1 13.1 36.9C13.1 27 24.8 21.6 32 11.7Z',
   },
   'uno': { d: 'M8 17L28 11L37 45L17 51ZM31 14H55V50H31' },
+  // Three property cards fanned in a hand.
+  'monopoly-deal': { d: 'M9 24L25 18L33 46L17 52ZM24 12H42V44H24ZM39 18L55 24L47 52L31 46Z', outer: 9 },
+  // A kitten's head, wide-eyed, with a spark between its ears.
+  'exploding-kittens': {
+    d: 'M11 31L15 12L27 22H37L49 12L53 31C56 44 47 56 32 56C17 56 8 44 11 31Z',
+    dots: [
+      [24, 38, 4],
+      [40, 38, 4],
+      [32, 9, 3.5],
+    ],
+  },
   solitaire: { d: 'M8 40V6H38M22 20H54V56H22Z' },
   // Words & puzzles
   // A letter tile: a small A with room round it.

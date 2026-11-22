@@ -24,6 +24,8 @@ const GAME_APPS: Record<string, GameApp> = {
   chess: lazy(() => import('../games/chess/ui/ChessApp').then((m) => ({ default: m.ChessApp }))),
   scrabble: lazy(() => import('../games/scrabble/ui/ScrabbleApp').then((m) => ({ default: m.ScrabbleApp }))),
   'uno': lazy(() => import('../games/uno/ui/UnoApp').then((m) => ({ default: m.UnoApp }))),
+  'monopoly-deal': lazy(() => import('../games/monopoly-deal/ui/MdApp').then((m) => ({ default: m.MdApp }))),
+  'exploding-kittens': lazy(() => import('../games/exploding-kittens/ui/EkApp').then((m) => ({ default: m.EkApp }))),
   poker: lazy(() => import('../games/poker/ui/PokerApp').then((m) => ({ default: m.PokerApp }))),
   imposter: lazy(() => import('../games/imposter/ui/ImposterApp').then((m) => ({ default: m.ImposterApp }))),
   catan: lazy(() => import('../games/catan/ui/CatanApp').then((m) => ({ default: m.CatanApp }))),

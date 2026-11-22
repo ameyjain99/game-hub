@@ -2,30 +2,48 @@
  * Ludo on the classic 15×15 cross board, played the way it's commonly played in
  * India (Ludo King style):
  *
- * - 2-4 players; two players sit at opposite corners. Play runs clockwise:
- *   red, green, yellow, blue.
+ * - 2-4 players on the cross board; two players sit at opposite corners. Play
+ *   runs clockwise: red, green, yellow, blue.
+ * - 5-8 players on a star board with one arm for each player. Every arm is
+ *   built like an arm of the cross, so each player still has 13 squares of
+ *   track, a start square, a star and a home column of 5.
  * - A 6 brings a token out of the yard onto its start square.
  * - A 6 rolls again; a third 6 in a row ends the turn with no move.
  * - Landing on an opponent's token sends it back to its yard and earns a bonus
  *   roll - except on the safe squares (each start square and the four stars).
  * - Tokens of one colour may share a square (there are no blockades).
- * - After a lap of the 52-square track a token turns up its own home column;
- *   it needs the exact roll to reach home, which earns a bonus roll too.
+ * - After a lap of the track (52 squares on the cross, 13 for each arm) a
+ *   token turns up its own home column; it needs the exact roll to reach home,
+ *   which earns a bonus roll too.
  * - The first to bring all four tokens home wins.
  *
- * A token's progress runs from -1 (in the yard) through 0-50 (the track, from
- * its start square) and 51-55 (its home column) to 56 (home).
+ * A token's progress runs from -1 (in the yard) through the track from its
+ * start square, then its home column, to home: 0-50, 51-55 and 56 on the cross.
  */
 import { assignPieces, IllegalMove, nextRandom, rollDie, type GameKit, type KitCommonAction, type KitPlayer, type KitSeat } from '../kit/engine';
 
-export type LudoColor = 'red' | 'green' | 'yellow' | 'blue';
-export const COLORS: LudoColor[] = ['red', 'green', 'yellow', 'blue'];
+/** The four colours of the cross board, in the order of its arms. */
+export type CrossColor = 'red' | 'green' | 'yellow' | 'blue';
+export type LudoColor = CrossColor | 'purple' | 'orange' | 'teal' | 'pink';
+export const COLORS: CrossColor[] = ['red', 'green', 'yellow', 'blue'];
+/** The colours a star board hands out, the classic four first. */
+export const STAR_COLORS: LudoColor[] = [...COLORS, 'purple', 'orange', 'teal', 'pink'];
 export const YARD = -1;
-export const HOME = 56;
-const LAST_TRACK = 50;
+/** Track squares each arm adds to the lap. */
+const PER_ARM = 13;
+/** Squares in a home column. */
+const COLUMN = 5;
+
+/** The last track square of a lap, and home, as progress on a board of `arms` arms. */
+export const lastTrack = (arms: number) => PER_ARM * arms - 2;
+export const homeOf = (arms: number) => lastTrack(arms) + COLUMN + 1;
+/** Home on the cross board. */
+export const HOME = homeOf(4);
+/** Start squares, and the star eight squares on from each, are safe. */
+export const isSafe = (index: number) => index % PER_ARM === 0 || index % PER_ARM === 8;
 
 /** Where each colour joins the track (an index into TRACK). */
-export const START: Record<LudoColor, number> = { red: 0, green: 13, yellow: 26, blue: 39 };
+export const START: Record<CrossColor, number> = { red: 0, green: 13, yellow: 26, blue: 39 };
 /** Safe track squares: the four starts and the four stars eight squares on. */
 export const SAFE = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
 
@@ -47,7 +65,7 @@ export const TRACK: [number, number][] = [
 ];
 
 /** Each colour's home column, from the track inwards. */
-export const HOME_COLUMN: Record<LudoColor, [number, number][]> = {
+export const HOME_COLUMN: Record<CrossColor, [number, number][]> = {
   red: [1, 2, 3, 4, 5].map((c) => [7, c] as [number, number]),
   green: [1, 2, 3, 4, 5].map((r) => [r, 7] as [number, number]),
   yellow: [13, 12, 11, 10, 9].map((c) => [7, c] as [number, number]),
@@ -56,6 +74,8 @@ export const HOME_COLUMN: Record<LudoColor, [number, number][]> = {
 
 export interface LudoPlayer extends KitPlayer {
   color: LudoColor;
+  /** The arm of the board this player starts from and comes home on. */
+  arm: number;
   tokens: number[];
   out?: boolean;
 }
@@ -74,6 +94,8 @@ export interface LudoEvent {
 }
 
 export interface LudoState {
+  /** Arms of the board: 4 on the cross, one for each player on a star. */
+  arms: number;
   players: LudoPlayer[];
   turn: number;
   /** 'roll' → waiting for a roll; 'move' → a token must be chosen for `dice`. */
@@ -97,34 +119,40 @@ export type LudoAction = { type: 'ROLL' } | { type: 'MOVE'; token: number };
 const HISTORY = 30;
 
 /** Which colours sit at a table of `n`. */
-export function colorsFor(n: number): LudoColor[] {
+export function colorsFor(n: number): CrossColor[] {
   if (n === 2) return ['red', 'yellow'];
   if (n === 3) return ['red', 'green', 'yellow'];
   return COLORS;
 }
 
-/** The track index a token stands on, or null off the track. */
-export function trackIndex(color: LudoColor, progress: number): number | null {
-  return progress >= 0 && progress <= LAST_TRACK ? (START[color] + progress) % 52 : null;
+/** The track square a token from `arm` stands on at `progress`, or null off the track. */
+export function trackAt(arms: number, arm: number, progress: number): number | null {
+  return progress >= 0 && progress <= lastTrack(arms) ? (PER_ARM * arm + progress) % (PER_ARM * arms) : null;
+}
+
+/** The track index a token stands on on the cross board, or null off the track. */
+export function trackIndex(color: CrossColor, progress: number): number | null {
+  return trackAt(4, COLORS.indexOf(color), progress);
 }
 
 /** Where a token would end up with `roll`, or null if it can't move. */
-export function destination(progress: number, roll: number): number | null {
+export function destination(progress: number, roll: number, arms = 4): number | null {
   if (progress === YARD) return roll === 6 ? 0 : null;
-  if (progress === HOME) return null;
+  const home = homeOf(arms);
+  if (progress === home) return null;
   const to = progress + roll;
-  return to <= HOME ? to : null;
+  return to <= home ? to : null;
 }
 
 /** The tokens `player` may move with `roll`. */
-export function movableTokens(p: LudoPlayer, roll: number): number[] {
-  return p.tokens.flatMap((t, i) => (destination(t, roll) !== null ? [i] : []));
+export function movableTokens(p: LudoPlayer, roll: number, arms = 4): number[] {
+  return p.tokens.flatMap((t, i) => (destination(t, roll, arms) !== null ? [i] : []));
 }
 
 /** One token per distinct position (moving either of two stacked tokens is the same move). */
-function distinctMoves(p: LudoPlayer, roll: number): number[] {
+function distinctMoves(p: LudoPlayer, roll: number, arms: number): number[] {
   const seen = new Set<number>();
-  return movableTokens(p, roll).filter((i) => {
+  return movableTokens(p, roll, arms).filter((i) => {
     if (seen.has(p.tokens[i])) return false;
     seen.add(p.tokens[i]);
     return true;
@@ -158,9 +186,11 @@ function newGame(s: LudoState, game: number): LudoState {
 }
 
 export function createLudo(seats: KitSeat[], seed: number): LudoState {
-  const colors = assignPieces(seats, COLORS, colorsFor(seats.length));
-  const players = seats.map((seat, i) => ({ id: `p${i}`, name: seat.name, isAI: seat.isAI, difficulty: seat.difficulty, color: colors[i], tokens: [] as number[] }));
-  const base = { players, score: Object.fromEntries(players.map((p) => [p.id, 0])), seed, rollSeq: 0 } as LudoState;
+  // Up to four sit at the cross, each on their colour's arm. More than four get a star with an arm each, in seat order.
+  const star = seats.length > 4;
+  const colors = star ? assignPieces(seats, STAR_COLORS) : assignPieces(seats, COLORS, colorsFor(seats.length));
+  const players = seats.map((seat, i) => ({ id: `p${i}`, name: seat.name, isAI: seat.isAI, difficulty: seat.difficulty, color: colors[i], arm: star ? i : COLORS.indexOf(colors[i] as CrossColor), tokens: [] as number[] }));
+  const base = { arms: star ? seats.length : 4, players, score: Object.fromEntries(players.map((p) => [p.id, 0])), seed, rollSeq: 0 } as LudoState;
   return newGame(base, 1);
 }
 
@@ -169,19 +199,19 @@ function moveToken(s: LudoState, i: number): LudoState {
   const me = s.players[s.turn];
   const roll = s.dice!;
   const from = me.tokens[i];
-  const to = destination(from, roll);
+  const to = destination(from, roll, s.arms);
   if (to === null) throw new IllegalMove("that token can't move");
 
   const captured: LudoEvent['captured'] = [];
-  const landing = trackIndex(me.color, to);
+  const landing = trackAt(s.arms, me.arm, to);
   let players = s.players.map((p, k) => (k === s.turn ? { ...p, tokens: p.tokens.map((t, j) => (j === i ? to : t)) } : p));
-  if (landing !== null && !SAFE.has(landing)) {
+  if (landing !== null && !isSafe(landing)) {
     players = players.map((p) => {
       if (p.id === me.id || p.out) return p;
       return {
         ...p,
         tokens: p.tokens.map((t, j) => {
-          if (trackIndex(p.color, t) !== landing) return t;
+          if (trackAt(s.arms, p.arm, t) !== landing) return t;
           captured.push({ player: p.id, token: j, from: t });
           return YARD;
         }),
@@ -189,12 +219,13 @@ function moveToken(s: LudoState, i: number): LudoState {
     });
   }
 
-  const reachedHome = to === HOME;
+  const home = homeOf(s.arms);
+  const reachedHome = to === home;
   const bonus = roll === 6 || captured.length > 0 || reachedHome;
   const event: LudoEvent = { player: me.id, roll, kind: 'move', token: i, from, to, captured, bonus, seq: (s.last?.seq ?? 0) + 1 };
   const next: LudoState = { ...s, players, dice: null, phase: 'roll', ...record(s, event) };
 
-  if (players[s.turn].tokens.every((t) => t === HOME)) {
+  if (players[s.turn].tokens.every((t) => t === home)) {
     return { ...next, over: true, winner: me.id, score: { ...s.score, [me.id]: (s.score[me.id] ?? 0) + 1 } };
   }
   if (bonus) return { ...next, sixes: roll === 6 ? s.sixes : 0 };
@@ -223,7 +254,7 @@ export function applyLudo(s: LudoState, action: LudoAction | KitCommonAction, ac
       const e: LudoEvent = { player: me.id, roll, kind: 'three-sixes', seq };
       return { ...base, ...record(s, e), dice: null, sixes: 0, phase: 'roll', turn: nextTurn(s) };
     }
-    const options = distinctMoves(me, roll);
+    const options = distinctMoves(me, roll, s.arms);
     if (options.length === 0) {
       const e: LudoEvent = { player: me.id, roll, kind: 'no-move', seq };
       return { ...base, ...record(s, e), dice: null, sixes: 0, phase: 'roll', turn: nextTurn(s) };
@@ -234,7 +265,7 @@ export function applyLudo(s: LudoState, action: LudoAction | KitCommonAction, ac
   }
   if (action.type === 'MOVE') {
     if (s.phase !== 'move') throw new IllegalMove('roll first');
-    if (!movableTokens(me, s.dice!).includes(action.token)) throw new IllegalMove("that token can't move");
+    if (!movableTokens(me, s.dice!, s.arms).includes(action.token)) throw new IllegalMove("that token can't move");
     return moveToken(s, action.token);
   }
   throw new IllegalMove('unknown action');
@@ -245,17 +276,18 @@ export function applyLudo(s: LudoState, action: LudoAction | KitCommonAction, ac
 
 /** How many opponent tokens could hit track square `idx` next turn. */
 function threats(s: LudoState, me: LudoPlayer, idx: number): number {
-  if (SAFE.has(idx)) return 0;
+  if (isSafe(idx)) return 0;
+  const lap = PER_ARM * s.arms;
   let n = 0;
   for (const p of s.players) {
     if (p.id === me.id || p.out) continue;
     for (const t of p.tokens) {
-      const at = trackIndex(p.color, t);
+      const at = trackAt(s.arms, p.arm, t);
       if (at !== null) {
-        const gap = (idx - at + 52) % 52;
+        const gap = (idx - at + lap) % lap;
         // Within a roll behind, and not about to turn into its own home column first.
-        if (gap >= 1 && gap <= 6 && t + gap <= LAST_TRACK) n++;
-      } else if (t === YARD && START[p.color] === idx) n++;
+        if (gap >= 1 && gap <= 6 && t + gap <= lastTrack(s.arms)) n++;
+      } else if (t === YARD && PER_ARM * p.arm === idx) n++;
     }
   }
   return n;
@@ -265,28 +297,30 @@ function threats(s: LudoState, me: LudoPlayer, idx: number): number {
 function chooseToken(s: LudoState, rand: () => number = Math.random): number {
   const me = s.players[s.turn];
   const roll = s.dice!;
-  const options = movableTokens(me, roll);
+  const options = movableTokens(me, roll, s.arms);
   const level = me.difficulty ?? 'normal';
+  const home = homeOf(s.arms);
+  const last = lastTrack(s.arms);
   if (level === 'easy' && rand() < 0.6) return options[Math.floor(rand() * options.length)];
   let best = options[0];
   let bestScore = -Infinity;
   for (const i of options) {
     const from = me.tokens[i];
-    const to = destination(from, roll)!;
-    const landing = trackIndex(me.color, to);
+    const to = destination(from, roll, s.arms)!;
+    const landing = trackAt(s.arms, me.arm, to);
     let score = to * 0.4;
     if (from === YARD) score += 45;
-    if (to === HOME) score += 70;
-    if (to > LAST_TRACK && from <= LAST_TRACK) score += 30; // into the home column: out of reach
+    if (to === home) score += 70;
+    if (to > last && from <= last) score += 30; // into the home column: out of reach
     if (landing !== null) {
       for (const p of s.players) {
-        if (p.id === me.id || p.out || SAFE.has(landing)) continue;
-        for (const t of p.tokens) if (trackIndex(p.color, t) === landing) score += 60 + t;
+        if (p.id === me.id || p.out || isSafe(landing)) continue;
+        for (const t of p.tokens) if (trackAt(s.arms, p.arm, t) === landing) score += 60 + t;
       }
-      if (SAFE.has(landing)) score += 15;
+      if (isSafe(landing)) score += 15;
       score -= threats(s, me, landing) * (level === 'hard' ? 28 : 18);
     }
-    const here = trackIndex(me.color, from);
+    const here = trackAt(s.arms, me.arm, from);
     if (here !== null) score += threats(s, me, here) * (level === 'hard' ? 22 : 12); // getting out of danger
     score += rand() * 2;
     if (score > bestScore) {
@@ -305,7 +339,7 @@ export function eventMs(e: LudoEvent | null): number {
 }
 
 export const ludoKit: GameKit<LudoState, LudoAction> = {
-  seatError: (count) => (count >= 2 && count <= 4 ? null : 'Ludo is for 2-4 players'),
+  seatError: (count) => (count >= 2 && count <= 8 ? null : 'Ludo is for 2-8 players'),
   create: (seats, seed) => createLudo(seats, seed),
   pieces: COLORS,
   apply: applyLudo,

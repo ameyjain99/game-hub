@@ -75,6 +75,22 @@ export const GAMES: GameEntry[] = [
     category: 'cards',
   },
   {
+    id: 'exploding-kittens',
+    title: 'Exploding Kittens',
+    tagline: 'Draw cards until someone draws a Kitten. Attack, Skip, Nope and Defuse your way to being the last one standing.',
+    players: '2-5 · 15 min',
+    status: 'live',
+    category: 'cards',
+  },
+  {
+    id: 'monopoly-deal',
+    title: 'Monopoly Deal',
+    tagline: 'The Monopoly card game: bank money, charge rent, steal sets, and be first to three full property sets.',
+    players: '2-5 · 15 min',
+    status: 'live',
+    category: 'cards',
+  },
+  {
     id: 'chess',
     title: 'Chess',
     tagline: 'Plan your moves, trade pieces and checkmate the king.',
@@ -93,8 +109,8 @@ export const GAMES: GameEntry[] = [
   {
     id: 'ludo',
     title: 'Ludo',
-    tagline: 'Roll the die and race all four of your tokens home.',
-    players: '2-4 · 20-40 min',
+    tagline: 'Roll the die and race all four of your tokens home. A cross board for up to four, a star board for up to eight.',
+    players: '2-8 · 20-60 min',
     status: 'live',
     category: 'race',
   },

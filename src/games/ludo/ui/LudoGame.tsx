@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
-  HOME,
+  COLORS,
   HOME_COLUMN,
   SAFE,
   START,
@@ -8,14 +8,20 @@ import {
   YARD,
   destination,
   eventMs,
+  homeOf,
+  isSafe,
+  lastTrack,
   ludoKit,
   movableTokens,
-  trackIndex,
+  trackAt,
+  type CrossColor,
   type LudoAction,
   type LudoColor,
   type LudoEvent,
+  type LudoPlayer,
   type LudoState,
 } from '../engine';
+import { armAngle, cellCentre, starOf, starSpot, yardAngle, type Star } from './star';
 import { GameShell, SideSection } from '../../kit/ui/GameShell';
 import { PlayersPanel, tokenLabel } from '../../kit/ui/PlayersPanel';
 import { ResultCard } from '../../kit/ui/ResultCard';
@@ -28,11 +34,11 @@ import { useMediaQuery } from '../../../shared/useMediaQuery';
 import { SafeSquareIcon } from '../../../shared/icons';
 import { LUDO_SOUNDS, ludoCues, playCapture, playFinish, playHome, playOut, playStep } from './sound';
 
-export const LUDO_COLOR: Record<LudoColor, string> = { red: '#E0393E', green: '#25A35A', yellow: '#F2B90F', blue: '#2F6FDB' };
-const NAME: Record<LudoColor, string> = { red: 'Red', green: 'Green', yellow: 'Yellow', blue: 'Blue' };
-/** Each yard's top-left cell, and which side of the centre its home triangle faces. */
-const YARD_AT: Record<LudoColor, [number, number]> = { red: [0, 0], green: [0, 9], yellow: [9, 9], blue: [9, 0] };
-const HOME_AT: Record<LudoColor, [number, number]> = { red: [7.5, 6.55], green: [6.55, 7.5], yellow: [7.5, 8.45], blue: [8.45, 7.5] };
+export const LUDO_COLOR: Record<LudoColor, string> = { red: '#E0393E', green: '#25A35A', yellow: '#F2B90F', blue: '#2F6FDB', purple: '#8E4EC6', orange: '#F0761A', teal: '#12A5A0', pink: '#E34C9C' };
+const NAME: Record<LudoColor, string> = { red: 'Red', green: 'Green', yellow: 'Yellow', blue: 'Blue', purple: 'Purple', orange: 'Orange', teal: 'Teal', pink: 'Pink' };
+/** Each yard's top-left cell on the cross board, and which side of the centre its home triangle faces. */
+const YARD_AT: Record<CrossColor, [number, number]> = { red: [0, 0], green: [0, 9], yellow: [9, 9], blue: [9, 0] };
+const HOME_AT: Record<CrossColor, [number, number]> = { red: [7.5, 6.55], green: [6.55, 7.5], yellow: [7.5, 8.45], blue: [8.45, 7.5] };
 const YARD_SPOTS: [number, number][] = [
   [1.85, 1.85],
   [1.85, 4.15],
@@ -43,19 +49,31 @@ const YARD_SPOTS: [number, number][] = [
 const WALK_DELAY_MS = 420;
 const STEP_MS = 140;
 
-/** A token's centre in grid units (row, col), 0-15. */
-function spot(color: LudoColor, progress: number, token: number): [number, number] {
+/**
+ * A token's centre as (row, col) on a 15-unit square: the cross board's own
+ * grid, or the star board scaled to the same square. `cell` names the square
+ * it stands on, so tokens sharing one can fan out.
+ */
+function spot(star: Star | null, p: Pick<LudoPlayer, 'color' | 'arm'>, progress: number, token: number): { r: number; c: number; cell: string | null } {
+  const arms = star?.arms ?? 4;
+  const resting = progress === YARD || progress === homeOf(arms);
+  if (star) {
+    const [x, y] = starSpot(star, p.arm, progress, token);
+    const scale = 7.5 / star.half;
+    return { r: 7.5 + y * scale, c: 7.5 + x * scale, cell: resting ? null : progress > lastTrack(arms) ? `h${p.arm}-${progress}` : `t${trackAt(arms, p.arm, progress)}` };
+  }
+  const color = p.color as CrossColor;
   if (progress === YARD) {
     const [r, c] = YARD_AT[color];
-    return [r + YARD_SPOTS[token][0], c + YARD_SPOTS[token][1]];
+    return { r: r + YARD_SPOTS[token][0], c: c + YARD_SPOTS[token][1], cell: null };
   }
-  if (progress === HOME) {
+  if (resting) {
     const [r, c] = HOME_AT[color];
     const off = (token - 1.5) * 0.42;
-    return color === 'red' || color === 'yellow' ? [r + off, c] : [r, c + off];
+    return color === 'red' || color === 'yellow' ? { r: r + off, c, cell: null } : { r, c: c + off, cell: null };
   }
-  const cell = progress <= 50 ? TRACK[trackIndex(color, progress)!] : HOME_COLUMN[color][progress - 51];
-  return [cell[0] + 0.5, cell[1] + 0.5];
+  const [r, c] = progress <= lastTrack(4) ? TRACK[trackAt(4, p.arm, progress)!] : HOME_COLUMN[color][progress - lastTrack(4) - 1];
+  return { r: r + 0.5, c: c + 0.5, cell: `${r}-${c}` };
 }
 
 /** The squares a move walks through, as progress values. */
@@ -103,7 +121,7 @@ function useTokenWalk(view: LudoState) {
       }),
     );
     const walked = WALK_DELAY_MS + path.length * STEP_MS;
-    if (e.to === HOME) later(walked, playHome);
+    if (e.to === homeOf(view.arms)) later(walked, playHome);
     if (e.captured?.length) {
       later(walked + 80, () => {
         playCapture();
@@ -122,12 +140,12 @@ function useTokenWalk(view: LudoState) {
   return { shown, moving, flying, animating: moving !== null };
 }
 
-function describe(e: LudoEvent, name: string, color: LudoColor): string {
+function describe(e: LudoEvent, name: string, color: LudoColor, home: number): string {
   if (e.kind === 'three-sixes') return `${name} rolled a third 6 - turn over`;
   if (e.kind === 'no-move') return `${name} rolled ${e.roll} - no move`;
   let text = `${name} rolled ${e.roll}`;
   if (e.from === YARD) text += ' - a token comes out';
-  else if (e.to === HOME) text += ' - a token reaches home';
+  else if (e.to === home) text += ' - a token reaches home';
   else text += ` - moved ${NAME[color].toLowerCase()} ${e.token! + 1}`;
   if (e.captured?.length) text += `, capturing ${e.captured.length === 1 ? 'a token' : `${e.captured.length} tokens`}`;
   if (e.bonus) text += ' · rolls again';
@@ -151,7 +169,7 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
         const victims = [...new Set(e.captured.map((c) => (c.player === meId ? 'you' : nameFor(c.player))))].join(' and ');
         out.push({ kicker: name, title: `sent ${victims} home`, detail: `${e.captured.length === 1 ? 'That token goes' : 'Those tokens go'} back to the yard.`, color: LUDO_COLOR[p.color], afterMs, feels: { [e.player]: 'good', ...Object.fromEntries(e.captured.map((c) => [c.player, 'bad' as const])) } });
       }
-      if (e.to === HOME) out.push({ kicker: name, title: 'brought a token home', color: LUDO_COLOR[p.color], afterMs, feels: { [e.player]: 'good' } });
+      if (e.to === homeOf(b.arms)) out.push({ kicker: name, title: 'brought a token home', color: LUDO_COLOR[p.color], afterMs, feels: { [e.player]: 'good' } });
       return out;
     }),
   );
@@ -163,7 +181,9 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
   const current = view.players[view.turn];
   const who = (id: string) => (id === meId ? 'You' : nameFor(id));
   const choosing = myTurn && view.phase === 'move' && !animating;
-  const movable = choosing && me ? new Set(movableTokens(me, view.dice!)) : new Set<number>();
+  const movable = choosing && me ? new Set(movableTokens(me, view.dice!, view.arms)) : new Set<number>();
+  const star = view.arms > 4 ? starOf(view.arms) : null;
+  const HOME = homeOf(view.arms);
 
   // The finish sounds once the last token is home.
   const finished = useRef(view.over);
@@ -190,24 +210,24 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
   }, [myTurn, view.phase, animating, onAction]);
 
   // Where a hovered token would land, and whom it would knock out.
-  const preview = hoverToken !== null && me && movable.has(hoverToken) ? destination(me.tokens[hoverToken], view.dice!) : null;
-  const previewSpot = preview !== null && me ? spot(me.color, preview, hoverToken!) : null;
-  const previewIdx = preview !== null && me ? trackIndex(me.color, preview) : null;
+  const preview = hoverToken !== null && me && movable.has(hoverToken) ? destination(me.tokens[hoverToken], view.dice!, view.arms) : null;
+  const previewSpot = preview !== null && me ? spot(star, me, preview, hoverToken!) : null;
+  const previewIdx = preview !== null && me ? trackAt(view.arms, me.arm, preview) : null;
   const victims = new Set<string>();
-  if (previewIdx !== null && !SAFE.has(previewIdx)) {
-    for (const p of view.players) if (p.id !== meId) p.tokens.forEach((t, i) => trackIndex(p.color, t) === previewIdx && victims.add(key(p.id, i)));
+  if (previewIdx !== null && !isSafe(previewIdx)) {
+    for (const p of view.players) if (p.id !== meId) p.tokens.forEach((t, i) => trackAt(view.arms, p.arm, t) === previewIdx && victims.add(key(p.id, i)));
   }
 
   const cells = [];
-  for (let r = 0; r < 15; r++) {
+  for (let r = 0; r < (star ? 0 : 15); r++) {
     for (let c = 0; c < 15; c++) {
       const inYard = (r < 6 || r > 8) && (c < 6 || c > 8);
       const inCentre = r >= 6 && r <= 8 && c >= 6 && c <= 8;
       if (inYard || inCentre) continue;
       const idx = TRACK.findIndex(([tr, tc]) => tr === r && tc === c);
-      const homeOf = (Object.keys(HOME_COLUMN) as LudoColor[]).find((col) => HOME_COLUMN[col].some(([hr, hc]) => hr === r && hc === c));
-      const startOf = (Object.keys(START) as LudoColor[]).find((col) => START[col] === idx);
-      const tint = homeOf ?? startOf;
+      const columnOf = COLORS.find((col) => HOME_COLUMN[col].some(([hr, hc]) => hr === r && hc === c));
+      const startOf = COLORS.find((col) => START[col] === idx);
+      const tint = columnOf ?? startOf;
       cells.push(
         <div
           key={`${r}-${c}`}
@@ -228,18 +248,81 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
       : p.tokens.map((_, i) => {
           const k = key(p.id, i);
           const progress = shown[k] ?? p.tokens[i];
-          const [r, c] = spot(p.color, progress, i);
-          const cellKey = progress === YARD || progress === HOME ? k : `${Math.floor(r)}-${Math.floor(c)}`;
+          const { r, c, cell } = spot(star, p, progress, i);
+          const cellKey = cell ?? k;
           groups.set(cellKey, [...(groups.get(cellKey) ?? []), k]);
           return { p, i, k, r, c, cellKey, progress };
         }),
   );
 
+  /** The die of the player to roll, in their yard. */
+  const die = (color: LudoColor) => (
+    <BoardDie value={view.dice ?? view.last?.roll ?? null} rollKey={view.rollSeq} canRoll={myTurn && view.phase === 'roll' && !animating} onRoll={() => onAction({ type: 'ROLL' })} color={LUDO_COLOR[color]} className="ludo-die" />
+  );
+
+  // The star board is drawn in its own units, centred on the middle of the board.
+  const starBoard = star && (
+    <div className="ludo-star-board">
+      <svg className="ludo-star-art" viewBox={`${-star.half} ${-star.half} ${star.half * 2} ${star.half * 2}`} aria-hidden="true">
+        {view.players.map((p) => {
+          const deg = (armAngle(star, p.arm) * 180) / Math.PI;
+          const [yx, yy] = [Math.cos(yardAngle(star, p.arm)) * star.yardAt, Math.sin(yardAngle(star, p.arm)) * star.yardAt];
+          const fill = LUDO_COLOR[p.color];
+          const half = Math.PI / star.arms;
+          const corner = (side: number) => `${Math.cos(armAngle(star, p.arm) + side * half) * star.corner},${Math.sin(armAngle(star, p.arm) + side * half) * star.corner}`;
+          return (
+            <g key={p.id} className={p.out ? 'is-empty' : undefined}>
+              <polygon points={`0,0 ${corner(-1)} ${corner(1)}`} fill={fill} />
+              <circle cx={yx} cy={yy} r={star.yardRadius} fill={fill} className={`ludo-star-yard${p.id === current.id && !view.over ? ' is-turn' : ''}`} />
+              <circle cx={yx} cy={yy} r={star.yardRadius * 0.8} fill="#fffdf8" />
+              {[0, 1, 2, 3].map((t) => {
+                const [sx, sy] = starSpot(star, p.arm, YARD, t);
+                return <circle key={t} cx={sx} cy={sy} r={0.42} fill={`color-mix(in srgb, ${fill} 22%, #fff)`} stroke={`color-mix(in srgb, ${fill} 55%, #fff)`} strokeWidth={0.08} />;
+              })}
+              <g transform={`rotate(${deg})`}>
+                {[0, 1, 2, 3, 4, 5].flatMap((row) =>
+                  [-1, 0, 1].map((col) => {
+                    const tinted = (col === 0 && row < 5) || (col === 1 && row === 4);
+                    return <rect key={`${row}:${col}`} x={star.apothem + row} y={col - 0.5} width={1} height={1} fill={tinted ? fill : '#fffdf8'} stroke={tinted ? `color-mix(in srgb, ${fill} 70%, #000)` : '#c9bfa9'} strokeWidth={0.04} />;
+                  }),
+                )}
+              </g>
+            </g>
+          );
+        })}
+      </svg>
+      {view.players.map((p) => {
+        // Each arm's star square, the fourth out on its near side, and its start square.
+        const at = (row: number, col: number) => {
+          const [x, y] = cellCentre(star, { arm: p.arm, row, col });
+          return { left: `${50 + (x / star.half) * 50}%`, top: `${50 + (y / star.half) * 50}%`, width: `${50 / star.half}%` } as CSSProperties;
+        };
+        const [yx, yy] = [Math.cos(yardAngle(star, p.arm)) * star.yardAt, Math.sin(yardAngle(star, p.arm)) * star.yardAt];
+        return (
+          <div key={p.id}>
+            <SafeSquareIcon className="ludo-star-mark" style={at(3, -1)} />
+            <SafeSquareIcon className="ludo-star-mark is-start" style={at(4, 1)} />
+            <div className={`ludo-star-who${p.out ? ' is-out' : ''}`} style={{ left: `${50 + (yx / star.half) * 50}%`, top: `${50 + ((yy + (yy < 0 ? -1 : 1) * star.yardRadius * 0.93) / star.half) * 50}%`, '--lc': LUDO_COLOR[p.color] } as CSSProperties}>
+              <SeatFace id={p.id} className="ludo-face" color="#fff" />
+              <span className="ludo-yard-name">{nameFor(p.id)}</span>
+            </div>
+            {p.id === current.id && !view.over && !p.out && (
+              <div className="ludo-star-die" style={{ left: `${50 + (yx / star.half) * 50}%`, top: `${50 + (yy / star.half) * 50}%` }}>
+                {die(p.color)}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   const board = (
-    <div className={`kit-board ludo-board${choosing ? ' is-choosing' : ''}`}>
-      <div className="ludo-grid">
+    <div className={`kit-board ludo-board${choosing ? ' is-choosing' : ''}${star ? ' is-star' : ''}`} style={star ? ({ '--k': 7.5 / star.half } as CSSProperties) : undefined}>
+      {starBoard}
+      {!star && <div className="ludo-grid">
         {cells}
-        {(Object.keys(YARD_AT) as LudoColor[]).map((col) => {
+        {(Object.keys(YARD_AT) as CrossColor[]).map((col) => {
           const [r, c] = YARD_AT[col];
           const owner = view.players.find((p) => p.color === col && !p.out);
           const seated = !!owner;
@@ -249,16 +332,7 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
               {YARD_SPOTS.map(([sr, sc], i) => (
                 <span key={i} className="ludo-yard-spot" style={{ top: `${(sr / 6) * 100}%`, left: `${(sc / 6) * 100}%` }} />
               ))}
-              {owner && owner.id === current.id && !view.over && (
-                <BoardDie
-                  value={view.dice ?? view.last?.roll ?? null}
-                  rollKey={view.rollSeq}
-                  canRoll={myTurn && view.phase === 'roll' && !animating}
-                  onRoll={() => onAction({ type: 'ROLL' })}
-                  color={LUDO_COLOR[col]}
-                  className="ludo-die"
-                />
-              )}
+              {owner && owner.id === current.id && !view.over && die(col)}
               {owner && (
                 <span className="ludo-yard-who">
                   <SeatFace id={owner.id} className="ludo-face" color="#fff" />
@@ -274,13 +348,13 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
           <polygon points="3,0 3,3 1.5,1.5" fill={LUDO_COLOR.yellow} />
           <polygon points="0,3 1.5,1.5 3,3" fill={LUDO_COLOR.blue} />
         </svg>
-      </div>
+      </div>}
       <div className="ludo-tokens">
-  {previewSpot && <span className="ludo-ghost" style={{ left: `${(previewSpot[1] / 15) * 100}%`, top: `${(previewSpot[0] / 15) * 100}%`, '--lc': LUDO_COLOR[me!.color] } as CSSProperties} />}
+        {previewSpot && <span className="ludo-ghost" style={{ left: `${(previewSpot.c / 15) * 100}%`, top: `${(previewSpot.r / 15) * 100}%`, '--lc': LUDO_COLOR[me!.color] } as CSSProperties} />}
         {placed.map(({ p, i, k, r, c, cellKey }) => {
           const group = groups.get(cellKey) ?? [k];
           const n = group.indexOf(k);
-          const spread = group.length > 1 ? 0.22 : 0;
+          const spread = group.length > 1 ? 0.22 * (star ? 7.5 / star.half : 1) : 0;
           const angle = (n / group.length) * Math.PI * 2 + 0.6;
           const canMove = p.id === meId && movable.has(i);
           const cls = ['ludo-token'];
@@ -329,7 +403,7 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
             {choosing
               ? `You rolled ${view.dice} - pick a token to move.`
               : view.last && roller
-                ? describe(view.last, who(roller.id), roller.color)
+                ? describe(view.last, who(roller.id), roller.color, HOME)
                 : 'Roll a 6 to bring a token out.'}
           </span>
         </div>
@@ -429,7 +503,7 @@ export function LudoGame({ view, meId, nameFor, onAction, onExit, exitLabel, onl
             <ul className="kit-log">
               {view.history.map((e) => {
                 const p = view.players.find((pl) => pl.id === e.player)!;
-                return <li key={e.seq}>{describe(e, who(p.id), p.color)}</li>;
+                return <li key={e.seq}>{describe(e, who(p.id), p.color, HOME)}</li>;
               })}
             </ul>
           )}

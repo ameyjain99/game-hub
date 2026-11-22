@@ -328,7 +328,7 @@ export function stationWord(board: BoardId = 'neo'): string {
   return 'Station';
 }
 
-/** Monopoly money: the M with a line through it, for boards that mix countries. */
+/** Monopoly money, for boards that mix countries. The app's font draws this character as an M with two bars (see tokens.css). */
 export const MONOPOLY_MONEY = '\u20A5';
 
 /** A board's currency symbol: rupees in India, pounds on the European boards, dollars on the US ones, Monopoly money where countries mix. */

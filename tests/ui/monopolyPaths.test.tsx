@@ -11,7 +11,7 @@ afterEach(() => {
 
 function openMonopoly() {
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: /play monopoly/i }));
+  fireEvent.click(screen.getByRole('button', { name: /play monopoly$/i }));
 }
 
 test('the hub card opens /monopoly', () => {

@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import type { LobbyPiece } from '../../../online/ui/OnlineLobby';
 import { KitLocal, freshSeed, localSeats } from '../../kit/ui/KitLocal';
 import { KitOnline } from '../../kit/ui/KitOnline';
-import { COLORS, colorsFor, createLudo, ludoKit } from '../engine';
+import { COLORS, STAR_COLORS, createLudo, ludoKit } from '../engine';
 import { LUDO_COLOR, LudoGame } from './LudoGame';
 import { LUDO_RULES } from '../rules';
 
@@ -16,15 +16,15 @@ const DIFFICULTIES = [
 const CONFIG: KitAppConfig = {
   gameId: 'ludo',
   title: 'Ludo',
-  meta: '2-4 players · 20-40 min',
-  localSeats: [2, 3, 4],
-  onlineSeats: [2, 3, 4],
+  meta: '2-8 players · 20-60 min',
+  localSeats: [2, 3, 4, 5, 6, 7, 8],
+  onlineSeats: [2, 3, 4, 5, 6, 7, 8],
   defaultSeats: 4,
   difficulties: DIFFICULTIES,
 };
 
-// Lobby seat colours follow a four-seat table (a smaller table re-seats at start).
-const seatColor = (i: number) => LUDO_COLOR[colorsFor(4)[i % 4]];
+// Lobby seat colours follow the order a full table is seated in (a table of two or three re-seats at the start).
+const seatColor = (i: number) => LUDO_COLOR[STAR_COLORS[i % STAR_COLORS.length]];
 
 /** The four colours, to pick yours in the lobby. */
 const COLOUR_PIECES: LobbyPiece[] = COLORS.map((c) => ({

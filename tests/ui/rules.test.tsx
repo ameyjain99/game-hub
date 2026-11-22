@@ -22,6 +22,8 @@ import { MINESWEEPER_RULES } from '../../src/games/minesweeper/rules';
 import { POKER_RULES } from '../../src/games/poker/rules';
 import { CATAN_RULES } from '../../src/games/catan/rules';
 import { IMPOSTER_RULES } from '../../src/games/imposter/rules';
+import { EK_RULES } from '../../src/games/exploding-kittens/rules';
+import { MD_RULES } from '../../src/games/monopoly-deal/rules';
 
 afterEach(cleanup);
 
@@ -36,6 +38,8 @@ const BOOKS: Record<string, GameRules> = {
   ludo: LUDO_RULES,
   sequence: SEQUENCE_RULES,
   'uno': UNO_RULES,
+  'exploding-kittens': EK_RULES,
+  'monopoly-deal': MD_RULES,
   scrabble: SCRABBLE_RULES,
   minecraft: MINECRAFT_RULES,
   solitaire: SOLITAIRE_RULES,

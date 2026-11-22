@@ -88,13 +88,15 @@ test('picking a category shows only its games; All brings everything back', () =
 test('search narrows the grid by name, ignoring case', () => {
   render(<HubScreen onSelect={vi.fn()} onJoin={vi.fn()} />);
   fireEvent.change(screen.getByRole('searchbox', { name: /search games/i }), { target: { value: 'MONO' } });
-  expect(shownTitles()).toEqual(['Monopoly']);
+  expect(shownTitles()).toEqual(['Monopoly', 'Monopoly Deal']);
 });
 
 test('search and category combine, with a clear message when nothing matches', () => {
   render(<HubScreen onSelect={vi.fn()} onJoin={vi.fn()} />);
   fireEvent.change(screen.getByRole('searchbox', { name: /search games/i }), { target: { value: 'mono' } });
   fireEvent.click(pill(/^cards/i));
+  expect(shownTitles()).toEqual(['Monopoly Deal']);
+  fireEvent.click(pill(/^words/i));
   expect(screen.queryByRole('list', { name: /games/i })).toBeNull();
   expect(screen.getByText(/no games match/i)).toBeTruthy();
 });

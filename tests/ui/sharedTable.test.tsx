@@ -94,7 +94,7 @@ test('a local game starts with the chosen starting cash', () => {
 
 test('the local setup offers starting cash and house rules, and uses them', () => {
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: /play monopoly/i }));
+  fireEvent.click(screen.getByRole('button', { name: /play monopoly$/i }));
   fireEvent.click(screen.getByText(/house rules/i));
   expect(screen.getByLabelText(/free parking jackpot/i)).toBeTruthy();
   fireEvent.change(screen.getByRole('combobox', { name: /starting cash/i }), { target: { value: '2000' } });
